@@ -1,0 +1,1679 @@
+ ESTILO DE PAGINA FINAL
+
+# Sistema de Diseño - Guía Completa
+
+## 🎨 Paleta de Colores
+
+### Colores Principales
+```css
+/* Azules (Primary) */
+bg-blue-50     /* Fondo muy claro */
+bg-blue-100    /* Fondo claro */
+bg-blue-600    /* Color principal */
+bg-blue-700    /* Hover principal */
+bg-blue-900    /* Versión oscura */
+
+text-blue-400  /* Texto claro modo oscuro */
+text-blue-600  /* Texto modo claro */
+text-blue-800  /* Texto oscuro */
+
+border-blue-300 /* Bordes claros */
+border-blue-500 /* Bordes principales */
+border-blue-600 /* Bordes modo oscuro */
+
+ring-blue-500  /* Focus rings */
+```
+
+### Estados de Colores
+```css
+/* Verde (Éxito/Activo/Disponible) */
+bg-green-50, bg-green-100, bg-green-600, bg-green-900
+text-green-200, text-green-400, text-green-800
+border-green-300, border-green-600
+
+/* Rojo (Error/Peligro/Inactivo) */
+bg-red-50, bg-red-100, bg-red-600, bg-red-900
+text-red-200, text-red-400, text-red-800
+border-red-300, border-red-600
+
+/* Amarillo (Advertencia/Destacado) */
+bg-yellow-50, bg-yellow-100, bg-yellow-500, bg-yellow-900
+text-yellow-200, text-yellow-400, text-yellow-800
+border-yellow-300, border-yellow-600
+
+/* Gris (Neutral) */
+bg-gray-50, bg-gray-100, bg-gray-200, bg-gray-300, bg-gray-400
+bg-gray-500, bg-gray-600, bg-gray-700, bg-gray-800, bg-gray-900
+text-gray-100, text-gray-300, text-gray-400, text-gray-500
+text-gray-600, text-gray-700, text-gray-900
+border-gray-200, border-gray-300, border-gray-600, border-gray-700
+```
+
+## 🌙 Modo Oscuro (Dark Mode)
+
+### Sistema de Clases Duales
+Cada elemento tiene versiones para modo claro y oscuro:
+```css
+/* Patrón estándar */
+bg-white dark:bg-gray-800
+text-gray-900 dark:text-gray-100
+border-gray-300 dark:border-gray-600
+
+/* Hovers */
+hover:bg-gray-50 dark:hover:bg-gray-600
+hover:text-blue-700 dark:hover:text-blue-300
+```
+
+### Fondos Principales
+```css
+/* Fondo de página */
+bg-gray-100 dark:bg-gray-900
+
+/* Tarjetas/Cards */
+bg-white dark:bg-gray-800
+
+/* Headers de tabla */
+bg-gray-50 dark:bg-gray-800
+
+/* Campos de entrada */
+bg-white dark:bg-gray-700
+```
+
+## 📐 Espaciado y Dimensiones
+
+### Padding y Margin
+```css
+/* Componentes pequeños */
+px-2 py-1          /* Badges */
+px-3 py-2          /* Botones pequeños */
+px-4 py-2          /* Botones normales */
+px-4 py-3          /* Inputs */
+px-6 py-4          /* Celdas de tabla */
+p-4, p-6, p-8      /* Contenedores */
+
+/* Espacios entre elementos */
+space-x-2, space-x-3, space-x-4    /* Horizontal */
+space-y-2, space-y-4, space-y-6    /* Vertical */
+gap-2, gap-4, gap-6               /* Grid/Flex */
+```
+
+### Tamaños de Íconos
+```css
+h-3 w-3    /* Íconos muy pequeños (badges) */
+h-4 w-4    /* Íconos pequeños (botones) */
+h-5 w-5    /* Íconos medianos (estrella) */
+h-6 w-6    /* Íconos grandes */
+h-12 w-12  /* Íconos extra grandes o imágenes */
+```
+
+## 🔘 Componentes Base
+
+### Botones
+
+#### Botón Principal
+```css
+inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+```
+
+#### Botón Secundario
+```css
+inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+```
+
+#### Botón de Acción (Íconos)
+```css
+p-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/40 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+```
+
+#### Botón Toggle (Estados)
+```css
+/* Estado activo */
+inline-flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 bg-yellow-100 text-yellow-800 border-2 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-600
+
+/* Estado inactivo */
+inline-flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600
+```
+
+### Inputs y Formularios
+
+#### Campo de Texto
+```css
+block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200
+```
+
+#### Campo con Ícono
+```css
+/* Contenedor */
+relative
+
+/* Input */
+block w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200
+
+/* Ícono */
+absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none
+```
+
+#### Select/Dropdown
+```css
+block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200
+```
+
+### Badges y Estados
+
+#### Badge de Estado
+```css
+/* Activo/Disponible */
+inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+
+/* Inactivo/Error */
+inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+
+/* Advertencia */
+inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+```
+
+#### Badge de Filtro (Removible)
+```css
+inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200
+```
+
+#### Badge con Contador
+```css
+inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-blue-100 bg-blue-600 rounded-full
+```
+
+### Tablas
+
+#### Estructura Base
+```css
+/* Contenedor */
+overflow-x-auto
+
+/* Tabla */
+min-w-full divide-y divide-gray-200 dark:divide-gray-700
+
+/* Header */
+bg-gray-50 dark:bg-gray-800
+
+/* Celdas Header */
+px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider
+
+/* Filas */
+bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700
+
+/* Filas con Hover */
+hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150
+
+/* Celdas */
+px-6 py-4 whitespace-nowrap
+```
+
+### Tarjetas y Contenedores
+
+#### Card Principal
+```css
+bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden
+```
+
+#### Card con Header
+```css
+bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-4
+```
+
+#### Modal/Dialog
+```css
+bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6
+```
+
+## 🎭 Animaciones y Transiciones
+
+### Transiciones Base
+```css
+transition-colors duration-200    /* Para cambios de color */
+transition-all duration-200       /* Para múltiples propiedades */
+transition-transform duration-200 /* Para transformaciones */
+```
+
+### Efectos Especiales
+```css
+/* Hover Scale */
+hover:scale-110
+
+/* Loading Spinner */
+animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600
+
+/* Pulse Effect */
+animate-pulse cursor-not-allowed opacity-50
+
+/* Focus Ring */
+focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+```
+
+### Estados Interactivos
+```css
+/* Botón con efecto hover */
+hover:bg-blue-700 hover:scale-105 transform
+
+/* Elemento clickeable */
+cursor-pointer hover:shadow-md
+
+/* Elemento deshabilitado */
+disabled:opacity-50 disabled:cursor-not-allowed
+
+/* Elemento procesando */
+animate-pulse cursor-not-allowed opacity-50
+```
+
+## 📱 Responsive Design
+
+### Breakpoints
+```css
+/* Móvil primero, luego: */
+sm:   /* >= 640px */
+md:   /* >= 768px */
+lg:   /* >= 1024px */
+xl:   /* >= 1280px */
+```
+
+### Patrones Responsive
+```css
+/* Grid adaptativo */
+grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+
+/* Flex responsive */
+flex-col md:flex-row
+
+/* Espacios responsive */
+gap-4 md:gap-6 lg:gap-8
+
+/* Texto responsive */
+text-sm md:text-base lg:text-lg
+
+/* Padding responsive */
+p-4 md:p-6 lg:p-8
+
+/* Ocultar en móvil */
+hidden md:flex
+
+/* Mostrar solo en móvil */
+flex md:hidden
+```
+
+## 🏗️ Estructura de Layout
+
+### Container Principal
+```css
+min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200
+```
+
+### Contenedor Centrado
+```css
+max-w-7xl mx-auto p-4 sm:p-6 lg:p-8
+```
+
+### Header de Página
+```css
+/* Contenedor */
+mb-8
+
+/* Título con ícono */
+flex items-center space-x-3
+
+/* Ícono del header */
+p-3 bg-blue-600 rounded-lg
+
+/* Título */
+text-3xl font-bold text-gray-900 dark:text-gray-100
+
+/* Subtítulo */
+text-gray-600 dark:text-gray-400 mt-1
+```
+
+### Barra de Acciones
+```css
+flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6
+```
+
+## 🎯 Patrones de Interacción
+
+### Estados de Loading
+```css
+/* Spinner centrado */
+flex justify-center items-center h-64
+animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600
+
+/* Loading overlay */
+absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-50 flex items-center justify-center
+```
+
+### Estados Vacíos
+```css
+/* Contenedor */
+text-center py-12
+
+/* Ícono */
+mx-auto h-12 w-12 text-gray-400 mb-4
+
+/* Título */
+text-lg font-medium text-gray-900 dark:text-gray-100 mb-2
+
+/* Descripción */
+text-gray-500 dark:text-gray-400
+```
+
+### Tooltips y Ayuda
+```css
+title="Texto del tooltip"
+```
+
+## 🔧 Utilidades Especiales
+
+### Truncate Text
+```css
+truncate max-w-xs      /* Para títulos largos */
+```
+
+### Código/Monospace
+```css
+text-sm font-mono text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded
+```
+
+### Separadores
+```css
+/* Línea horizontal */
+border-t border-gray-200 dark:border-gray-600 pt-4
+
+/* Línea vertical */
+w-px h-8 bg-gray-200 dark:bg-gray-700
+```
+
+### Shadow Levels
+```css
+shadow-sm     /* Sombra muy sutil */
+shadow-md     /* Sombra estándar para cards */
+shadow-lg     /* Sombra prominente */
+shadow-xl     /* Sombra para modals */
+```
+
+## 📋 Checklist de Implementación
+
+### Al crear un componente nuevo, asegúrate de incluir:
+- [ ] Soporte para modo oscuro (dark:)
+- [ ] Estados hover/focus/disabled
+- [ ] Transiciones suaves (transition-*)
+- [ ] Responsive design (sm:, md:, lg:)
+- [ ] Estados de loading
+- [ ] Estados vacíos
+- [ ] Accesibilidad (focus rings, títulos)
+- [ ] Consistencia en espaciado
+- [ ] Iconografía consistente
+- [ ] Manejo de errores visual
+
+### Colores por función:
+- **Azul**: Acciones principales, links
+- **Verde**: Éxito, activo, disponible
+- **Rojo**: Error, peligro, eliminar
+- **Amarillo**: Advertencia, destacado
+- **Gris**: Neutral, inactivo, texto secundario
+- **Púrpura**: Categorías especiales
+- **Indigo**: Información adicional
+
+Este sistema garantiza consistencia visual y experiencia de usuario uniforme en todas las páginas.
+
+// ==================== TEMPLATE 1: PÁGINA DE LISTADO CON CRUD ====================
+import React, { useState, useEffect, useCallback } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faPlus, 
+  faDownload, 
+  faUpload, 
+  faUsers, // Cambiar según tu página (faBoxes, faTools, faCogs, etc.)
+  faEdit, 
+  faTrash,
+  faEye,
+  faSearch,
+  faFilter
+} from '@fortawesome/free-solid-svg-icons';
+
+/**
+ * Template base para páginas CRUD - Usuario, Productos, Servicios, etc.
+ * Solo cambia: título, ícono, datos, y funciones específicas
+ */
+const CrudPageTemplate = () => {
+  // ===== ESTADOS BASE =====
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    count: 0,
+    current_page: 1,
+    total_pages: 1
+  });
+
+  // Estados para modales
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState(null);
+
+  // Estados para filtros
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    category: ''
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // ===== ESTRUCTURA JSX BASE =====
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        {/* ===== HEADER CON ESTADÍSTICAS ===== */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-blue-600 rounded-lg">
+                <FontAwesomeIcon icon={faUsers} className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Gestión de [Entidad]
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Administra [descripción de la entidad]
+                </p>
+              </div>
+            </div>
+
+            {/* Estadísticas rápidas */}
+            <div className="hidden md:flex items-center space-x-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {pagination.count || 0}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Total
+                </div>
+              </div>
+              <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {items.filter(item => item.active).length || 0}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Activos
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== BARRA DE BÚSQUEDA ===== */}
+        <div className="mb-6">
+          <SearchComponent
+            onSearch={handleSearch}
+            filters={filters}
+          />
+        </div>
+
+        {/* ===== BARRA DE ACCIONES ===== */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              Crear [Entidad]
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleImport}
+              disabled={loading}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faUpload} className="mr-2" />
+              Importar
+            </button>
+            
+            <button
+              onClick={handleExport}
+              disabled={loading}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faDownload} className="mr-2" />
+              Exportar
+            </button>
+          </div>
+        </div>
+
+        {/* ===== TABLA/LISTADO PRINCIPAL ===== */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          <DataTable
+            data={items}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            loading={loading}
+          />
+          
+          {/* Paginación */}
+          <PaginationComponent
+            currentPage={currentPage}
+            totalPages={pagination.total_pages}
+            totalItems={pagination.count}
+            onPageChange={setCurrentPage}
+            loading={loading}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== TEMPLATE 2: COMPONENTE DE TABLA REUTILIZABLE ====================
+const DataTable = ({ data, onEdit, onDelete, loading, customColumns = [] }) => {
+  if (loading && data.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Cargando datos...</span>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <FontAwesomeIcon icon={faUsers} className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          No hay elementos disponibles
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400">
+          Comienza creando tu primer elemento o ajusta los filtros de búsqueda.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-800">
+          <tr>
+            {/* Headers dinámicos basados en customColumns */}
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              ID
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Nombre
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Estado
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Fecha
+            </th>
+            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {data.map((item) => (
+            <tr 
+              key={item.id} 
+              className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150"
+            >
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-mono text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                  #{item.id}
+                </div>
+              </td>
+
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  {item.image && (
+                    <img
+                      className="h-10 w-10 rounded-full mr-3"
+                      src={item.image}
+                      alt={item.name}
+                    />
+                  )}
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {item.name}
+                    </div>
+                    {item.description && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {item.description}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </td>
+
+              <td className="px-6 py-4 whitespace-nowrap">
+                <StatusBadge status={item.status} active={item.active} />
+              </td>
+
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {new Date(item.created_at).toLocaleDateString('es-ES')}
+              </td>
+
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <ActionButtons
+                  item={item}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// ==================== TEMPLATE 3: COMPONENTES AUXILIARES ====================
+
+// Componente de Badge de Estado
+const StatusBadge = ({ status, active }) => {
+  if (status === 'success' || active === true) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+        Activo
+      </span>
+    );
+  } else if (status === 'warning') {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+        Pendiente
+      </span>
+    );
+  } else {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+        Inactivo
+      </span>
+    );
+  }
+};
+
+// Botones de Acción
+const ActionButtons = ({ item, onEdit, onDelete, customActions = [] }) => (
+  <div className="flex justify-center space-x-2">
+    <button
+      onClick={() => onEdit(item)}
+      className="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/40 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      title="Editar"
+    >
+      <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
+    </button>
+    
+    <button
+      onClick={() => onDelete(item)}
+      className="p-2 text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/40 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+      title="Eliminar"
+    >
+      <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
+    </button>
+
+    {/* Acciones personalizadas */}
+    {customActions.map((action, index) => (
+      <button
+        key={index}
+        onClick={() => action.handler(item)}
+        className={`p-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${action.className || 'text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 dark:bg-gray-900/20 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-900/40 focus:ring-gray-500'}`}
+        title={action.title}
+      >
+        <FontAwesomeIcon icon={action.icon} className="h-4 w-4" />
+      </button>
+    ))}
+  </div>
+);
+
+// ==================== TEMPLATE 4: COMPONENTE DE PAGINACIÓN ====================
+const PaginationComponent = ({ currentPage, totalPages, totalItems, onPageChange, loading, itemsPerPage = 10 }) => {
+  if (totalPages <= 1) return null;
+
+  const pages = [];
+  const maxPages = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
+  let endPage = Math.min(totalPages, startPage + maxPages - 1);
+
+  if (endPage - startPage + 1 < maxPages) {
+    startPage = Math.max(1, endPage - maxPages + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
+      <div className="flex items-center justify-between">
+        {/* Info de items - Solo en desktop */}
+        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Mostrando{' '}
+              <span className="font-medium">
+                {(currentPage - 1) * itemsPerPage + 1}
+              </span>{' '}
+              a{' '}
+              <span className="font-medium">
+                {Math.min(currentPage * itemsPerPage, totalItems)}
+              </span>{' '}
+              de{' '}
+              <span className="font-medium">{totalItems}</span> elementos
+            </p>
+          </div>
+          
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+              {/* Botón Anterior */}
+              <button
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage <= 1 || loading}
+                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                Anterior
+              </button>
+              
+              {/* Números de página */}
+              {pages.map((page) => (
+                <button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  disabled={loading}
+                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed ${
+                    page === currentPage
+                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/50 dark:border-blue-400 dark:text-blue-300'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              
+              {/* Botón Siguiente */}
+              <button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages || loading}
+                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                Siguiente
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Versión móvil */}
+        <div className="flex-1 flex justify-between sm:hidden">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage <= 1 || loading}
+            className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            Anterior
+          </button>
+          
+          <span className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            {currentPage} de {totalPages}
+          </span>
+          
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages || loading}
+            className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== TEMPLATE 5: COMPONENTE DE BÚSQUEDA UNIVERSAL ====================
+const SearchComponent = ({ onSearch, filters, placeholder = "Buscar...", additionalFilters = [] }) => {
+  const [localFilters, setLocalFilters] = useState({
+    search: '',
+    ...filters
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const handleInputChange = (field, value) => {
+    const newFilters = { ...localFilters, [field]: value };
+    setLocalFilters(newFilters);
+    
+    // Debounced search
+    clearTimeout(window.searchTimeout);
+    window.searchTimeout = setTimeout(() => {
+      onSearch(newFilters);
+    }, 300);
+  };
+
+  const clearAllFilters = () => {
+    const clearedFilters = Object.keys(localFilters).reduce((acc, key) => {
+      acc[key] = key === 'search' ? '' : '';
+      return acc;
+    }, {});
+    setLocalFilters(clearedFilters);
+    onSearch(clearedFilters);
+    setShowAdvanced(false);
+  };
+
+  const hasActiveFilters = Object.values(localFilters).some(value => value !== '' && value !== false);
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      {/* Barra principal de búsqueda */}
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        {/* Campo de búsqueda */}
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FontAwesomeIcon icon={faSearch} className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder={placeholder}
+            value={localFilters.search}
+            onChange={(e) => handleInputChange('search', e.target.value)}
+            className="block w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+          />
+        </div>
+
+        {/* Botón de filtros avanzados */}
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className={`inline-flex items-center px-4 py-3 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+            showAdvanced || hasActiveFilters
+              ? 'bg-blue-100 text-blue-800 border-2 border-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-600'
+              : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+          }`}
+        >
+          <FontAwesomeIcon icon={faFilter} className="mr-2 h-4 w-4" />
+          Filtros
+          {hasActiveFilters && (
+            <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-blue-100 bg-blue-600 rounded-full">
+              {Object.values(localFilters).filter(v => v && v !== '').length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Filtros avanzados */}
+      {showAdvanced && additionalFilters.length > 0 && (
+        <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {additionalFilters.map((filter, index) => (
+              <div key={index}>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {filter.icon && <FontAwesomeIcon icon={filter.icon} className="mr-2 h-4 w-4" />}
+                  {filter.label}
+                </label>
+                {filter.type === 'select' ? (
+                  <select
+                    value={localFilters[filter.key] || ''}
+                    onChange={(e) => handleInputChange(filter.key, e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  >
+                    <option value="">{filter.placeholder || `Todos los ${filter.label.toLowerCase()}`}</option>
+                    {filter.options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={filter.type || 'text'}
+                    placeholder={filter.placeholder}
+                    value={localFilters[filter.key] || ''}
+                    onChange={(e) => handleInputChange(filter.key, e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Botón limpiar filtros */}
+          {hasActiveFilters && (
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== TEMPLATE 6: MODAL BASE REUTILIZABLE ====================
+const BaseModal = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  footerActions,
+  size = 'md', // 'sm', 'md', 'lg', 'xl'
+  loading = false 
+}) => {
+  if (!isOpen) return null;
+
+  const sizeClasses = {
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl'
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        {/* Overlay */}
+        <div 
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          onClick={onClose}
+        ></div>
+
+        {/* Centrar modal */}
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+
+        {/* Modal */}
+        <div className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} sm:w-full sm:p-6`}>
+          {/* Header */}
+          <div className="mb-4">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+              {title}
+            </h3>
+          </div>
+
+          {/* Content */}
+          <div className={`${loading ? 'opacity-50' : ''}`}>
+            {children}
+          </div>
+
+          {/* Footer */}
+          {footerActions && (
+            <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 space-y-3 space-y-reverse sm:space-y-0">
+              {footerActions}
+            </div>
+          )}
+
+          {/* Loading overlay */}
+          {loading && (
+            <div className="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-50 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== TEMPLATE 7: FORMULARIO BASE ====================
+const FormField = ({ 
+  label, 
+  name, 
+  type = 'text', 
+  value, 
+  onChange, 
+  error, 
+  required = false, 
+  options = [], 
+  placeholder,
+  icon,
+  disabled = false 
+}) => (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      {icon && <FontAwesomeIcon icon={icon} className="mr-2 h-4 w-4" />}
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
+    </label>
+    
+    {type === 'select' ? (
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`block w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+          error ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+        }`}
+      >
+        <option value="">{placeholder || `Seleccionar ${label.toLowerCase()}`}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ) : type === 'textarea' ? (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        rows={4}
+        className={`block w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed resize-vertical ${
+          error ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+        }`}
+      />
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={`block w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+          error ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+        }`}
+      />
+    )}
+    
+    {error && (
+      <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+        {error}
+      </p>
+    )}
+  </div>
+);
+
+export { 
+  CrudPageTemplate, 
+  DataTable, 
+  StatusBadge, 
+  ActionButtons, 
+  PaginationComponent, 
+  SearchComponent, 
+  BaseModal, 
+  FormField 
+};
+
+// ==================== EJEMPLO 1: PÁGINA DE USUARIOS ====================
+import React from 'react';
+import { CrudPageTemplate, SearchComponent, DataTable, ActionButtons } from './Templates';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUsers, faUserPlus, faUserCheck, faUserTimes, faEnvelope, faIdCard } from '@fortawesome/free-solid-svg-icons';
+
+const UsuariosPage = () => {
+  // Configuración específica para usuarios
+  const searchFilters = [
+    {
+      key: 'rol',
+      label: 'Rol',
+      type: 'select',
+      icon: faUserCheck,
+      options: [
+        { value: 'admin', label: 'Administrador' },
+        { value: 'empleado', label: 'Empleado' },
+        { value: 'cliente', label: 'Cliente' }
+      ]
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      type: 'select',
+      options: [
+        { value: 'activo', label: 'Activo' },
+        { value: 'inactivo', label: 'Inactivo' }
+      ]
+    },
+    {
+      key: 'fecha_registro',
+      label: 'Fecha de Registro',
+      type: 'date',
+      placeholder: 'Desde fecha...'
+    }
+  ];
+
+  const customActions = [
+    {
+      icon: faEnvelope,
+      title: 'Enviar email',
+      handler: (user) => console.log('Enviando email a:', user),
+      className: 'text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/40 focus:ring-green-500'
+    },
+    {
+      icon: faIdCard,
+      title: 'Ver perfil',
+      handler: (user) => console.log('Viendo perfil de:', user),
+      className: 'text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-900/40 focus:ring-purple-500'
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header personalizado para usuarios */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-blue-600 rounded-lg">
+                <FontAwesomeIcon icon={faUsers} className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Gestión de Usuarios
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Administra usuarios, roles y permisos del sistema
+                </p>
+              </div>
+            </div>
+
+            {/* Estadísticas específicas para usuarios */}
+            <div className="hidden md:flex items-center space-x-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  8.5
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Rating Promedio
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Componentes específicos de servicios */}
+        <SearchComponent
+          placeholder="Buscar servicios por nombre o descripción..."
+          additionalFilters={searchFilters}
+          onSearch={(filters) => console.log('Filtros de servicios:', filters)}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ==================== EJEMPLO 3: PÁGINA DE MANTENIMIENTOS ====================
+import { faMotorcycle, faCalendarAlt, faCheckCircle, faClock } from '@fortawesome/free-solid-svg-icons';
+
+const MantenimientosPage = () => {
+  const searchFilters = [
+    {
+      key: 'estado',
+      label: 'Estado',
+      type: 'select',
+      icon: faCheckCircle,
+      options: [
+        { value: 'pendiente', label: 'Pendiente' },
+        { value: 'en_proceso', label: 'En Proceso' },
+        { value: 'completado', label: 'Completado' },
+        { value: 'cancelado', label: 'Cancelado' }
+      ]
+    },
+    {
+      key: 'tipo',
+      label: 'Tipo de Mantenimiento',
+      type: 'select',
+      options: [
+        { value: 'preventivo', label: 'Preventivo' },
+        { value: 'correctivo', label: 'Correctivo' },
+        { value: 'revision', label: 'Revisión' }
+      ]
+    },
+    {
+      key: 'fecha_inicio',
+      label: 'Fecha Inicio',
+      type: 'date'
+    },
+    {
+      key: 'fecha_fin',
+      label: 'Fecha Fin',
+      type: 'date'
+    }
+  ];
+
+  const customActions = [
+    {
+      icon: faCalendarAlt,
+      title: 'Reagendar',
+      handler: (mantenimiento) => console.log('Reagendando:', mantenimiento),
+      className: 'text-orange-600 hover:text-orange-800 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:hover:text-orange-300 dark:hover:bg-orange-900/40 focus:ring-orange-500'
+    },
+    {
+      icon: faCheckCircle,
+      title: 'Marcar como completado',
+      handler: (mantenimiento) => console.log('Completando:', mantenimiento),
+      className: 'text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/40 focus:ring-green-500'
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-purple-600 rounded-lg">
+                <FontAwesomeIcon icon={faMotorcycle} className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Gestión de Mantenimientos
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Programa y supervisa mantenimientos de motocicletas
+                </p>
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center space-x-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                  12
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Pendientes
+                </div>
+              </div>
+              <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  8
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  En Proceso
+                </div>
+              </div>
+              <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  45
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Completados
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <SearchComponent
+          placeholder="Buscar por placa, cliente o técnico..."
+          additionalFilters={searchFilters}
+          onSearch={(filters) => console.log('Filtros de mantenimientos:', filters)}
+        />
+
+        <DataTable
+          data={[/* datos de mantenimientos */]}
+          customActions={customActions}
+          onEdit={(item) => console.log('Editando mantenimiento:', item)}
+          onDelete={(item) => console.log('Cancelando mantenimiento:', item)}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ==================== EJEMPLO 4: DASHBOARD/ESTADÍSTICAS ====================
+import { faChartLine, faDollarSign, faCalendarDay } from '@fortawesome/free-solid-svg-icons';
+
+const DashboardPage = () => {
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header del Dashboard */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-indigo-600 rounded-lg">
+              <FontAwesomeIcon icon={faChartLine} className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                Dashboard
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Vista general del rendimiento de tu negocio
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Cards de Estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="Ingresos Mensuales"
+            value="$12,450"
+            change="+12.5%"
+            changeType="positive"
+            icon={faDollarSign}
+            color="green"
+          />
+          <StatCard
+            title="Productos Vendidos"
+            value="89"
+            change="+8.2%"
+            changeType="positive"
+            icon={faBoxes}
+            color="blue"
+          />
+          <StatCard
+            title="Servicios Realizados"
+            value="45"
+            change="-2.1%"
+            changeType="negative"
+            icon={faTools}
+            color="purple"
+          />
+          <StatCard
+            title="Citas Hoy"
+            value="7"
+            change="+1"
+            changeType="neutral"
+            icon={faCalendarDay}
+            color="orange"
+          />
+        </div>
+
+        {/* Gráficos y Tablas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <ChartCard title="Ventas por Mes" />
+          <ChartCard title="Productos más Vendidos" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de Card de Estadística
+const StatCard = ({ title, value, change, changeType, icon, color = 'blue' }) => {
+  const colorClasses = {
+    blue: 'bg-blue-600',
+    green: 'bg-green-600',
+    purple: 'bg-purple-600',
+    orange: 'bg-orange-600',
+    red: 'bg-red-600'
+  };
+
+  const changeClasses = {
+    positive: 'text-green-600 dark:text-green-400',
+    negative: 'text-red-600 dark:text-red-400',
+    neutral: 'text-gray-600 dark:text-gray-400'
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div className="flex items-center">
+        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+          <FontAwesomeIcon icon={icon} className="h-6 w-6 text-white" />
+        </div>
+        <div className="ml-4 flex-1">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            {title}
+          </h3>
+          <div className="flex items-center mt-1">
+            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {value}
+            </span>
+            <span className={`ml-2 text-sm font-medium ${changeClasses[changeType]}`}>
+              {change}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de Card de Gráfico
+const ChartCard = ({ title, children }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+      {title}
+    </h3>
+    <div className="h-64 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+      {children || (
+        <span className="text-gray-500 dark:text-gray-400">
+          Gráfico - {title}
+        </span>
+      )}
+    </div>
+  </div>
+);
+
+// ==================== EJEMPLO 5: CONFIGURACIONES/SETTINGS ====================
+import { faCog, faUser, faPalette, faBell, faShield } from '@fortawesome/free-solid-svg-icons';
+
+const ConfiguracionesPage = () => {
+  const [activeTab, setActiveTab] = useState('general');
+
+  const tabs = [
+    { id: 'general', label: 'General', icon: faCog },
+    { id: 'perfil', label: 'Perfil', icon: faUser },
+    { id: 'apariencia', label: 'Apariencia', icon: faPalette },
+    { id: 'notificaciones', label: 'Notificaciones', icon: faBell },
+    { id: 'seguridad', label: 'Seguridad', icon: faShield }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gray-600 rounded-lg">
+              <FontAwesomeIcon icon={faCog} className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                Configuraciones
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Personaliza la configuración de tu aplicación
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          {/* Tabs de navegación */}
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex space-x-8 px-6">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <FontAwesomeIcon icon={tab.icon} className="mr-2 h-4 w-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Contenido de las tabs */}
+          <div className="p-6">
+            {activeTab === 'general' && <GeneralSettings />}
+            {activeTab === 'perfil' && <PerfilSettings />}
+            {activeTab === 'apariencia' && <AparienciaSettings />}
+            {activeTab === 'notificaciones' && <NotificacionesSettings />}
+            {activeTab === 'seguridad' && <SeguridadSettings />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de configuraciones generales
+const GeneralSettings = () => (
+  <div className="space-y-6">
+    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+      Configuración General
+    </h3>
+    
+    <FormField
+      label="Nombre de la Empresa"
+      name="empresa"
+      value="Mi Taller de Motos"
+      onChange={() => {}}
+      placeholder="Ingresa el nombre de tu empresa"
+    />
+    
+    <FormField
+      label="Dirección"
+      name="direccion"
+      value="Av. Principal 123"
+      onChange={() => {}}
+      placeholder="Dirección completa"
+    />
+    
+    <FormField
+      label="Teléfono"
+      name="telefono"
+      type="tel"
+      value="+591 123 456 789"
+      onChange={() => {}}
+      placeholder="Número de teléfono"
+    />
+    
+    <div className="flex justify-end">
+      <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+        Guardar Cambios
+      </button>
+    </div>
+  </div>
+);
+
+export { 
+  UsuariosPage, 
+  ServiciosPage, 
+  MantenimientosPage, 
+  DashboardPage, 
+  StatCard, 
+  ChartCard, 
+  ConfiguracionesPage 
+}; dark:text-blue-400">
+                  125
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Total
+                </div>
+              </div>
+              <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  98
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Activos
+                </div>
+              </div>
+              <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  15
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Admins
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Búsqueda con filtros específicos */}
+        <SearchComponent
+          placeholder="Buscar por nombre, email o CI..."
+          additionalFilters={searchFilters}
+          onSearch={(filters) => console.log('Filtros de usuarios:', filters)}
+        />
+
+        {/* Tabla con acciones personalizadas */}
+        <DataTable
+          data={[/* datos de usuarios */]}
+          customActions={customActions}
+          onEdit={(user) => console.log('Editando usuario:', user)}
+          onDelete={(user) => console.log('Eliminando usuario:', user)}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ==================== EJEMPLO 2: PÁGINA DE SERVICIOS ====================
+import { faTools, faCog, faWrench } from '@fortawesome/free-solid-svg-icons';
+
+const ServiciosPage = () => {
+  const searchFilters = [
+    {
+      key: 'categoria',
+      label: 'Categoría',
+      type: 'select',
+      icon: faTools,
+      options: [
+        { value: 'mantenimiento', label: 'Mantenimiento' },
+        { value: 'reparacion', label: 'Reparación' },
+        { value: 'revision', label: 'Revisión' }
+      ]
+    },
+    {
+      key: 'precio_min',
+      label: 'Precio Mínimo',
+      type: 'number',
+      placeholder: '0.00'
+    },
+    {
+      key: 'precio_max',
+      label: 'Precio Máximo',
+      type: 'number',
+      placeholder: '1000.00'
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header específico para servicios */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-green-600 rounded-lg">
+                <FontAwesomeIcon icon={faTools} className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Gestión de Servicios
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Administra los servicios ofrecidos por tu taller
+                </p>
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center space-x-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  45
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Servicios
+                </div>
+              </div>
+              <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600

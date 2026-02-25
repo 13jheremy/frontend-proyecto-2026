@@ -1,0 +1,451 @@
+// src/modulos/mantenimiento/pages/MantenimientoPage.jsx
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMantenimientos } from '../hooks/useMantenimientos';
+import { useDetallesMantenimiento } from '../hooks/useDetallesMantenimiento';
+import { useRecordatoriosMantenimiento } from '../hooks/useRecordatoriosMantenimiento';
+import MantenimientoTable from './components/MantenimientoTable';
+import MantenimientoCreateModal from './components/MantenimientoCreateModal';
+import MantenimientoEditModal from './components/MantenimientoEditModal';
+import MantenimientoSearch from './components/MantenimientoSearch';
+import MantenimientoActionModal from './components/MantenimientoActionModal';
+import MantenimientoInfoModal from './components/MantenimientoInfoModal';
+import DetalleMantenimientoModal from './components/DetalleMantenimientoModal';
+import { toast } from 'react-toastify';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faTools, 
+  faPlus, 
+  faExclamationTriangle, 
+  faCalendarAlt,
+  faCheckCircle,
+  faBan,
+  faTrashAlt,
+  faUndo,
+  faInfoCircle
+} from '@fortawesome/free-solid-svg-icons';
+import { PERMISSIONS } from '../../../utils/constants';
+import { useAuth } from '../../../context/AuthContext';
+
+/**
+ * Página principal para la gestión de mantenimientos.
+ */
+const MantenimientoPage = () => {
+  const { user, roles } = useAuth();
+  
+  // Validar que el usuario y roles estén cargados antes de calcular permisos
+  if (!user || !roles) {
+    return (
+      <div className="container mx-auto p-4 dark:bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg text-gray-600 dark:text-gray-400">⏳ Esperando usuario...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Función para verificar permisos con normalización
+  const canPerformAction = useCallback((requiredPerms) => {
+    if (!roles || !Array.isArray(roles)) return false;
+    const normalizedRoles = roles.map(r => r?.toLowerCase?.() || '');
+    const normalizedPerms = requiredPerms.map(p => p?.toLowerCase?.() || '');
+    return normalizedRoles.some(r => normalizedPerms.includes(r));
+  }, [roles]);
+  
+  // Calcular permisos
+  const canCreate = useMemo(() => canPerformAction(PERMISSIONS.MANTENIMIENTOS?.CREATE || ['administrador']), [canPerformAction]);
+  const canEdit = useMemo(() => canPerformAction(PERMISSIONS.MANTENIMIENTOS?.EDIT || ['administrador']), [canPerformAction]);
+  const canDelete = useMemo(() => canPerformAction(PERMISSIONS.MANTENIMIENTOS?.DELETE || ['administrador']), [canPerformAction]);
+  
+  // Objeto de permisos para pasar a la tabla
+  const tablePermissions = useMemo(() => ({
+    canEdit,
+    canDelete,
+    canToggleActive: canEdit,
+    canRestore: canEdit,
+    canViewDetails: true
+  }), [canEdit, canDelete]);
+
+  // Hooks para mantenimientos
+  const {
+    mantenimientos = [],
+    loading: loadingMantenimientos,
+    error: errorMantenimientos,
+    fetchMantenimientos,
+    createMantenimiento,
+    updateMantenimiento,
+    softDeleteMantenimiento,
+    hardDeleteMantenimiento,
+    restoreMantenimiento,
+    toggleEstadoMantenimiento,
+    clearError: clearErrorMantenimientos,
+    pagination = {},
+    fetchEstadisticas
+  } = useMantenimientos();
+
+  // Estados para modales
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentMantenimiento, setCurrentMantenimiento] = useState(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [selectedInfoMantenimiento, setSelectedInfoMantenimiento] = useState(null);
+  
+  // Estados para modal de acción
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [selectedActionMantenimiento, setSelectedActionMantenimiento] = useState(null);
+  const [actionType, setActionType] = useState(null);
+
+  // Estados para búsqueda, paginación y filtros
+  const [filters, setFilters] = useState({
+    search: '',
+    estado: '',
+    fecha_desde: '',
+    fecha_hasta: ''
+  });
+  
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Estados para estadísticas
+  const [estadisticas, setEstadisticas] = useState({
+    total: 0,
+    pendientes: 0,
+    enProgreso: 0,
+    completados: 0,
+    cancelados: 0,
+    totalMantenimientos: 0,
+    mantenimientosPendientes: 0,
+    mantenimientosCompletados: 0,
+    mantenimientosEliminados: 0
+  });
+
+  // Cargar mantenimientos y estadísticas
+  const fetchMantenimientosData = useCallback(() => {
+    const searchParams = {
+      ...filters,
+      page: currentPage,
+      page_size: pageSize
+    };
+    
+    fetchMantenimientos(searchParams);
+    
+    // Cargar estadísticas
+    fetchEstadisticas().then(stats => {
+      if (stats) {
+        setEstadisticas(prev => ({
+          ...prev,
+          total: stats.total || 0,
+          pendientes: stats.pendientes || 0,
+          enProgreso: stats.en_progreso || 0,
+          completados: stats.completados || 0,
+          cancelados: stats.cancelados || 0,
+          totalMantenimientos: stats.total || 0,
+          mantenimientosPendientes: stats.pendientes || 0,
+          mantenimientosCompletados: stats.completados || 0,
+          mantenimientosEliminados: stats.eliminados || 0
+        }));
+      }
+    }).catch(err => {
+      console.error('Error al cargar estadísticas:', err);
+    });
+  }, [filters, currentPage, pageSize, fetchMantenimientos, fetchEstadisticas]);
+
+  // Efecto para cargar datos
+  useEffect(() => {
+    fetchMantenimientosData();
+  }, [fetchMantenimientosData]);
+
+  // Efecto para manejar errores
+  useEffect(() => {
+    if (errorMantenimientos) {
+      toast.error(`Error: ${errorMantenimientos}`);
+      const timeout = setTimeout(() => {
+        clearErrorMantenimientos();
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [errorMantenimientos, clearErrorMantenimientos]);
+
+  // Handlers para búsqueda y paginación
+  const handleSearch = useCallback((newFilters) => {
+    setFilters(newFilters);
+    setPage(1);
+  }, []);
+
+  const handlePageChange = useCallback((newPage) => {
+    setPage(newPage);
+  }, []);
+
+  const handlePageSizeChange = useCallback((newSize) => {
+    setPageSize(newSize);
+    setPage(1);
+  }, []);
+
+  // Función para abrir modal de acción
+  const openActionModal = (mantenimiento, type) => {
+    setSelectedActionMantenimiento(mantenimiento);
+    setActionType(type);
+    setActionModalOpen(true);
+  };
+
+  // Handlers para acciones de mantenimiento
+  const handleSoftDeleteMantenimiento = useCallback((mantenimientoId) => {
+    const mantenimiento = mantenimientos.find(m => m.id === mantenimientoId);
+    if (!mantenimiento) return;
+    openActionModal(mantenimiento, 'softDelete');
+  }, [mantenimientos]);
+
+  const handleHardDeleteMantenimiento = useCallback((mantenimientoId) => {
+    const mantenimiento = mantenimientos.find(m => m.id === mantenimientoId);
+    if (!mantenimiento) return;
+    openActionModal(mantenimiento, 'hardDelete');
+  }, [mantenimientos]);
+
+  const handleRestoreMantenimiento = useCallback((mantenimientoId) => {
+    const mantenimiento = mantenimientos.find(m => m.id === mantenimientoId);
+    if (!mantenimiento) return;
+    openActionModal(mantenimiento, 'restore');
+  }, [mantenimientos]);
+
+  const handleToggleEstadoMantenimiento = useCallback((mantenimientoId) => {
+    const mantenimiento = mantenimientos.find(m => m.id === mantenimientoId);
+    if (!mantenimiento) return;
+    openActionModal(mantenimiento, 'toggleEstado');
+  }, [mantenimientos]);
+
+  // Función para confirmar acciones
+  const handleConfirmAction = useCallback(async () => {
+    if (!selectedActionMantenimiento) return;
+    
+    try {
+      let result;
+      switch (actionType) {
+        case 'softDelete':
+          result = await softDeleteMantenimiento(selectedActionMantenimiento.id);
+          break;
+        case 'hardDelete':
+          result = await hardDeleteMantenimiento(selectedActionMantenimiento.id);
+          break;
+        case 'restore':
+          result = await restoreMantenimiento(selectedActionMantenimiento.id);
+          break;
+        case 'toggleEstado':
+          result = await toggleEstadoMantenimiento(selectedActionMantenimiento.id);
+          break;
+        default:
+          return;
+      }
+      
+      if (result) {
+        toast.success("Operación realizada con éxito");
+        fetchMantenimientosData();
+      }
+      
+      setActionModalOpen(false);
+      setSelectedActionMantenimiento(null);
+      setActionType(null);
+    } catch (err) {
+      console.error('Error al ejecutar acción:', err);
+      toast.error(`Error al ${actionType === 'softDelete' ? 'eliminar' : actionType === 'restore' ? 'restaurar' : 'cambiar estado'} mantenimiento`);
+    }
+  }, [selectedActionMantenimiento, actionType, softDeleteMantenimiento, hardDeleteMantenimiento, restoreMantenimiento, toggleEstadoMantenimiento, fetchMantenimientosData]);
+
+  // Handlers para creación y edición
+  const handleCreateMantenimiento = useCallback(async (mantenimientoData) => {
+    try {
+      await createMantenimiento(mantenimientoData);
+      toast.success('Mantenimiento creado exitosamente!');
+      setIsCreateModalOpen(false);
+      fetchMantenimientosData();
+    } catch (err) {
+      const errorMessage = err.message || 'Error desconocido al crear mantenimiento';
+      toast.error(`Error al crear mantenimiento: ${errorMessage}`);
+    }
+  }, [createMantenimiento, fetchMantenimientosData]);
+
+  const handleEditMantenimiento = useCallback((mantenimiento) => {
+    setCurrentMantenimiento(mantenimiento);
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleUpdateMantenimiento = useCallback(async (mantenimientoData) => {
+    if (!currentMantenimiento) return;
+    
+    try {
+      await updateMantenimiento(currentMantenimiento.id, mantenimientoData);
+      toast.success('Mantenimiento actualizado exitosamente!');
+      setIsEditModalOpen(false);
+      setCurrentMantenimiento(null);
+      fetchMantenimientosData();
+    } catch (err) {
+      const errorMessage = err.message || 'Error desconocido al actualizar mantenimiento';
+      toast.error(`Error al actualizar mantenimiento: ${errorMessage}`);
+    }
+  }, [currentMantenimiento, updateMantenimiento, fetchMantenimientosData]);
+
+  // Handler para ver información
+  const handleInfoMantenimiento = useCallback((mantenimiento) => {
+    setSelectedInfoMantenimiento(mantenimiento);
+    setIsInfoModalOpen(true);
+  }, []);
+
+  // Renderizado de la interfaz
+  return (
+    <div className="container mx-auto px-4 py-6">
+      {/* Encabezado */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <FontAwesomeIcon icon={faTools} className="mr-2 text-blue-600" />
+          Mantenimientos
+        </h1>
+
+        {/* Filtros y búsqueda */}
+        <div className="mt-4 md:mt-0">
+          <MantenimientoSearch onSearch={handleSearch} />
+        </div>
+      </div>
+
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {/* Total */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
+              <FontAwesomeIcon icon={faTools} className="h-6 w-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{estadisticas.totalMantenimientos}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pendientes */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-yellow-500">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300">
+              <FontAwesomeIcon icon={faExclamationTriangle} className="h-6 w-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pendientes</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{estadisticas.pendientes}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* En Progreso */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-blue-400">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-400">
+              <FontAwesomeIcon icon={faTools} className="h-6 w-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">En Progreso</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{estadisticas.enProgreso}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Completados */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-green-500">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300">
+              <FontAwesomeIcon icon={faCheckCircle} className="h-6 w-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Completados</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{estadisticas.completados}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Cancelados */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-red-500">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300">
+              <FontAwesomeIcon icon={faBan} className="h-6 w-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Cancelados</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{estadisticas.cancelados}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Acciones */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lista de Mantenimientos</h2>
+        {canCreate && (
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <FontAwesomeIcon icon={faPlus} className="mr-2 h-4 w-4" />
+            Nuevo Mantenimiento
+          </button>
+        )}
+      </div>
+
+      {/* Tabla de mantenimientos */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <MantenimientoTable
+          mantenimientos={mantenimientos}
+          loading={loadingMantenimientos}
+          onEdit={handleEditMantenimiento}
+          onDelete={handleSoftDeleteMantenimiento}
+          onRestore={handleRestoreMantenimiento}
+          onToggleEstado={handleToggleEstadoMantenimiento}
+          onInfo={handleInfoMantenimiento}
+          permissions={tablePermissions}
+          currentPage={currentPage}
+          totalPages={pagination?.total_pages || 1}
+          onPageChange={handlePageChange}
+        />
+      </div>
+
+      {/* Modales */}
+      <MantenimientoCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={handleCreateMantenimiento}
+        loading={loadingMantenimientos}
+      />
+
+      <MantenimientoEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setCurrentMantenimiento(null);
+        }}
+        mantenimiento={currentMantenimiento}
+        onUpdate={handleUpdateMantenimiento}
+        loading={loadingMantenimientos}
+      />
+
+      <MantenimientoInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => {
+          setIsInfoModalOpen(false);
+          setSelectedInfoMantenimiento(null);
+        }}
+        mantenimiento={selectedInfoMantenimiento}
+      />
+
+      <MantenimientoActionModal
+        isOpen={actionModalOpen}
+        onClose={() => {
+          setActionModalOpen(false);
+          setSelectedActionMantenimiento(null);
+          setActionType(null);
+        }}
+        mantenimiento={selectedActionMantenimiento}
+        actionType={actionType}
+        onConfirm={handleConfirmAction}
+        loading={loadingMantenimientos}
+      />
+    </div>
+  );
+};
+
+export default MantenimientoPage;

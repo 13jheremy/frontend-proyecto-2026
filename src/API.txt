@@ -1,0 +1,1946 @@
+MODESLS
+
+from django.db import models
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from decimal import Decimal
+from django.core.validators import MinValueValidator
+from django.contrib.auth.models import Group, Permission
+from cloudinary.models import CloudinaryField
+from django.utils import timezone
+
+
+# =======================================
+# BASE CLASSES
+# =======================================
+class SoftDeleteManager(models.Manager):
+    """Manager que oculta registros eliminados lógicamente por defecto"""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(eliminado=False)
+
+
+class SoftDeleteModel(models.Model):
+    """Modelo base para soft delete"""
+
+    eliminado = models.BooleanField(default=False)
+    objects = SoftDeleteManager()
+    objects_all = models.Manager()  # para acceder a todos (incluyendo eliminados)
+
+    def delete(self, *args, **kwargs):
+        self.eliminado = True
+        self.save(update_fields=["eliminado"])
+
+    class Meta:
+        abstract = True
+
+
+class TimestampedModel(SoftDeleteModel):
+    """Modelo base con fechas + soft delete"""
+
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+# =======================================
+# MANAGERS
+# =======================================
+class UsuarioManager(BaseUserManager):
+    """Manager personalizado para Usuario"""
+
+    def create_user(self, correo_electronico, password=None, **extra_fields):
+        if not correo_electronico:
+            raise ValueError("El correo electrónico es obligatorio")
+
+        correo_electronico = self.normalize_email(correo_electronico)
+        user = self.model(correo_electronico=correo_electronico, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, correo_electronico, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        if not extra_fields.get("is_staff"):
+            raise ValueError("El superusuario debe tener is_staff=True.")
+        if not extra_fields.get("is_superuser"):
+            raise ValueError("El superusuario debe tener is_superuser=True.")
+
+        return self.create_user(correo_electronico, password, **extra_fields)
+
+
+# =======================================
+# MODELO DE USUARIO
+# =======================================
+class Usuario(AbstractUser, TimestampedModel):
+    """Modelo de usuario personalizado"""
+
+    correo_electronico = models.EmailField(unique=True)
+    is_active = models.BooleanField(default=True)
+    persona = models.ForeignKey(
+        "Persona",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="usuarios_asociados",
+        help_text="Datos personales asociados a este usuario.",
+    )
+
+    # redefinir groups y permisos
+    groups = models.ManyToManyField(
+        Group,
+        related_name="usuario_set",
+        blank=True,
+        help_text="Los grupos a los que pertenece el usuario.",
+        verbose_name="grupos",
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name="usuario_permissions_set",
+        blank=True,
+        help_text="Permisos específicos para este usuario.",
+        verbose_name="permisos",
+    )
+
+    objects = UsuarioManager()
+
+    USERNAME_FIELD = "correo_electronico"
+    REQUIRED_FIELDS = ["username"]
+
+    class Meta:
+        db_table = "usuario"
+        verbose_name = "Usuario"
+        verbose_name_plural = "Usuarios"
+
+    def __str__(self):
+        return self.correo_electronico
+
+
+class Rol(TimestampedModel):
+    """Modelo de roles del sistema"""
+
+    nombre = models.CharField(max_length=50, unique=True)
+    descripcion = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "rol"
+        verbose_name = "Rol"
+        verbose_name_plural = "Roles"
+
+    def __str__(self):
+        return self.nombre
+
+
+class UsuarioRol(TimestampedModel):
+    """Relación entre Usuario y Rol"""
+
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "usuario_rol"
+        unique_together = ("usuario", "rol")
+        verbose_name = "Usuario Rol"
+        verbose_name_plural = "Usuario Roles"
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.rol.nombre}"
+
+
+# =======================================
+# PERSONAS
+# =======================================
+class Persona(TimestampedModel):
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    cedula = models.CharField(max_length=20, unique=True)
+    telefono = models.CharField(max_length=20, blank=True)
+    direccion = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "persona"
+        verbose_name = "Persona"
+        verbose_name_plural = "Personas"
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellido}"
+
+    @property
+    def nombre_completo(self):
+        return f"{self.nombre} {self.apellido}"
+
+
+# =======================================
+# CATEGORÍAS
+# =======================================
+class Categoria(TimestampedModel):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "categoria"
+        verbose_name = "Categoría"
+        verbose_name_plural = "Categorías"
+
+    def __str__(self):
+        return self.nombre
+
+
+class CategoriaServicio(TimestampedModel):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "categoria_servicio"
+        verbose_name = "Categoría de Servicio"
+        verbose_name_plural = "Categorías de Servicios"
+
+    def __str__(self):
+        return self.nombre
+
+
+# =======================================
+# PROVEEDORES
+# =======================================
+class Proveedor(TimestampedModel):
+    nombre = models.CharField(max_length=200)
+    ruc = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    telefono = models.CharField(max_length=20, blank=True)
+    correo = models.EmailField(blank=True)
+    direccion = models.TextField(blank=True)
+    contacto_principal = models.CharField(max_length=100, blank=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "proveedor"
+        verbose_name = "Proveedor"
+        verbose_name_plural = "Proveedores"
+
+    def __str__(self):
+        return self.nombre
+
+
+# =======================================
+# PRODUCTOS
+# =======================================
+class Producto(TimestampedModel):
+    nombre = models.CharField(max_length=200)
+    codigo = models.CharField(max_length=50, unique=True)
+    descripcion = models.TextField(blank=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+    proveedor = models.ForeignKey(
+        Proveedor, on_delete=models.CASCADE, blank=True, null=True
+    )
+    precio_compra = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+    precio_venta = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+    stock_minimo = models.PositiveIntegerField(default=0)
+    stock_actual = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    destacado = models.BooleanField(default=False)
+    imagen = CloudinaryField("imagen", blank=True, null=True)
+
+    class Meta:
+        db_table = "producto"
+        verbose_name = "Producto"
+        verbose_name_plural = "Productos"
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+
+
+# =======================================
+# SERVICIOS
+# =======================================
+class Servicio(TimestampedModel):
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True)
+    categoria_servicio = models.ForeignKey(CategoriaServicio, on_delete=models.CASCADE)
+    precio = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+    duracion_estimada = models.PositiveIntegerField(help_text="Duración en minutos")
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "servicio"
+        verbose_name = "Servicio"
+        verbose_name_plural = "Servicios"
+
+    def __str__(self):
+        return self.nombre
+
+
+# =======================================
+# VEHÍCULOS
+# =======================================
+class Moto(TimestampedModel):
+    propietario = models.ForeignKey(Persona, on_delete=models.CASCADE)
+    marca = models.CharField(max_length=50)
+    modelo = models.CharField(max_length=50)
+    año = models.PositiveIntegerField()
+    placa = models.CharField(max_length=10, unique=True)
+    numero_chasis = models.CharField(max_length=50, unique=True)
+    numero_motor = models.CharField(max_length=50, unique=True)
+    color = models.CharField(max_length=30)
+    cilindrada = models.PositiveIntegerField()
+    kilometraje = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "moto"
+        verbose_name = "Motocicleta"
+        verbose_name_plural = "Motocicletas"
+
+    def __str__(self):
+        return f"{self.marca} {self.modelo} - {self.placa}"
+
+
+# =======================================
+# MANTENIMIENTO
+# =======================================
+class Mantenimiento(TimestampedModel):
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente"),
+        ("en_proceso", "En Proceso"),
+        ("completado", "Completado"),
+        ("cancelado", "Cancelado"),
+    ]
+
+    moto = models.ForeignKey(Moto, on_delete=models.CASCADE)
+    fecha_ingreso = models.DateTimeField()
+    fecha_entrega = models.DateTimeField(blank=True, null=True)
+    descripcion_problema = models.TextField()
+    diagnostico = models.TextField(blank=True)
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="pendiente"
+    )
+    kilometraje_ingreso = models.PositiveIntegerField()
+    total = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("0.00")
+    )
+
+    class Meta:
+        db_table = "mantenimiento"
+        verbose_name = "Mantenimiento"
+        verbose_name_plural = "Mantenimientos"
+
+    def __str__(self):
+        return f"Mantenimiento {self.id} - {self.moto.placa}"
+
+
+class DetalleMantenimiento(TimestampedModel):
+    mantenimiento = models.ForeignKey(
+        Mantenimiento, on_delete=models.CASCADE, related_name="detalles"
+    )
+    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    observaciones = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "detalle_mantenimiento"
+        verbose_name = "Detalle de Mantenimiento"
+        verbose_name_plural = "Detalles de Mantenimiento"
+
+
+class RecordatorioMantenimiento(TimestampedModel):
+    moto = models.ForeignKey(
+        Moto, on_delete=models.CASCADE, related_name="recordatorios"
+    )
+    categoria_servicio = models.ForeignKey(CategoriaServicio, on_delete=models.CASCADE)
+    fecha_programada = models.DateField()
+    enviado = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "recordatorio_mantenimiento"
+        verbose_name = "Recordatorio de Mantenimiento"
+        verbose_name_plural = "Recordatorios de Mantenimiento"
+
+    def __str__(self):
+        return (
+            f"{self.moto} - {self.categoria_servicio.nombre} ({self.fecha_programada})"
+        )
+
+    def proximo(self, dias_antes=7):
+        """Indica si el mantenimiento es próximo dentro de X días (default 7)"""
+        hoy = timezone.now().date()
+        return hoy <= self.fecha_programada <= hoy + timezone.timedelta(days=dias_antes)
+
+
+# =======================================
+# VENTAS
+# =======================================
+class Venta(TimestampedModel):
+    cliente = models.ForeignKey(Persona, on_delete=models.CASCADE)
+    fecha_venta = models.DateTimeField()
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    impuesto = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal("0.00")
+    )
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(max_length=20, default="completada")
+
+    class Meta:
+        db_table = "venta"
+        verbose_name = "Venta"
+        verbose_name_plural = "Ventas"
+
+    def __str__(self):
+        return f"Venta {self.id} - {self.cliente.nombre_completo}"
+
+
+class DetalleVenta(TimestampedModel):
+    venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name="detalles")
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        db_table = "detalle_venta"
+        verbose_name = "Detalle de Venta"
+        verbose_name_plural = "Detalles de Venta"
+
+
+# =======================================
+# INVENTARIO
+# =======================================
+class InventarioMovimiento(TimestampedModel):
+    TIPO_CHOICES = [
+        ("entrada", "Entrada"),
+        ("salida", "Salida"),
+        ("ajuste", "Ajuste"),
+    ]
+
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    cantidad = models.IntegerField()
+    motivo = models.CharField(max_length=200)
+    usuario = models.ForeignKey(
+        Usuario, on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    class Meta:
+        db_table = "inventario_movimiento"
+        verbose_name = "Movimiento de Inventario"
+        verbose_name_plural = "Movimientos de Inventario"
+
+SERIALIZERS
+
+# SERIALIZERS ESTANDARIZADOS - SOLO IDs PARA RELACIONES
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from datetime import timedelta
+from django.utils import timezone
+from ..models import *
+
+
+# =======================================
+# AUTHENTICATION SERIALIZERS
+# =======================================
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = "correo_electronico"
+
+    def validate(self, attrs):
+        correo = attrs.get("correo_electronico", "").lower().strip()
+        password = attrs.get("password")
+
+        if not correo or not password:
+            raise serializers.ValidationError(
+                "Correo electrónico y contraseña son requeridos"
+            )
+
+        user = authenticate(correo_electronico=correo, password=password)
+
+        if not user:
+            raise serializers.ValidationError(
+                {"non_field_errors": ["Credenciales inválidas"]}
+            )
+
+        if not user.is_active:
+            raise serializers.ValidationError(
+                {"non_field_errors": ["Usuario inactivo"]}
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "correo_electronico": user.correo_electronico,
+            },
+        }
+
+
+class CambioPasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+
+# =======================================
+# PERSONA SERIALIZERS
+# =======================================
+class PersonaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Persona
+        fields = ["id", "nombre", "apellido", "cedula", "telefono", "direccion"]
+
+    def validate_cedula(self, value):
+        # Si es update, permitir el mismo valor de la instancia
+        if self.instance and self.instance.cedula == value:
+            return value
+        if Persona.objects.filter(cedula=value).exists():
+            raise serializers.ValidationError("Ya existe Persona con esta cédula.")
+        return value
+
+
+# =======================================
+# USER SERIALIZERS
+# =======================================
+class UsuarioMeSerializer(serializers.ModelSerializer):
+    """Serializer para el endpoint /me con información básica"""
+
+    roles = serializers.SerializerMethodField()
+    persona_id = serializers.IntegerField(source="persona.id", read_only=True)
+    last_login = serializers.DateTimeField(read_only=True)
+    fecha_registro = serializers.DateTimeField(
+        source="timestampedmodel_ptr.fecha_registro", read_only=True
+    )
+
+    class Meta:
+        model = Usuario
+        fields = [
+            "id",
+            "username",
+            "correo_electronico",
+            "is_active",
+            "is_staff",
+            "roles",
+            "persona_id",
+            "last_login",
+            "fecha_registro",
+        ]
+        read_only_fields = [
+            "id",
+            "username",
+            "correo_electronico",
+            "is_active",
+            "is_staff",
+            "roles",
+            "persona_id",
+            "last_login",
+            "fecha_registro",
+        ]
+
+    def get_roles(self, obj):
+        """Devuelve los IDs de roles activos"""
+        return [ur.rol.id for ur in obj.usuariorol_set.filter(activo=True)]
+
+
+# =======================================
+# USER SERIALIZERS CORREGIDOS
+# =======================================
+
+
+class UsuarioSerializer(serializers.ModelSerializer):
+    """Serializer principal para gestión de usuarios - corregido para manejar persona"""
+
+    roles_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        help_text="Lista de IDs de roles a asignar al usuario",
+    )
+    roles = serializers.SerializerMethodField(read_only=True)
+    persona = PersonaSerializer(required=False, allow_null=True)
+    last_login = serializers.DateTimeField(read_only=True)
+    fecha_registro = serializers.DateTimeField(
+        source="timestampedmodel_ptr.fecha_registro", read_only=True
+    )
+
+    class Meta:
+        model = Usuario
+        fields = [
+            "id",
+            "username",
+            "correo_electronico",
+            "first_name",
+            "last_name",
+            "is_active",
+            "is_staff",
+            "roles",
+            "roles_ids",
+            "persona",
+            "last_login",
+            "fecha_registro",
+        ]
+        read_only_fields = ["id", "last_login", "fecha_registro"]
+        extra_kwargs = {"password": {"write_only": True, "required": False}}
+
+    def get_roles(self, obj):
+        """Devuelve los IDs de roles activos"""
+        return [ur.rol.id for ur in obj.usuariorol_set.filter(activo=True)]
+
+    def validate_persona(self, value):
+        """Validación personalizada para persona"""
+        if value and "cedula" in value:
+            cedula = value["cedula"]
+            # Si estamos actualizando (self.instance existe)
+            if self.instance and self.instance.persona:
+                # Verificar si hay otra persona con la misma cédula (excluyendo la actual)
+                if (
+                    Persona.objects.filter(cedula=cedula)
+                    .exclude(id=self.instance.persona.id)
+                    .exists()
+                ):
+                    raise serializers.ValidationError(
+                        {"cedula": "Ya existe otra persona con esta cédula."}
+                    )
+            else:
+                # Si estamos creando o el usuario no tiene persona asociada
+                if Persona.objects.filter(cedula=cedula).exists():
+                    raise serializers.ValidationError(
+                        {"cedula": "Ya existe una persona con esta cédula."}
+                    )
+        return value
+
+    def create(self, validated_data):
+        roles_data = validated_data.pop("roles_ids", [])
+        persona_data = validated_data.pop("persona", None)
+        password = validated_data.pop("password", None)
+
+        # Crear usuario
+        user = Usuario.objects.create_user(**validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+
+        # Manejar persona anidada para creación
+        if persona_data:
+            persona = Persona.objects.create(**persona_data)
+            user.persona = persona
+            user.save()
+
+        # Asignar roles
+        if roles_data:
+            for role_id in roles_data:
+                try:
+                    rol = Rol.objects.get(id=role_id)
+                    UsuarioRol.objects.create(usuario=user, rol=rol, activo=True)
+                except Rol.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"Rol con ID {role_id} no encontrado."
+                    )
+
+        return user
+
+    def update(self, instance, validated_data):
+        roles_data = validated_data.pop("roles_ids", None)
+        persona_data = validated_data.pop("persona", None)
+        password = validated_data.pop("password", None)
+
+        # Actualizar campos básicos del usuario
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+
+        # --- Manejo de la relación Persona anidada para actualización ---
+        if persona_data is not None:
+            if persona_data == {}:
+                instance.persona = None
+            elif instance.persona:
+                # CORRECCIÓN: Si ya tiene una persona, usar el serializer con la instancia existente
+                persona_serializer = PersonaSerializer(
+                    instance.persona, data=persona_data, partial=True
+                )
+                persona_serializer.is_valid(raise_exception=True)
+                persona_serializer.save()
+            else:
+                # Si no tiene una persona, crear una nueva y asociarla
+                persona_serializer = PersonaSerializer(data=persona_data)
+                persona_serializer.is_valid(raise_exception=True)
+                persona = persona_serializer.save()
+                instance.persona = persona
+        elif "persona" in self.initial_data and self.initial_data["persona"] is None:
+            instance.persona = None
+
+        instance.save()
+
+        # Actualizar roles si se proporcionan
+        if roles_data is not None:
+            # Eliminar todos los roles actuales
+            UsuarioRol.objects.filter(usuario=instance).delete()
+
+            # Agregar nuevos roles
+            for role_id in roles_data:
+                try:
+                    rol = Rol.objects.get(id=role_id)
+                    UsuarioRol.objects.create(usuario=instance, rol=rol, activo=True)
+                except Rol.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"Rol con ID {role_id} no encontrado."
+                    )
+
+        return instance
+
+        def validate_roles_ids(self, value):
+            """Validar que los IDs de roles existan"""
+            if value:
+                existing_roles = Rol.objects.filter(id__in=value).values_list(
+                    "id", flat=True
+                )
+                missing_roles = set(value) - set(existing_roles)
+                if missing_roles:
+                    raise serializers.ValidationError(
+                        f"Los siguientes IDs de roles no existen: {list(missing_roles)}"
+                    )
+            return value
+
+
+class RolSerializer(serializers.ModelSerializer):
+    usuarios_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Rol
+        fields = "__all__"
+
+    def get_usuarios_count(self, obj):
+        return obj.usuariorol_set.filter(activo=True).count()
+
+
+class UsuarioRolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UsuarioRol
+        fields = "__all__"
+
+
+# =======================================
+# CATEGORIA SERIALIZERS
+# =======================================
+class CategoriaPublicaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categoria
+        fields = ["id", "nombre", "descripcion"]  # solo los campos que quieras exponer
+
+
+class CategoriaSerializer(serializers.ModelSerializer):
+    productos_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Categoria
+        fields = [
+            "id",
+            "nombre",
+            "descripcion",
+            "productos_count",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+    def get_productos_count(self, obj):
+        return obj.producto_set.filter(activo=True).count()
+
+
+class CategoriaServicioSerializer(serializers.ModelSerializer):
+    servicios_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CategoriaServicio
+        fields = [
+            "id",
+            "nombre",
+            "descripcion",
+            "servicios_count",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+    def get_servicios_count(self, obj):
+        return obj.servicio_set.filter(activo=True).count()
+
+
+# =======================================
+# PROVEEDOR SERIALIZERS
+# =======================================
+class ProveedorSerializer(serializers.ModelSerializer):
+    productos_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Proveedor
+        fields = "__all__"
+
+    def get_productos_count(self, obj):
+        return obj.producto_set.filter(activo=True).count()
+
+
+# =======================================
+# PRODUCTO SERIALIZERS
+# =======================================
+class ProductoSerializer(serializers.ModelSerializer):
+    """Serializer principal para productos - solo IDs en relaciones"""
+
+    imagen_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Producto
+        fields = [
+            "id",
+            "nombre",
+            "codigo",
+            "descripcion",
+            "categoria",  # ID de categoria
+            "proveedor",  # ID de proveedor (puede ser null)
+            "precio_compra",
+            "precio_venta",
+            "stock_minimo",
+            "stock_actual",
+            "activo",
+            "destacado",
+            "imagen",
+            "imagen_url",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+    def get_imagen_url(self, obj):
+        return obj.imagen.url if obj.imagen else None
+
+
+class ProductoPublicoSerializer(serializers.ModelSerializer):
+    """Serializer para catálogo público - solo información básica"""
+
+    imagen_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Producto
+        fields = [
+            "id",
+            "nombre",
+            "codigo",
+            "descripcion",
+            "categoria",  # ID de categoria
+            "precio_venta",
+            "imagen_url",
+            "destacado",
+        ]
+
+    def get_imagen_url(self, obj):
+        return obj.imagen.url if obj.imagen else None
+
+
+class ProductoClienteSerializer(serializers.ModelSerializer):
+    """Serializer para productos visibles por clientes - sin precios ni stock"""
+
+    imagen_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Producto
+        fields = [
+            "id",
+            "nombre",
+            "codigo",
+            "descripcion",
+            "categoria",  # ID de categoria
+            "proveedor",  # ID de proveedor
+            "activo",
+            "imagen_url",
+        ]
+        read_only_fields = fields
+
+    def get_imagen_url(self, obj):
+        return obj.imagen.url if obj.imagen else None
+
+
+# =======================================
+# SERVICIO SERIALIZERS
+# =======================================
+class ServicioSerializer(serializers.ModelSerializer):
+    """Serializer para servicios - solo IDs en relaciones"""
+
+    class Meta:
+        model = Servicio
+        fields = [
+            "id",
+            "nombre",
+            "descripcion",
+            "categoria_servicio",  # ID de categoria_servicio
+            "precio",
+            "duracion_estimada",
+            "activo",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+
+class ServicioClienteSerializer(serializers.ModelSerializer):
+    """Serializer para servicios visibles por clientes - sin precios"""
+
+    class Meta:
+        model = Servicio
+        fields = [
+            "id",
+            "nombre",
+            "descripcion",
+            "categoria_servicio",  # ID de categoria_servicio
+            "duracion_estimada",
+            "activo",
+        ]
+        read_only_fields = fields
+
+
+# =======================================
+# VEHICULO SERIALIZERS
+# =======================================
+class MotoSerializer(serializers.ModelSerializer):
+    """Serializer para motos - solo IDs en relaciones"""
+
+    class Meta:
+        model = Moto
+        fields = [
+            "id",
+            "propietario",  # ID de propietario (Persona)
+            "marca",
+            "modelo",
+            "año",
+            "placa",
+            "numero_chasis",
+            "numero_motor",
+            "color",
+            "cilindrada",
+            "kilometraje",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+
+# =======================================
+# MANTENIMIENTO SERIALIZERS
+# =======================================
+class DetalleMantenimientoSerializer(serializers.ModelSerializer):
+    """Serializer para detalles de mantenimiento - solo IDs"""
+
+    class Meta:
+        model = DetalleMantenimiento
+        fields = [
+            "id",
+            "mantenimiento",  # ID de mantenimiento
+            "servicio",  # ID de servicio
+            "precio",
+            "observaciones",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+
+class MantenimientoSerializer(serializers.ModelSerializer):
+    """Serializer para mantenimientos - solo IDs en relaciones"""
+
+    detalles_ids = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Mantenimiento
+        fields = [
+            "id",
+            "moto",  # ID de moto
+            "fecha_ingreso",
+            "fecha_entrega",
+            "descripcion_problema",
+            "diagnostico",
+            "estado",
+            "kilometraje_ingreso",
+            "total",
+            "detalles_ids",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+    def get_detalles_ids(self, obj):
+        """Devuelve lista de IDs de detalles"""
+        return list(obj.detalles.values_list("id", flat=True))
+
+
+class RecordatorioMantenimientoSerializer(serializers.ModelSerializer):
+    moto_placa = serializers.CharField(source="moto.placa", read_only=True)
+    categoria_servicio_nombre = serializers.CharField(
+        source="categoria_servicio.nombre", read_only=True
+    )
+    proximo = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RecordatorioMantenimiento
+        fields = [
+            "id",
+            "moto",
+            "moto_placa",
+            "categoria_servicio",
+            "categoria_servicio_nombre",
+            "fecha_programada",
+            "enviado",
+            "proximo",
+        ]
+
+    def get_proximo(self, obj):
+        hoy = timezone.now().date()
+        return hoy <= obj.fecha_programada <= hoy + timedelta(days=7)
+
+
+# =======================================
+# VENTA SERIALIZERS
+# =======================================
+class DetalleVentaSerializer(serializers.ModelSerializer):
+    """Serializer para detalles de venta - solo IDs"""
+
+    class Meta:
+        model = DetalleVenta
+        fields = [
+            "id",
+            "venta",  # ID de venta
+            "producto",  # ID de producto
+            "cantidad",
+            "precio_unitario",
+            "subtotal",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+
+class VentaSerializer(serializers.ModelSerializer):
+    """Serializer para ventas - solo IDs en relaciones"""
+
+    detalles_ids = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Venta
+        fields = [
+            "id",
+            "cliente",  # ID de cliente (Persona)
+            "fecha_venta",
+            "subtotal",
+            "impuesto",
+            "total",
+            "estado",
+            "detalles_ids",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+    def get_detalles_ids(self, obj):
+        """Devuelve lista de IDs de detalles"""
+        return list(obj.detalles.values_list("id", flat=True))
+
+
+# =======================================
+# INVENTARIO SERIALIZERS
+# =======================================
+class InventarioMovimientoSerializer(serializers.ModelSerializer):
+    """Serializer para movimientos de inventario - solo IDs"""
+
+    class Meta:
+        model = InventarioMovimiento
+        fields = [
+            "id",
+            "producto",  # ID de producto
+            "tipo",
+            "cantidad",
+            "motivo",
+            "usuario",  # ID de usuario
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+VIEWS
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from django.db.models import Count, Sum, Q, F
+from django.utils import timezone
+from datetime import timedelta
+from rest_framework import permissions
+import logging
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
+
+
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
+
+from ..models import *
+from .serializers import *
+
+from .permissions import (
+    IsAdministrador,
+    IsEmpleado,
+    IsTecnico,
+    IsCliente,
+    IsOwner,
+    CustomPermission,
+)
+
+logger = logging.getLogger(__name__)
+
+
+# =======================================
+# BASE VIEWSET
+# =======================================
+class BaseViewSet(viewsets.ModelViewSet):
+    """ViewSet base con funcionalidades comunes y soft delete"""
+
+    permission_classes = [IsAuthenticated, CustomPermission]
+
+    def get_queryset(self):
+        """Filtra automáticamente registros no eliminados si el modelo soporta soft delete"""
+        qs = super().get_queryset()
+        if hasattr(self.serializer_class.Meta.model, "objects"):
+            return qs.filter(eliminado=False)
+        return qs
+
+    def perform_create(self, serializer):
+        if (
+            hasattr(serializer.Meta.model, "usuario")
+            and self.request.user.is_authenticated
+        ):
+            serializer.save(usuario=self.request.user)
+        else:
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        """Soft delete si el modelo lo permite"""
+        if hasattr(instance, "delete"):
+            instance.delete()
+        else:
+            instance.delete()  # fallback normal
+
+
+# =======================================
+# AUTHENTICATION VIEWS
+# =======================================
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error en login: {str(e)}")
+            return Response(
+                {"error": "Credenciales inválidas"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    permission_classes = [AllowAny]
+
+
+class UsuarioMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UsuarioMeSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CambioPasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        serializer = CambioPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            if not user.check_password(serializer.validated_data["old_password"]):
+                return Response(
+                    {"detail": "Contraseña actual incorrecta"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.set_password(serializer.validated_data["new_password"])
+            user.save()
+            return Response(
+                {"detail": "Contraseña cambiada correctamente"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def login_view(request):
+    try:
+        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(f"Error en login: {str(e)}")
+        return Response(
+            {"error": "Error al iniciar sesión"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    try:
+        refresh_token = request.data.get("refresh_token")
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Error en logout: {str(e)}")
+        return Response(
+            {"error": "Error al cerrar sesión"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+class UsuarioViewSet(BaseViewSet):
+    queryset = (
+        Usuario.objects.all()
+        .prefetch_related("usuariorol_set__rol")
+        .select_related("persona")
+    )
+    serializer_class = UsuarioSerializer
+    filterset_fields = ["is_active"]
+    search_fields = [
+        "username",
+        "correo_electronico",
+        "persona__nombre",
+        "persona__apellido",
+        "persona__cedula",
+    ]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filtro por rol
+        role_id = self.request.query_params.get("roles")
+        if role_id:
+            queryset = queryset.filter(
+                usuariorol_set__rol__id=role_id, usuariorol_set__activo=True
+            ).distinct()
+
+        # Filtros por fecha
+        fecha_desde = self.request.query_params.get("fecha_registro__gte")
+        fecha_hasta = self.request.query_params.get("fecha_registro__lte")
+        if fecha_desde:
+            queryset = queryset.filter(fecha_registro__date__gte=fecha_desde)
+        if fecha_hasta:
+            queryset = queryset.filter(fecha_registro__date__lte=fecha_hasta)
+
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        """Crear usuario - CORREGIDO para manejar persona correctamente"""
+        try:
+            print(f"Datos recibidos para crear usuario: {request.data}")
+
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                print(f"Usuario creado exitosamente: {user.id}")
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                print(f"Errores de validación: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error al crear usuario: {str(e)}")
+            return Response(
+                {"detail": f"Error al crear usuario: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def update(self, request, *args, **kwargs):
+        """Actualizar usuario - CORREGIDO para manejar persona correctamente"""
+        try:
+            print(
+                f"Datos recibidos para actualizar usuario {kwargs.get('pk')}: {request.data}"
+            )
+
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=False)
+
+            if serializer.is_valid():
+                user = serializer.save()
+                print(f"Usuario actualizado exitosamente: {user.id}")
+                return Response(serializer.data)
+            else:
+                print(f"Errores de validación en actualización: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error al actualizar usuario: {str(e)}")
+            return Response(
+                {"detail": f"Error al actualizar usuario: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def partial_update(self, request, *args, **kwargs):
+        """Actualización parcial - CORREGIDO"""
+        try:
+            print(
+                f"Datos recibidos para actualización parcial del usuario {kwargs.get('pk')}: {request.data}"
+            )
+
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+
+            if serializer.is_valid():
+                user = serializer.save()
+                print(f"Usuario actualizado parcialmente: {user.id}")
+                return Response(serializer.data)
+            else:
+                print(
+                    f"Errores de validación en actualización parcial: {serializer.errors}"
+                )
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error en actualización parcial: {str(e)}")
+            return Response(
+                {"detail": f"Error al actualizar usuario: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticated, IsAdministrador],
+    )
+    def assign_roles(self, request, pk=None):
+        """Asignar roles - CORREGIDO"""
+        user = self.get_object()
+        role_ids = request.data.get("roles", [])
+
+        if not isinstance(role_ids, list):
+            return Response(
+                {"detail": 'El campo "roles" debe ser una lista de IDs.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Eliminar roles actuales y asignar los nuevos
+            UsuarioRol.objects.filter(usuario=user).delete()
+
+            for role_id in role_ids:
+                rol = Rol.objects.get(id=role_id)
+                UsuarioRol.objects.create(usuario=user, rol=rol, activo=True)
+
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+
+        except Rol.DoesNotExist:
+            return Response(
+                {"detail": f"Rol con ID {role_id} no encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"Error al asignar roles: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticated, IsAdministrador],
+    )
+    def remove_roles(self, request, pk=None):
+        user = self.get_object()
+        role_ids = request.data.get("roles", [])
+        if not isinstance(role_ids, list):
+            return Response(
+                {"detail": 'El campo "roles" debe ser una lista de IDs.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        for role_id in role_ids:
+            UsuarioRol.objects.filter(usuario=user, rol__id=role_id).update(
+                activo=False
+            )
+
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticated, IsAdministrador],
+    )
+    def reset_password(self, request, pk=None):
+        user = self.get_object()
+        new_password = request.data.get("new_password")
+        if not new_password:
+            return Response(
+                {"detail": "La nueva contraseña es requerida."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.save()
+        return Response(
+            {"detail": "Contraseña reseteada correctamente."},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        permission_classes=[IsAuthenticated, IsAdministrador],
+    )
+    def toggle_user_status(self, request, pk=None):
+        user = self.get_object()
+        is_active = request.data.get("is_active")
+        if is_active is None or not isinstance(is_active, bool):
+            return Response(
+                {"detail": 'El campo "is_active" (booleano) es requerido.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.is_active = is_active
+        user.save()
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAuthenticated, IsAdministrador],
+    )
+    def export(self, request):
+        return Response(
+            {"detail": "Funcionalidad de exportación no implementada aún."},
+            status=status.HTTP_501_NOT_IMPLEMENTED,
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticated, IsAdministrador],
+    )
+    def restore(self, request, pk=None):
+        """Restaurar usuario eliminado"""
+        try:
+            user = Usuario.objects_all.get(pk=pk)
+            user.eliminado = False
+            user.save()
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+        except Usuario.DoesNotExist:
+            return Response(
+                {"detail": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class RolViewSet(BaseViewSet):
+    queryset = Rol.objects.annotate(
+        usuarios_count=Count("usuariorol", filter=Q(usuariorol__activo=True))
+    ).all()
+    serializer_class = RolSerializer
+    permission_classes = [IsAuthenticated, IsAdministrador]
+
+
+class UsuarioRolViewSet(BaseViewSet):
+    queryset = UsuarioRol.objects.select_related("usuario", "rol")
+    serializer_class = UsuarioRolSerializer
+    permission_classes = [IsAuthenticated, IsAdministrador]
+
+
+# =======================================
+# PERSONA VIEWS
+# =======================================
+class PersonaViewSet(BaseViewSet):
+    queryset = Persona.objects.all()
+    serializer_class = PersonaSerializer
+    search_fields = ["nombre", "apellido", "cedula"]
+    filterset_fields = ["cedula"]
+
+    def get_queryset(self):
+        if IsCliente().has_permission(
+            self.request, self
+        ) and not IsAdministrador().has_permission(self.request, self):
+            # Un cliente solo puede ver su propia persona si está asociada a su usuario
+            return Persona.objects.filter(usuarios_asociados=self.request.user)
+        return super().get_queryset()
+
+
+# =======================================
+# CATEGORIA VIEWS
+# =======================================
+class CategoriaViewSet(BaseViewSet):
+    queryset = Categoria.objects.all()
+    serializer_class = CategoriaSerializer
+    search_fields = ["nombre"]
+
+
+class CategoriaServicioViewSet(BaseViewSet):
+    queryset = CategoriaServicio.objects.all()
+    serializer_class = CategoriaServicioSerializer
+    search_fields = ["nombre"]
+
+
+# =======================================
+# PROVEEDOR VIEWS
+# =======================================
+class ProveedorViewSet(BaseViewSet):
+    queryset = Proveedor.objects.all()
+    serializer_class = ProveedorSerializer
+    search_fields = ["nombre", "ruc"]
+    filterset_fields = ["activo"]
+
+
+# =======================================
+# PRODUCTO VIEWS
+# =======================================
+# views.py - Correcciones
+class ProductoViewSet(BaseViewSet):
+    queryset = Producto.objects.select_related("categoria", "proveedor")
+    serializer_class = ProductoSerializer
+    search_fields = ["nombre", "codigo"]
+    filterset_fields = [
+        "categoria",
+        "proveedor",
+        "activo",
+        "destacado",
+    ]  # Agregar destacado
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_serializer_class(self):
+        if (
+            IsCliente().has_permission(self.request, self)
+            and self.request.method in permissions.SAFE_METHODS
+        ):
+            return ProductoClienteSerializer
+        return ProductoSerializer
+
+    @action(detail=False, methods=["get"])
+    def stock_bajo(self, request):
+        if not IsEmpleado().has_permission(request, self):
+            return Response(
+                {"detail": "No tienes permiso para ver el stock bajo."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        productos = self.queryset.filter(stock_actual__lte=F("stock_minimo"))
+        serializer = self.get_serializer(productos, many=True)
+        return Response(serializer.data)
+
+    # NUEVO: Endpoint específico para alternar destacado
+    @action(detail=True, methods=["patch"])
+    def toggle_destacado(self, request, pk=None):
+        if not IsEmpleado().has_permission(request, self):
+            return Response(
+                {"detail": "No tienes permiso para modificar productos destacados."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            producto = self.get_object()
+            destacado = request.data.get("destacado")
+
+            if destacado is None:
+                return Response(
+                    {"detail": "El campo 'destacado' es requerido."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            producto.destacado = destacado
+            producto.save(update_fields=["destacado"])
+
+            serializer = self.get_serializer(producto)
+            return Response(serializer.data)
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Error al actualizar producto: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class ProductoPublicoViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Producto.objects.filter(activo=True).select_related("categoria")
+    serializer_class = ProductoPublicoSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        # Endpoint para productos destacados
+        if self.action == "destacados":
+            return self.queryset.filter(destacado=True)
+        return self.queryset
+
+    # AGREGAR: Action específica para destacados
+    @action(detail=False, methods=["get"])
+    def destacados(self, request):
+        productos = self.queryset.filter(destacado=True)
+        serializer = self.get_serializer(productos, many=True)
+        return Response(serializer.data)
+
+
+# serializers.py - Asegurar que ProductoClienteSerializer incluya destacado
+class ProductoClienteSerializer(serializers.ModelSerializer):
+    """Serializer para clientes - información visible para clientes"""
+
+    imagen_url = serializers.SerializerMethodField()
+    categoria_nombre = serializers.CharField(source="categoria.nombre", read_only=True)
+
+    class Meta:
+        model = Producto
+        fields = [
+            "id",
+            "nombre",
+            "codigo",
+            "descripcion",
+            "categoria",
+            "categoria_nombre",
+            "precio_venta",
+            "destacado",  # IMPORTANTE: Incluir destacado
+            "imagen",
+            "imagen_url",
+            "activo",
+        ]
+
+    def get_imagen_url(self, obj):
+        return obj.imagen.url if obj.imagen else None
+
+
+class CategoriaPublicaViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Vista pública de categorías (solo listar y ver detalle).
+    """
+
+    queryset = Categoria.objects.all().order_by("nombre")  # orden alfabético
+    serializer_class = CategoriaPublicaSerializer
+    permission_classes = [permissions.AllowAny]  # acceso público
+
+
+# =======================================
+# SERVICIO VIEWS
+# =======================================
+class ServicioViewSet(BaseViewSet):
+    queryset = Servicio.objects.select_related("categoria_servicio")
+    serializer_class = ServicioSerializer
+    search_fields = ["nombre"]
+    filterset_fields = ["categoria_servicio", "activo"]
+
+    def get_serializer_class(self):
+        if (
+            IsCliente().has_permission(self.request, self)
+            and self.request.method in permissions.SAFE_METHODS
+        ):
+            return ServicioClienteSerializer
+        return ServicioSerializer
+
+
+# =======================================
+# VEHICULO VIEWS
+# =======================================
+class MotoViewSet(BaseViewSet):
+    queryset = Moto.objects.select_related("propietario")
+    serializer_class = MotoSerializer
+    search_fields = ["placa", "marca", "modelo"]
+    filterset_fields = ["propietario", "marca"]
+
+    def get_queryset(self):
+        if IsCliente().has_permission(
+            self.request, self
+        ) and not IsAdministrador().has_permission(self.request, self):
+            # Un cliente solo puede ver sus propias motos si su persona está asociada a su usuario
+            return Moto.objects.filter(
+                propietario__usuarios_asociados=self.request.user
+            )
+        return super().get_queryset()
+
+
+# =======================================
+# MANTENIMIENTO VIEWS
+# =======================================
+class MantenimientoViewSet(BaseViewSet):
+    queryset = Mantenimiento.objects.select_related("moto__propietario")
+    serializer_class = MantenimientoSerializer
+    filterset_fields = ["moto", "estado"]
+    ordering = ["-fecha_ingreso"]
+
+    def get_queryset(self):
+        if IsCliente().has_permission(
+            self.request, self
+        ) and not IsAdministrador().has_permission(self.request, self):
+            # Un cliente solo puede ver sus propios mantenimientos
+            return Mantenimiento.objects.filter(
+                moto__propietario__usuarios_asociados=self.request.user
+            )
+        return super().get_queryset()
+
+
+class DetalleMantenimientoViewSet(BaseViewSet):
+    queryset = DetalleMantenimiento.objects.select_related("mantenimiento", "servicio")
+    serializer_class = DetalleMantenimientoSerializer
+    filterset_fields = ["mantenimiento", "servicio"]
+
+    def get_queryset(self):
+        if IsCliente().has_permission(
+            self.request, self
+        ) and not IsAdministrador().has_permission(self.request, self):
+            # Un cliente solo puede ver detalles de sus propios mantenimientos
+            return DetalleMantenimiento.objects.filter(
+                mantenimiento__moto__propietario__usuarios_asociados=self.request.user
+            )
+        return super().get_queryset()
+
+
+class RecordatorioMantenimientoViewSet(viewsets.ModelViewSet):
+    queryset = RecordatorioMantenimiento.objects.all().order_by("fecha_programada")
+    serializer_class = RecordatorioMantenimientoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Filtra recordatorios solo del usuario logueado
+        usuario = self.request.user
+        if hasattr(usuario, "persona"):
+            return RecordatorioMantenimiento.objects.filter(
+                moto__propietario=usuario.persona
+            ).order_by("fecha_programada")
+        return RecordatorioMantenimiento.objects.none()
+
+    @action(detail=False, methods=["get"])
+    def proximos(self, request):
+        """
+        Devuelve los próximos mantenimientos y cambios de aceite.
+        Se puede pasar ?dias=7 para definir cuántos días hacia adelante.
+        """
+        dias_adelante = int(request.query_params.get("dias", 7))
+        usuario = request.user
+        if hasattr(usuario, "persona"):
+            hoy = timezone.now().date()
+            proximos = RecordatorioMantenimiento.objects.filter(
+                moto__propietario=usuario.persona,
+                fecha_programada__range=[hoy, hoy + timedelta(days=dias_adelante)],
+            ).order_by("fecha_programada")
+            serializer = self.get_serializer(proximos, many=True)
+            return Response(serializer.data)
+        return Response([])
+
+
+# =======================================
+# VENTA VIEWS
+# =======================================
+class VentaViewSet(BaseViewSet):
+    queryset = Venta.objects.select_related("cliente")
+    serializer_class = VentaSerializer
+    filterset_fields = ["cliente", "estado"]
+    ordering = ["-fecha_venta"]
+
+    def get_queryset(self):
+        if IsCliente().has_permission(
+            self.request, self
+        ) and not IsAdministrador().has_permission(self.request, self):
+            # Un cliente solo puede ver sus propias ventas
+            return Venta.objects.filter(cliente__usuarios_asociados=self.request.user)
+        return super().get_queryset()
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Lógica para evitar edición/eliminación de ventas completadas por empleados
+        if IsEmpleado().has_permission(
+            request, self
+        ) and not IsAdministrador().has_permission(request, self):
+            if instance.estado == "completada":
+                return Response(
+                    {"detail": "No se puede modificar una venta completada."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Lógica para evitar edición/eliminación de ventas completadas por empleados
+        if IsEmpleado().has_permission(
+            request, self
+        ) and not IsAdministrador().has_permission(request, self):
+            if instance.estado == "completada":
+                return Response(
+                    {"detail": "No se puede eliminar una venta completada."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        return super().destroy(request, *args, **kwargs)
+
+
+class DetalleVentaViewSet(BaseViewSet):
+    queryset = DetalleVenta.objects.select_related("venta", "producto")
+    serializer_class = DetalleVentaSerializer
+    filterset_fields = ["venta", "producto"]
+
+    def get_queryset(self):
+        if IsCliente().has_permission(
+            self.request, self
+        ) and not IsAdministrador().has_permission(self.request, self):
+            # Un cliente solo puede ver detalles de sus propias ventas
+            return DetalleVenta.objects.filter(
+                venta__cliente__usuarios_asociados=self.request.user
+            )
+        return super().get_queryset()
+
+
+# =======================================
+# INVENTARIO VIEWS
+# =======================================
+class InventarioMovimientoViewSet(BaseViewSet):
+    queryset = InventarioMovimiento.objects.select_related("producto", "usuario")
+    serializer_class = InventarioMovimientoSerializer
+    filterset_fields = ["producto", "tipo", "usuario"]
+    ordering = ["-fecha_registro"]
+
+
+# =======================================
+# DASHBOARD VIEWS
+# =======================================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dashboard_stats(request):
+    if not IsEmpleado().has_permission(request, None):
+        return Response(
+            {"detail": "No tienes permiso para acceder a estas estadísticas."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        today = timezone.now().date()
+        last_30_days = today - timedelta(days=30)
+
+        stats = {
+            "total_productos": Producto.objects.filter(activo=True).count(),
+            "total_clientes": Persona.objects.count(),
+            "total_motos": Moto.objects.count(),
+            "mantenimientos_pendientes": Mantenimiento.objects.filter(
+                estado="pendiente"
+            ).count(),
+            "ventas_mes": Venta.objects.filter(
+                fecha_venta__date__gte=last_30_days
+            ).count(),
+            "ingresos_mes": Venta.objects.filter(
+                fecha_venta__date__gte=last_30_days
+            ).aggregate(total=Sum("total"))["total"]
+            or 0,
+            "productos_stock_bajo": Producto.objects.filter(
+                stock_actual__lte=F("stock_minimo"), activo=True
+            ).count(),
+        }
+
+        return Response(stats)
+    except Exception as e:
+        logger.error(f"Error en dashboard_stats: {str(e)}")
+        return Response(
+            {"error": "Error al obtener estadísticas"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def reporte_ventas(request):
+    if not IsEmpleado().has_permission(request, None):
+        return Response(
+            {"detail": "No tienes permiso para generar reportes de ventas."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        fecha_inicio = request.GET.get("fecha_inicio")
+        fecha_fin = request.GET.get("fecha_fin")
+
+        if not fecha_inicio or not fecha_fin:
+            return Response(
+                {"error": "Se requieren fecha_inicio y fecha_fin"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ventas = Venta.objects.filter(
+            fecha_venta__date__gte=fecha_inicio, fecha_venta__date__lte=fecha_fin
+        ).select_related("cliente")
+
+        serializer = VentaSerializer(ventas, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        logger.error(f"Error en reporte_ventas: {str(e)}")
+        return Response(
+            {"error": "Error al generar reporte de ventas"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def health_check(request):
+    try:
+        return Response(
+            {"status": "healthy", "timestamp": timezone.now()},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        return Response(
+            {"status": "unhealthy", "error": str(e), "timestamp": timezone.now()},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+URLS
+
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import *
+
+router = DefaultRouter()
+
+router.register(r"usuarios", UsuarioViewSet)
+router.register(r"roles", RolViewSet)
+router.register(r"usuarios-roles", UsuarioRolViewSet)
+router.register(r"personas", PersonaViewSet)
+router.register(r"categorias", CategoriaViewSet)
+router.register(r"productos", ProductoViewSet)
+router.register(r"proveedores", ProveedorViewSet)
+router.register(r"categorias-servicio", CategoriaServicioViewSet)
+router.register(r"servicios", ServicioViewSet)
+router.register(r"motos", MotoViewSet)
+router.register(r"mantenimientos", MantenimientoViewSet)
+router.register(r"ventas", VentaViewSet)
+router.register(r"detalles-venta", DetalleVentaViewSet)
+router.register(r"inventario-movimientos", InventarioMovimientoViewSet)
+router.register(r"publico/catalogo", ProductoPublicoViewSet, basename="catalogo")
+router.register(r"publico/destacados", ProductoPublicoViewSet, basename="destacados")
+router.register(
+    r"publico/categorias", CategoriaPublicaViewSet, basename="categoria-publica"
+)
+router.register(
+    r"recordatorios", RecordatorioMantenimientoViewSet, basename="recordatorio"
+)
+
+
+urlpatterns = [
+    path("token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", CustomTokenRefreshView.as_view(), name="token_refresh"),
+    path("usuarios/me/", UsuarioMeView.as_view(), name="usuario_me"),
+    path(
+        "usuarios/cambiar-password/",
+        CambioPasswordView.as_view(),
+        name="usuario_cambiar_password",
+    ),
+    path("dashboard-stats/", dashboard_stats, name="dashboard_stats"),  # Añadido
+    path("reporte-ventas/", reporte_ventas, name="reporte_ventas"),  # Añadido
+    path("health-check/", health_check, name="health_check"),  # Añadido
+    path("", include(router.urls)),
+]

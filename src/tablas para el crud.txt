@@ -1,0 +1,7 @@
+•	Pantalla: Gestión de Productos
+o	Tablas involucradas: Producto, Categoria, Proveedor
+o	Funcionalidades (CRUD):
+	Listar Productos: Ver el inventario de productos.
+	Crear Producto: Registrar un nuevo producto, seleccionando su categoría y proveedor (C).
+	Ver/Editar Producto: Ver y modificar la información, precios y stock del producto (R/U).
+	Eliminar Producto: Eliminar un producto (D).
