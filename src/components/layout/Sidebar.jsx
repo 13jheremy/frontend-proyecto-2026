@@ -104,7 +104,6 @@ const Sidebar = () => {
       'Mi Panel': faHome,
       'Mi Perfil': faUser,
       'Mis Motos': faMotorcycle,
-      'Mis Mantenimientos': faWrench,
       'Mis Compras': faShoppingCart,
       'Catálogo': faSearch
     };
