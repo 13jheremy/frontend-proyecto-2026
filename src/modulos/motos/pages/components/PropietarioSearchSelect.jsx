@@ -71,10 +71,11 @@ const PropietarioSearchSelect = ({
     setSelectedUser(cliente);
     setSearchTerm('');
     setIsOpen(false);
+    // Enviar el ID del cliente (usuario), no el ID de la persona
     onChange({
       target: {
         name: 'propietario',
-        value: cliente.persona?.id || cliente.id
+        value: cliente.id
       }
     });
   };

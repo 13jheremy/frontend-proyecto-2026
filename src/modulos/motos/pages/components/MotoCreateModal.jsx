@@ -142,6 +142,7 @@ const MotoCreateModal = ({ isOpen, onClose, onCreate, loading, error, usuariosDi
       color: formData.color.trim(),
       cilindrada: parseInt(formData.cilindrada, 10),
       kilometraje: parseInt(formData.kilometraje, 10),
+      // El serializer usa propietario_id como campo de escritura
       propietario_id: parseInt(formData.propietario, 10),
       activo: formData.activo,
     };
