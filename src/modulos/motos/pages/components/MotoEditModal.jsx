@@ -159,11 +159,17 @@ const MotoEditModal = ({ isOpen, onClose, onUpdate, currentMoto, loading, error,
 
     try {
       const dataToSend = {
-        ...formData,
-        año: parseInt(formData.año),
-        cilindrada: parseInt(formData.cilindrada),
-        kilometraje: parseInt(formData.kilometraje),
-        propietario: parseInt(formData.propietario),
+        marca: formData.marca.trim(),
+        modelo: formData.modelo.trim(),
+        año: parseInt(formData.año, 10),
+        placa: formData.placa.trim().toUpperCase(),
+        numero_chasis: formData.numero_chasis.trim().toUpperCase(),
+        numero_motor: formData.numero_motor.trim().toUpperCase(),
+        color: formData.color.trim(),
+        cilindrada: parseInt(formData.cilindrada, 10),
+        kilometraje: parseInt(formData.kilometraje, 10),
+        propietario_id: parseInt(formData.propietario, 10),
+        activo: formData.activo,
       };
       
       console.log('📦 Datos preparados para envío:', dataToSend);

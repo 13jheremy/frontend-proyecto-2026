@@ -131,9 +131,26 @@ const MotoCreateModal = ({ isOpen, onClose, onCreate, loading, error, usuariosDi
       return;
     }
 
+    // Transformar datos para enviar al backend
+    const motoData = {
+      marca: formData.marca.trim(),
+      modelo: formData.modelo.trim(),
+      año: parseInt(formData.año, 10),
+      placa: formData.placa.trim().toUpperCase(),
+      numero_chasis: formData.numero_chasis.trim().toUpperCase(),
+      numero_motor: formData.numero_motor.trim().toUpperCase(),
+      color: formData.color.trim(),
+      cilindrada: parseInt(formData.cilindrada, 10),
+      kilometraje: parseInt(formData.kilometraje, 10),
+      propietario_id: parseInt(formData.propietario, 10),
+      activo: formData.activo,
+    };
+
+    console.log('📤 Datos transformados para el backend:', motoData);
+
     try {
       console.log('✅ Validación exitosa, llamando onCreate...');
-      await onCreate(formData);
+      await onCreate(motoData);
       console.log('🎉 onCreate completado exitosamente');
     } catch (err) {
       console.error('💥 Error al crear moto:', err);
