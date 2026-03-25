@@ -186,7 +186,7 @@ export const ROLE_ROUTES = {
 
 // Configuración de la API
 export const API_CONFIG = {
-  BASE_URL: 'http://127.0.0.1:8000/api/',
+  BASE_URL: 'https://proyecto-2026-ts4b.onrender.com/api/',
   ENDPOINTS: {
     LOGIN: '/auth/login/',
     REFRESH: '/auth/refresh/',
