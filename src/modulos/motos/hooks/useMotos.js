@@ -1,7 +1,8 @@
 // src/modules/motos/hooks/useMotos.js
 import { useState, useEffect, useCallback } from 'react';
 import { motoApi } from '../api/moto';
-import { handleApiError, showNotification, motoMessages } from '../../../utils/notifications';
+import { showNotification, motoMessages } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 
 export const useMotos = () => {
   const [motos, setMotos] = useState([]);
@@ -150,23 +151,6 @@ export const useMotos = () => {
     }
   }, []);
 
-  // Eliminación permanente
-  const hardDeleteMoto = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await motoApi.hardDeleteMoto(id);
-      showNotification.success(motoMessages.motoHardDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Restaurar moto
   const restoreMoto = useCallback(async (id) => {
     setLoading(true);
@@ -185,14 +169,14 @@ export const useMotos = () => {
   }, []);
 
   // Toggle estado activo
-  const toggleMotoActivo = useCallback(async (id) => {
+  const toggleMotoActivo = useCallback(async (id, activo) => {
     setLoading(true);
     setError(null);
 
     try {
-      const updatedMoto = await motoApi.toggleActivoMoto(id);
-      showNotification.success(motoMessages.statusChanged(updatedMoto.activo));
-      return updatedMoto;
+      const response = await motoApi.toggleActivoMoto(id, activo);
+      const nuevoEstado = response.activo;
+      showNotification.success(motoMessages.statusChanged(nuevoEstado));
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
@@ -209,14 +193,14 @@ export const useMotos = () => {
         case 'softDelete':
           await softDeleteMoto(motoId);
           break;
-        case 'hardDelete':
-          await hardDeleteMoto(motoId);
-          break;
         case 'restore':
           await restoreMoto(motoId);
           break;
         case 'toggleActivo':
-          await toggleMotoActivo(motoId);
+          const moto = motos.find(m => m.id === motoId);
+          if (moto) {
+            await toggleMotoActivo(motoId, !moto.activo);
+          }
           break;
         default:
           throw new Error(`Acción no reconocida: ${actionType}`);
@@ -225,7 +209,7 @@ export const useMotos = () => {
       console.error(`Error en acción ${actionType}:`, err);
       throw err;
     }
-  }, [softDeleteMoto, hardDeleteMoto, restoreMoto, toggleMotoActivo]);
+  }, [motos, softDeleteMoto, restoreMoto, toggleMotoActivo]);
 
   // Obtener estadísticas
   const fetchEstadisticas = useCallback(async () => {
@@ -238,11 +222,6 @@ export const useMotos = () => {
       throw apiError;
     }
   }, []);
-
-  // Inicialización de motos
-  useEffect(() => {
-    fetchMotos();
-  }, [fetchMotos]);
 
   return {
     // Estados
@@ -258,7 +237,6 @@ export const useMotos = () => {
     
     // Funciones de gestión de estado
     softDeleteMoto,
-    hardDeleteMoto,
     restoreMoto,
     toggleMotoActivo,
     handleMotoAction,

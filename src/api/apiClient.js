@@ -33,8 +33,11 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Si el error es 401 y no hemos intentado refresh ya
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // IGNORAR errores 401 del endpoint de login - el login fallido NO debe recargar la página
+    const isLoginRequest = originalRequest.url?.includes('/auth/login');
+    
+    // Si el error es 401 y no hemos intentado refresh ya Y no es request de login
+    if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {
       originalRequest._retry = true;
 
       const refreshToken = localStorage.getItem('refresh_token');
@@ -68,6 +71,8 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Para login fallido (401 sin retry), solo rechazar el error normalmente
+    // NO recargar la página - dejar que el componente maneje el error
     return Promise.reject(error);
   }
 );

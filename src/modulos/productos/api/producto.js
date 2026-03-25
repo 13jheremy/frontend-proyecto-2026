@@ -23,22 +23,18 @@
         return response.data;
       },
 
-      // ELIMINACIÓN TEMPORAL Y PERMANENTE
+      // ELIMINACIÓN TEMPORAL
       softDeleteProducto: async (id) => {
-        const response = await productsAPI.patch(id, { eliminado: true });
+        const response = await productsAPI.softDelete(id);
         return response.data;
       },
 
-      hardDeleteProducto: async (id) => {
-        const response = await productsAPI.hardDelete(id);
-        return response.status;
-      },
-
-      // RESTAURAR PRODUCTO
       restoreProducto: async (id) => {
-        const response = await productsAPI.restoreProduct(id, { eliminado: false });
+        const response = await productsAPI.restoreProduct(id);
         return response.data;
       },
+
+
 
       // TOGGLE ESTADO ACTIVO/INACTIVO
       toggleActivoProducto: async (id, activo) => {

@@ -21,21 +21,12 @@ const ProveedorActionModal = ({ isOpen, onClose, proveedor, actionType, onConfir
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Proveedor (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente el proveedor "${proveedor.nombre}"? Podrá restaurarlo después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Proveedor',
+          message: `¿Está seguro de eliminar el proveedor "${proveedor.nombre}"?`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente "${proveedor.nombre}"...`,
+          loadingText: `Eliminando "${proveedor.nombre}"...`,
           icon: faArchive
-        };
-      case 'hardDelete':
-        return {
-          title: 'Eliminar Proveedor (Permanente)',
-          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE el proveedor "${proveedor.nombre}"? Esta acción no se puede deshacer y eliminará todos los datos asociados.`,
-          confirmText: 'Eliminar Permanentemente',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
-          loadingText: `Eliminando permanentemente "${proveedor.nombre}"...`,
-          icon: faTrash
         };
       case 'restore':
         return {
@@ -127,24 +118,6 @@ const ProveedorActionModal = ({ isOpen, onClose, proveedor, actionType, onConfir
 
         <p className="text-gray-700 dark:text-gray-300">{config.message}</p>
 
-        {/* Advertencia especial para eliminación permanente */}
-        {actionType === 'hardDelete' && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-            <div className="flex">
-              <FontAwesomeIcon icon={faTrash} className="h-5 w-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                  Esta acción es irreversible
-                </h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                  Se eliminarán todos los datos del proveedor y sus relaciones. Si tiene productos asociados, 
-                  considere usar eliminación temporal en su lugar.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="flex space-x-3">
           <button
             onClick={handleConfirm}
@@ -194,7 +167,7 @@ ProveedorActionModal.propTypes = {
     telefono: PropTypes.string,
     productos_count: PropTypes.number,
   }),
-  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']),
+  actionType: PropTypes.oneOf(['softDelete', 'restore', 'toggleActivo']),
   onConfirm: PropTypes.func.isRequired,
 };
 

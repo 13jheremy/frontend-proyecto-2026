@@ -74,7 +74,7 @@ const ProductoSearch = ({ filters, setFilters, onSearch, categorias, proveedores
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-all duration-300 ease-in-out">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         {/* Campo de búsqueda principal */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <div className="relative">
             <input
               type="text"
@@ -159,7 +159,7 @@ const ProductoSearch = ({ filters, setFilters, onSearch, categorias, proveedores
               >
                 <option value="">Todos</option>
                 <option value="false">No Eliminados</option>
-                <option value="true">Eliminados Temporalmente</option>
+                <option value="true">Eliminados</option>
               </select>
             </div>
 

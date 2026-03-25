@@ -1,192 +1,205 @@
 // src/modulos/mantenimiento/pages/components/MantenimientoActionModal.jsx
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import Modal from '../../../../components/Modal'; // Ajusta la ruta
+import Modal from '../../../../components/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExclamationTriangle, faTrash, faTrashRestore, faRecycle, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faRecycle, 
+  faTrashRestore,
+  faTrash,
+  faTools,
+  faUser,
+  faCalendarAlt,
+  faMotorcycle
+} from '@fortawesome/free-solid-svg-icons';
 
-/**
- * Modal para confirmar acciones en mantenimientos (eliminar, restaurar, etc.).
- */
-const MantenimientoActionModal = ({ isOpen, onClose, mantenimiento = null, actionType = null, onConfirm }) => {
+const MantenimientoActionModal = ({ 
+  isOpen, 
+  onClose, 
+  mantenimiento, 
+  actionType, 
+  onConfirm 
+}) => {
   const [loading, setLoading] = useState(false);
 
-  if (!mantenimiento || !actionType) {
-    return null;
-  }
+  if (!isOpen || !mantenimiento || !actionType) return null;
 
-  const getActionConfig = () => {
+  const formatearFecha = (fecha) => {
+    if (!fecha) return 'Sin fecha';
+    return new Date(fecha).toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getModalConfig = () => {
     switch (actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Mantenimiento Temporalmente',
-          message: `¿Estás seguro de que quieres eliminar temporalmente el mantenimiento "${mantenimiento.descripcion_problema || 'Sin descripción'}"?`,
-          details: 'El mantenimiento será marcado como eliminado pero podrá ser restaurado posteriormente.',
-          confirmText: 'Eliminar Temporalmente',
-          confirmButtonClass: 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-500',
+          title: 'Eliminar Mantenimiento',
+          message: `¿Está seguro de eliminar el mantenimiento #${mantenimiento.id}?`,
+          confirmText: 'Eliminar',
+          confirmClass: 'bg-orange-600 hover:bg-orange-700',
+          loadingText: 'Eliminando mantenimiento...',
           icon: faRecycle,
-          iconColor: 'text-orange-600'
-        };
-      case 'hardDelete':
-        return {
-          title: 'Eliminar Mantenimiento Permanentemente',
-          message: `¿Estás seguro de que quieres eliminar permanentemente el mantenimiento "${mantenimiento.descripcion_problema || 'Sin descripción'}"?`,
-          details: 'Esta acción no se puede deshacer. El mantenimiento y todos sus detalles serán eliminados definitivamente.',
-          confirmText: 'Eliminar Permanentemente',
-          confirmButtonClass: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-          icon: faTrash,
-          iconColor: 'text-red-600'
+          iconColor: 'text-orange-500',
+          bgColor: 'bg-orange-50 dark:bg-orange-900/20'
         };
       case 'restore':
         return {
           title: 'Restaurar Mantenimiento',
-          message: `¿Quieres restaurar el mantenimiento "${mantenimiento.descripcion_problema || 'Sin descripción'}"?`,
-          details: 'El mantenimiento volverá a estar activo en el sistema.',
+          message: `¿Desea restaurar el mantenimiento #${mantenimiento.id}?`,
           confirmText: 'Restaurar',
-          confirmButtonClass: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
+          confirmClass: 'bg-green-600 hover:bg-green-700',
+          loadingText: 'Restaurando mantenimiento...',
           icon: faTrashRestore,
-          iconColor: 'text-green-600'
+          iconColor: 'text-green-500',
+          bgColor: 'bg-green-50 dark:bg-green-900/20'
         };
       case 'toggleActivo':
         return {
           title: mantenimiento.activo ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento',
-          message: `¿Quieres ${mantenimiento.activo ? 'desactivar' : 'activar'} el mantenimiento "${mantenimiento.descripcion_problema || 'Sin descripción'}"?`,
-          details: mantenimiento.activo ? 'El mantenimiento será marcado como inactivo.' : 'El mantenimiento será marcado como activo.',
+          message: mantenimiento.activo 
+            ? `¿Desea desactivar el mantenimiento #${mantenimiento.id}?`
+            : `¿Desea activar el mantenimiento #${mantenimiento.id}?`,
           confirmText: mantenimiento.activo ? 'Desactivar' : 'Activar',
-          confirmButtonClass: mantenimiento.activo ? 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
-          icon: mantenimiento.activo ? faExclamationTriangle : faCheck,
-          iconColor: mantenimiento.activo ? 'text-yellow-600' : 'text-green-600'
+          confirmClass: mantenimiento.activo 
+            ? 'bg-red-600 hover:bg-red-700' 
+            : 'bg-green-600 hover:bg-green-700',
+          loadingText: mantenimiento.activo 
+            ? 'Desactivando mantenimiento...' 
+            : 'Activando mantenimiento...',
+          icon: mantenimiento.activo ? faTrash : faTools,
+          iconColor: mantenimiento.activo ? 'text-red-500' : 'text-green-500',
+          bgColor: mantenimiento.activo 
+            ? 'bg-red-50 dark:bg-red-900/20' 
+            : 'bg-green-50 dark:bg-green-900/20'
         };
       default:
         return {
-          title: 'Acción no reconocida',
-          message: 'La acción solicitada no es válida.',
-          details: '',
-          confirmText: 'Aceptar',
-          confirmButtonClass: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
-          icon: faExclamationTriangle,
-          iconColor: 'text-blue-600'
+          title: 'Confirmar Acción',
+          message: 'Confirme la acción a realizar.',
+          confirmText: 'Confirmar',
+          confirmClass: 'bg-blue-600 hover:bg-blue-700',
+          loadingText: 'Procesando...',
+          icon: faTools,
+          iconColor: 'text-blue-500',
+          bgColor: 'bg-blue-50 dark:bg-blue-900/20'
         };
     }
   };
 
-  const actionConfig = getActionConfig();
+  const config = getModalConfig();
 
   const handleConfirm = async () => {
     setLoading(true);
     try {
       await onConfirm(mantenimiento.id, actionType);
       onClose();
-    } catch (error) {
-      console.error('Error en acción del mantenimiento:', error);
+    } catch (err) {
+      console.error(`Error en acción ${actionType}:`, err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={actionConfig.title}>
-      <div className="space-y-6">
-        {/* Icono de advertencia */}
-        <div className="flex items-center justify-center">
-          <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-800`}>
-            <FontAwesomeIcon
-              icon={actionConfig.icon}
-              className={`h-8 w-8 ${actionConfig.iconColor}`}
-            />
-          </div>
-        </div>
-
-        {/* Mensaje principal */}
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-            {actionConfig.message}
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {actionConfig.details}
-          </p>
-        </div>
-
+    <Modal isOpen={isOpen} onClose={onClose} title={config.title}>
+      <div className="flex flex-col space-y-4">
         {/* Información del mantenimiento */}
-        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
-            Información del Mantenimiento
-          </h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">ID:</span>
-              <span className="text-gray-900 dark:text-gray-100">#{mantenimiento.id}</span>
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-full text-blue-600 dark:text-blue-400">
+                <FontAwesomeIcon icon={faTools} className="h-5 w-5" />
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Moto:</span>
-              <span className="text-gray-900 dark:text-gray-100">
-                {mantenimiento.moto?.marca} {mantenimiento.moto?.modelo} ({mantenimiento.moto?.placa})
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Propietario:</span>
-              <span className="text-gray-900 dark:text-gray-100">
-                {mantenimiento.moto?.propietario?.nombre} {mantenimiento.moto?.propietario?.apellido}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-gray-400">Estado:</span>
-              <span className="text-gray-900 dark:text-gray-100 capitalize">
-                {mantenimiento.estado}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Advertencia adicional para eliminación permanente */}
-        {actionType === 'hardDelete' && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <div className="flex">
-              <FontAwesomeIcon
-                icon={faExclamationTriangle}
-                className="h-5 w-5 text-red-400 mr-3 flex-shrink-0"
-              />
-              <div className="text-sm text-red-700 dark:text-red-400">
-                <strong>Advertencia:</strong> Esta acción eliminará permanentemente:
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>El mantenimiento y toda su información</li>
-                  <li>Todos los detalles de servicios asociados</li>
-                  <li>Los recordatorios relacionados</li>
-                </ul>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                Mantenimiento #{mantenimiento.id}
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {mantenimiento.descripcion_problema?.substring(0, 50) || 'Sin descripción'}
+                {(mantenimiento.descripcion_problema?.length || 0) > 50 ? '...' : ''}
+              </p>
+              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faMotorcycle} className="mr-1 h-3 w-3" />
+                  <span>{mantenimiento.moto?.marca} {mantenimiento.moto?.modelo} ({mantenimiento.moto?.placa})</span>
+                </div>
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faUser} className="mr-1 h-3 w-3" />
+                  <span>{mantenimiento.moto?.propietario?.nombre || 'Sin propietario'} {mantenimiento.moto?.propietario?.apellido || ''}</span>
+                </div>
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1 h-3 w-3" />
+                  <span>{formatearFecha(mantenimiento.fecha_ingreso)}</span>
+                </div>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Botones de acción */}
-        <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={loading}
-            className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${actionConfig.confirmButtonClass} focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Procesando...
-              </>
-            ) : (
-              <>
-                <FontAwesomeIcon icon={faCheck} className="mr-2" />
-                {actionConfig.confirmText}
-              </>
-            )}
-          </button>
+          {mantenimiento.estado && (
+            <div className="mt-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                mantenimiento.estado === 'completado' 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  : mantenimiento.estado === 'en_proceso'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                  : mantenimiento.estado === 'pendiente'
+                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+              }`}>
+                {mantenimiento.estado.toUpperCase()}
+              </span>
+            </div>
+          )}
+
+          {mantenimiento.eliminado && (
+            <div className="mt-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                <FontAwesomeIcon icon={faTrash} className="mr-1 h-3 w-3" />
+                ELIMINADO
+              </span>
+            </div>
+          )}
         </div>
+
+        {/* Mensaje de confirmación */}
+        <div className="text-gray-700 dark:text-gray-300">
+          <p>{config.message}</p>
+        </div>
+      </div>
+
+      {/* Acciones */}
+      <div className="mt-6 flex justify-end space-x-3">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={loading}
+          className={`px-4 py-2 text-sm font-medium text-white ${config.confirmClass} border border-transparent rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex items-center`}
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {config.loadingText}
+            </>
+          ) : (
+            config.confirmText
+          )}
+        </button>
       </div>
     </Modal>
   );
@@ -195,9 +208,24 @@ const MantenimientoActionModal = ({ isOpen, onClose, mantenimiento = null, actio
 MantenimientoActionModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  mantenimiento: PropTypes.object,
-  actionType: PropTypes.string,
-  onConfirm: PropTypes.func.isRequired,
+  mantenimiento: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    descripcion_problema: PropTypes.string,
+    estado: PropTypes.string,
+    eliminado: PropTypes.bool,
+    fecha_ingreso: PropTypes.string,
+    moto: PropTypes.shape({
+      marca: PropTypes.string,
+      modelo: PropTypes.string,
+      placa: PropTypes.string,
+      propietario: PropTypes.shape({
+        nombre: PropTypes.string,
+        apellido: PropTypes.string
+      })
+    })
+  }),
+  actionType: PropTypes.oneOf(['softDelete', 'restore', 'toggleActivo']).isRequired,
+  onConfirm: PropTypes.func.isRequired
 };
 
 export default MantenimientoActionModal;

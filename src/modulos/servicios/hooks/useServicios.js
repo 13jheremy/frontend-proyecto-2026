@@ -1,7 +1,8 @@
 // src/modules/servicios/hooks/useServicios.js
 import { useState, useEffect, useCallback } from 'react';
 import { servicioApi } from '../api/servicio';
-import { handleApiError, showNotification, serviceMessages } from '../../../utils/notifications';
+import { showNotification, serviceMessages } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 import { useServicioCategoria } from './useServicioCategoria';
 
 export const useServicios = () => {
@@ -152,23 +153,6 @@ export const useServicios = () => {
     }
   }, []);
 
-  // Eliminación permanente
-  const hardDeleteServicio = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await servicioApi.hardDeleteServicio(id);
-      showNotification.success(serviceMessages.serviceHardDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Restaurar servicio
   const restoreServicio = useCallback(async (id) => {
     setLoading(true);
@@ -192,8 +176,9 @@ export const useServicios = () => {
     setError(null);
 
     try {
-      await servicioApi.toggleActivoServicio(id);
-      showNotification.success(serviceMessages.statusChanged(activo));
+      const response = await servicioApi.toggleActivoServicio(id, activo);
+      const nuevoEstado = response.activo;
+      showNotification.success(serviceMessages.statusChanged(nuevoEstado));
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
@@ -209,9 +194,6 @@ export const useServicios = () => {
       switch (actionType) {
         case 'softDelete':
           await softDeleteServicio(servicioId);
-          break;
-        case 'hardDelete':
-          await hardDeleteServicio(servicioId);
           break;
         case 'restore':
           await restoreServicio(servicioId);
@@ -229,7 +211,7 @@ export const useServicios = () => {
       console.error(`Error en acción ${actionType}:`, err);
       throw err;
     }
-  }, [servicios, softDeleteServicio, hardDeleteServicio, restoreServicio, toggleServicioActivo]);
+  }, [servicios, softDeleteServicio, restoreServicio, toggleServicioActivo]);
 
   // Inicialización de servicios
   useEffect(() => {
@@ -251,7 +233,6 @@ export const useServicios = () => {
     
     // Funciones de gestión de estado
     softDeleteServicio,
-    hardDeleteServicio,
     restoreServicio,
     toggleServicioActivo,
     handleServicioAction,

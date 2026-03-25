@@ -1,7 +1,8 @@
 // src/modules/proveedores/hooks/useProveedores.js
 import { useState, useEffect, useCallback } from 'react';
 import { proveedorApi } from '../api/proveedores';
-import { handleApiError, showNotification, supplierMessages } from '../../../utils/notifications';
+import { showNotification, supplierMessages } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 
 export const useProveedores = () => {
   const [proveedores, setProveedores] = useState([]);
@@ -135,23 +136,6 @@ export const useProveedores = () => {
     }
   }, []);
 
-  // Eliminación permanente
-  const hardDeleteProveedor = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await proveedorApi.hardDeleteProveedor(id);
-      showNotification.success(supplierMessages.supplierHardDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Restaurar proveedor
   const restoreProveedor = useCallback(async (id) => {
     setLoading(true);
@@ -170,14 +154,14 @@ export const useProveedores = () => {
   }, []);
 
   // Toggle estado activo
-  const toggleProveedorActivo = useCallback(async (id) => {
+  const toggleProveedorActivo = useCallback(async (id, activo) => {
     setLoading(true);
     setError(null);
 
     try {
-      const updatedProveedor = await proveedorApi.toggleActivoProveedor(id);
-      showNotification.success(supplierMessages.statusChanged(updatedProveedor.activo));
-      return updatedProveedor;
+      const response = await proveedorApi.toggleActivoProveedor(id, activo);
+      const nuevoEstado = response.activo;
+      showNotification.success(supplierMessages.statusChanged(nuevoEstado));
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
@@ -194,14 +178,14 @@ export const useProveedores = () => {
         case 'softDelete':
           await softDeleteProveedor(proveedorId);
           break;
-        case 'hardDelete':
-          await hardDeleteProveedor(proveedorId);
-          break;
         case 'restore':
           await restoreProveedor(proveedorId);
           break;
         case 'toggleActivo':
-          await toggleProveedorActivo(proveedorId);
+          const proveedor = proveedores.find(p => p.id === proveedorId);
+          if (proveedor) {
+            await toggleProveedorActivo(proveedorId, !proveedor.activo);
+          }
           break;
         default:
           throw new Error(`Acción no reconocida: ${actionType}`);
@@ -210,7 +194,7 @@ export const useProveedores = () => {
       console.error(`Error en acción ${actionType}:`, err);
       throw err;
     }
-  }, [softDeleteProveedor, hardDeleteProveedor, restoreProveedor, toggleProveedorActivo]);
+  }, [proveedores, softDeleteProveedor, restoreProveedor, toggleProveedorActivo]);
 
   // Obtener estadísticas
   const fetchEstadisticas = useCallback(async () => {
@@ -224,10 +208,10 @@ export const useProveedores = () => {
     }
   }, []);
 
-  // Inicialización de proveedores
+  // Efecto para cargar proveedores al inicio - similar a useMotos
   useEffect(() => {
-    fetchProveedores();
-  }, [fetchProveedores]);
+    fetchProveedores({ activo: 'true' }, 1, 10);
+  }, []);
 
   return {
     // Estados
@@ -243,7 +227,6 @@ export const useProveedores = () => {
     
     // Funciones de gestión de estado
     softDeleteProveedor,
-    hardDeleteProveedor,
     restoreProveedor,
     toggleProveedorActivo,
     handleProveedorAction,

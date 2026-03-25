@@ -12,7 +12,6 @@ function Login() {
   const location = useLocation();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
-  // Estados locales
   const [formData, setFormData] = useState({
     correo_electronico: '',
     password: ''
@@ -20,22 +19,26 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [rememberMe, setRememberMe] = useState(false);
 
-  // Redirigir si ya está autenticado
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
+    if (isAuthenticated && !isLoading && !isSubmitting) {
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, isLoading, navigate, location.state]);
+  }, [isAuthenticated, isLoading, isSubmitting, navigate, location.state]);
 
-  // Limpiar errores cuando cambian los campos
-  useEffect(() => {
-    if (error) {
-      clearError();
-    }
+  // Limpiar errores solo cuando se inicia una nueva solicitud
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value.trim()
+    }));
+    
+    // Solo limpiar errores del formulario local, NO el error del contexto
     setFormErrors({});
-  }, [formData.correo_electronico, formData.password]);
+  };
 
   // Validar formulario
   const validateForm = () => {
@@ -57,18 +60,14 @@ function Login() {
     return Object.keys(errors).length === 0;
   };
 
-  // Manejar cambios en los inputs
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value.trim()
-    }));
-  };
+
 
   // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Limpiar errores antes de intentar login
+    clearError();
     
     if (!validateForm()) {
       return;
@@ -77,17 +76,18 @@ function Login() {
     setIsSubmitting(true);
     
     try {
-      const result = await login(formData.correo_electronico, formData.password);
+      const result = await login(formData.correo_electronico, formData.password, rememberMe);
       
       if (result.success) {
         // El redirect se maneja en el useEffect
-        console.log('Login exitoso');
       } else {
-        // Los errores se manejan automáticamente por el contexto
-        console.error('Error en login:', result.error);
+        // Verificar si hay intentos restantes
+        if (result.attempts_remaining !== undefined) {
+          console.log(`Intentos restantes: ${result.attempts_remaining}`);
+        }
       }
     } catch (err) {
-      console.error('Error inesperado:', err);
+      // Error inesperado manejado por el contexto
     } finally {
       setIsSubmitting(false);
     }
@@ -234,6 +234,8 @@ function Login() {
                     <input 
                       type="checkbox" 
                       className="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500" 
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
                       disabled={isSubmitting} 
                     />
                     <span className="ml-2 text-gray-700 dark:text-gray-300">

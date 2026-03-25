@@ -43,40 +43,52 @@ export const usuarioApi = {
     return response.data;
   },
 
-  // updateUsuario: Función asíncrona para actualizar un usuario existente.
-  // Recibe el 'id' del usuario a actualizar, un objeto 'data' con los campos a modificar,
-  // y opcionalmente un array 'newRoles' con el ID del rol único para asignar.
-  updateUsuario: async (id, data, newRoles = null) => {
-    // Primero actualiza los datos básicos del usuario (sin roles)
-    const response = await usersAPI.updateComplete(id, data);
-    
-    // Si se proporcionaron roles, maneja la asignación por separado
-    if (newRoles !== null && newRoles.length > 0) {
-      // Obtiene los roles actuales del usuario
-      const currentUser = await usersAPI.getById(id);
-      const currentRoleIds = currentUser.data.roles ? 
-        currentUser.data.roles.map(role => typeof role === 'object' ? role.id : role) : [];
-      
-      // Para sistema de rol único: el nuevo rol es el primer (y único) elemento
-      const newRoleId = newRoles[0];
-      
-      // Si el usuario ya tiene este rol, no hacer nada
-      if (currentRoleIds.includes(newRoleId)) {
-        return response.data;
-      }
-      
-      // Remueve todos los roles actuales
-      if (currentRoleIds.length > 0) {
-        await usersAPI.removeRoles(id, currentRoleIds);
-      }
-      
-      // Asigna el nuevo rol único
-      await usersAPI.assignRoles(id, [newRoleId]);
-    }
-    
-    // Retorna la propiedad 'data' de la respuesta.
-    return response.data;
-  },
+   // updateUsuario: Función asíncrona para actualizar un usuario existente.
+   // Recibe el 'id' del usuario a actualizar, un objeto 'data' con los campos a modificar,
+   // y opcionalmente un array 'newRoles' con el ID del rol único para asignar.
+   updateUsuario: async (id, data, newRoles = null) => {
+     try {
+       // Primero actualiza los datos básicos del usuario (sin roles)
+       const response = await usersAPI.updateComplete(id, data);
+       
+       // Si se proporcionaron roles, maneja la asignación por separado
+       if (newRoles !== null && newRoles.length > 0) {
+         try {
+           // Obtiene los roles actuales del usuario
+           const currentUser = await usersAPI.getById(id);
+           const currentRoleIds = currentUser.data.roles ? 
+             currentUser.data.roles.map(role => typeof role === 'object' ? role.id : role) : [];
+           
+           // Para sistema de rol único: el nuevo rol es el primer (y único) elemento
+           const newRoleId = newRoles[0];
+           
+           // Si el usuario ya tiene este rol, no hacer nada
+           if (currentRoleIds.includes(newRoleId)) {
+             return response.data;
+           }
+           
+           // Remueve todos los roles actuales
+           if (currentRoleIds.length > 0) {
+             await usersAPI.removeRoles(id, currentRoleIds);
+           }
+           
+           // Asigna el nuevo rol único
+           await usersAPI.assignRoles(id, [newRoleId]);
+         } catch (roleError) {
+           // Si falla la actualización de roles, aún retornamos la actualización básica del usuario
+           // pero registramos el error para investigación
+           console.warn(`Role update failed for user ${id}:`, roleError);
+           // Continuamos y retornamos la respuesta básica ya que al menos la actualización de usuario tuvo éxito
+         }
+       }
+       
+       // Retorna la propiedad 'data' de la respuesta.
+       return response.data;
+     } catch (error) {
+       // Proporcionamos más contexto sobre qué falló
+       throw new Error(`Failed to update user ${id}: ${error.message}`);
+     }
+   },
 
   // resetPassword: Función asíncrona para restablecer la contraseña de un usuario.
   // Recibe el 'id' del usuario y la 'password' nueva.
@@ -103,15 +115,6 @@ export const usuarioApi = {
   softDeleteUsuario: async (id) => {
     // Realiza una llamada DELETE a la API para eliminar el usuario de forma definitiva.
     const response = await usersAPI.softDelete(id);
-    // Retorna el 'status' de la respuesta HTTP (ej. 204 No Content).
-    return response.status;
-  },
-
-  // hardDeleteUsuario: Función asíncrona para eliminar permanentemente un usuario.
-  // Recibe el 'id' del usuario a eliminar.
-  hardDeleteUsuario: async (id) => {
-    // Realiza una llamada DELETE a la API para eliminar el usuario de forma definitiva.
-    const response = await usersAPI.hardDelete(id);
     // Retorna el 'status' de la respuesta HTTP (ej. 204 No Content).
     return response.status;
   },

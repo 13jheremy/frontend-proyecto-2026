@@ -12,7 +12,8 @@
         setLoadingProveedores(true);
         setErrorProveedores(null);
         try {
-          const response = await suppliersAPI.getAll();
+          // ✅ Filtrar solo proveedores activos
+          const response = await suppliersAPI.getAll({ activo: true });
           if (response.success) {
             setProveedores(response.data.results || response.data); // Manejar paginación o array directo
           } else {

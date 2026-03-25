@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useHome } from "../hooks/useHome";
 
 const Footer = () => (
@@ -10,8 +11,8 @@ const Footer = () => (
       </div>
       <p className="text-sm mb-4">Mantenimiento & Repuestos | Más de 10 años de experiencia</p>
       <div className="flex justify-center space-x-6 text-sm">
-        <span>📞 +591 123-4567</span>
-        <span>📍 Rurrenabaque, Beni</span>
+        <span>📞 +591 67386647</span>
+        <span>📍 Culpina, Chuquisaca</span>
         <span>🕐 Lun-Sáb 8:00-18:00</span>
       </div>
     </div>
@@ -19,6 +20,7 @@ const Footer = () => (
 );
 
 const Home = () => {
+  const navigate = useNavigate();
   const {
     slides,
     current,
@@ -64,10 +66,17 @@ const Home = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
+            <button
+              onClick={() => navigate("/catalogo")}
+              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
               Ver Catálogo
             </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-3 rounded-lg font-semibold transition-all duration-300">
+
+            <button
+              onClick={() => navigate("/contactos")}
+              className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-3 rounded-lg font-semibold transition-all duration-300"
+            >
               Contactar
             </button>
           </div>
@@ -301,10 +310,21 @@ const Home = () => {
             Contáctanos para una cotización personalizada o visítanos en nuestro taller
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-300">
-              Solicitar Cotización
-            </button>
-            <button className="border-2 border-gray-500 text-gray-300 hover:border-white hover:text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-300">
+          <button
+            onClick={() =>
+              window.open(
+                "https://wa.me/59167386647?text=Hola,%20quiero%20cotizar%20un%20servicio%20para%20mi%20moto",
+                "_blank"
+              )
+            }
+            className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-300"
+          >
+            Solicitar Cotización
+          </button>
+            <button
+              onClick={() => window.open("https://maps.app.goo.gl/xaWJCCU613w92GKv6?g_st=awb", "_blank")}
+              className="border-2 border-gray-500 text-gray-300 hover:border-white hover:text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-300"
+            >
               Ver Ubicación
             </button>
           </div>

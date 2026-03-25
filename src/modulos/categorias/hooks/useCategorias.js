@@ -22,10 +22,26 @@ export const useCategorias = () => {
    * Obtener lista de categorías con filtros.
    */
   const fetchCategorias = useCallback(async (params = {}) => {
+    // Procesar filtros para la API
+    const processFilters = (filters) => {
+      const result = { ...filters };
+
+      if (result.activo !== undefined && result.activo !== '') {
+        result.activo = String(result.activo);
+      }
+
+      if (result.eliminado !== undefined && result.eliminado !== '') {
+        result.eliminado = String(result.eliminado);
+      }
+
+      return result;
+    };
+
     setLoading(true);
     setError(null);
     try {
-      const response = await categoriaApi.getCategorias(params);
+      const processedFilters = processFilters(params);
+      const response = await categoriaApi.getCategorias(processedFilters);
 
       if (response.results) {
         setCategorias(response.results);
@@ -147,19 +163,17 @@ export const useCategorias = () => {
   /**
    * Alternar estado activo/inactivo de categoría.
    */
-  const toggleActiveCategoria = useCallback(async (id) => {
+  const toggleActiveCategoria = useCallback(async (id, activo) => {
     setLoading(true);
     setError(null);
     try {
-      const updatedCategoria = await categoriaApi.toggleActive(id);
+      const updatedCategoria = await categoriaApi.toggleActive(id, activo);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? updatedCategoria : c))
       );
       return updatedCategoria;
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      console.error(`Error al alternar estado de categoría con ID ${id}:`, errorInfo, err);
+      // Re-lanzar el error para preservar la respuesta del backend
       throw err;
     } finally {
       setLoading(false);
@@ -178,9 +192,7 @@ export const useCategorias = () => {
         prev.map((c) => (c.id === id ? { ...c, eliminado: true } : c))
       );
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      console.error(`Error al eliminar temporalmente categoría con ID ${id}:`, errorInfo, err);
+      // Re-lanzar el error para preservar la respuesta del backend
       throw err;
     } finally {
       setLoading(false);
@@ -199,9 +211,7 @@ export const useCategorias = () => {
         prev.map((c) => (c.id === id ? { ...c, eliminado: false } : c))
       );
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      console.error(`Error al restaurar categoría con ID ${id}:`, errorInfo, err);
+      // Re-lanzar el error para preservar la respuesta del backend
       throw err;
     } finally {
       setLoading(false);
@@ -251,6 +261,25 @@ export const useCategorias = () => {
   }, []);
 
   /**
+   * Verificar relaciones de la categoría antes de eliminar/desactivar.
+   */
+  const verificarRelacionesCategoria = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const relaciones = await categoriaApi.verificarRelaciones(id);
+      return relaciones;
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      setError(errorInfo.message);
+      console.error('Error al verificar relaciones:', errorInfo, err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
    * Limpiar error.
    */
   const clearError = useCallback(() => {
@@ -272,6 +301,7 @@ export const useCategorias = () => {
     restoreCategoria,
     hardDeleteCategoria,
     getCategoriaStats,
+    verificarRelacionesCategoria,
     clearError,
   };
 };

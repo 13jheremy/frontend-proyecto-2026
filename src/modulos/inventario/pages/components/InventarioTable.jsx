@@ -3,8 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faEdit, faTrash, faRecycle, faTrashRestore,
-  faToggleOn, faToggleOff, faInfoCircle, faCheckCircle, faBan,
+  faEdit, faInfoCircle, faCheckCircle, faBan,
   faBoxes, faIdCard, faUser, faPhone, faEnvelope, faWarning,
   faArrowUp, faArrowDown, faExchangeAlt, faBox
 } from '@fortawesome/free-solid-svg-icons';
@@ -13,10 +12,6 @@ const InventarioTable = ({
   inventarios,
   permissions = {},
   onEdit,
-  onSoftDelete,
-  onHardDelete,
-  onRestore,
-  onToggleActivo,
   onInfo,
   loading
 }) => {
@@ -87,16 +82,24 @@ const InventarioTable = ({
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 h-10 w-10">
-                    <div className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">
-                      <FontAwesomeIcon icon={faBox} />
-                    </div>
+                    {inventario.producto_imagen ? (
+                      <img
+                        className="h-10 w-10 rounded-full object-cover"
+                        src={inventario.producto_imagen}
+                        alt={inventario.producto_nombre}
+                      />
+                    ) : (
+                      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">
+                        <FontAwesomeIcon icon={faBox} />
+                      </div>
+                    )}
                   </div>
                   <div className="ml-4">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {inventario.producto_nombre || inventario.producto?.nombre || 'Producto sin nombre'}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      ID Producto: {inventario.producto || 'N/A'}
+                      Código: {inventario.producto_codigo || 'N/A'}
                     </div>
                     <div className="text-xs text-gray-400 dark:text-gray-500">
                       ID Inventario: {inventario.id}
@@ -160,30 +163,8 @@ const InventarioTable = ({
                   </button>
 
                   {inventario.eliminado ? (
-                    // Acciones para registros eliminados
-                    <>
-                      {/* Botón Restaurar */}
-                      {permissions.canRestore && (
-                        <button
-                          onClick={() => onRestore(inventario)}
-                          className="p-2 rounded-full text-green-600 hover:bg-green-100 dark:hover:bg-green-900 transition-colors duration-200"
-                          title="Restaurar"
-                        >
-                          <FontAwesomeIcon icon={faTrashRestore} />
-                        </button>
-                      )}
-
-                      {/* Botón Eliminar Permanentemente */}
-                      {permissions.canHardDelete && (
-                        <button
-                          onClick={() => onHardDelete(inventario)}
-                          className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                          title="Eliminar permanentemente"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      )}
-                    </>
+                    // Los registros eliminados no muestran acciones de edición
+                    null
                   ) : (
                     // Acciones para registros activos
                     <>
@@ -195,32 +176,6 @@ const InventarioTable = ({
                           title="Editar"
                         >
                           <FontAwesomeIcon icon={faEdit} />
-                        </button>
-                      )}
-
-                      {/* Botón Toggle Activo */}
-                      {permissions.canEdit && (
-                        <button
-                          onClick={() => onToggleActivo(inventario)}
-                          className={`p-2 rounded-full transition-colors duration-200 ${
-                            inventario.activo
-                              ? 'text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900'
-                              : 'text-green-600 hover:bg-green-100 dark:hover:bg-green-900'
-                          }`}
-                          title={inventario.activo ? 'Desactivar' : 'Activar'}
-                        >
-                          <FontAwesomeIcon icon={inventario.activo ? faToggleOff : faToggleOn} />
-                        </button>
-                      )}
-
-                      {/* Botón Eliminar Temporalmente */}
-                      {permissions.canDelete && (
-                        <button
-                          onClick={() => onSoftDelete(inventario)}
-                          className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                          title="Eliminar temporalmente"
-                        >
-                          <FontAwesomeIcon icon={faRecycle} />
                         </button>
                       )}
                     </>
@@ -259,15 +214,8 @@ InventarioTable.propTypes = {
   ).isRequired,
   permissions: PropTypes.shape({
     canEdit: PropTypes.bool,
-    canDelete: PropTypes.bool,
-    canRestore: PropTypes.bool,
-    canHardDelete: PropTypes.bool,
   }),
   onEdit: PropTypes.func.isRequired,
-  onSoftDelete: PropTypes.func.isRequired,
-  onHardDelete: PropTypes.func.isRequired,
-  onRestore: PropTypes.func.isRequired,
-  onToggleActivo: PropTypes.func.isRequired,
   onInfo: PropTypes.func.isRequired,
   loading: PropTypes.bool.isRequired,
 };

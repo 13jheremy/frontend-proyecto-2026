@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { mantenimientoApi } from '../api/mantenimiento';
 import { handleMantenimientoError } from '../utils/apiErrorHandlers';
+import { showNotification, mantenimientoMessages } from '../../../utils/notifications';
 
 /**
  * Hook personalizado para la gestión de mantenimientos.
@@ -27,19 +28,22 @@ export const useMantenimientos = () => {
     try {
       const response = await mantenimientoApi.getMantenimientos(params);
 
-      if (response.results) {
-        setMantenimientos(response.results);
+      // La API retorna { success: true, data: {...}, status: 200 }
+      const data = response.data || response;
+
+      if (data.results) {
+        setMantenimientos(data.results);
         setPagination({
-          count: response.count,
-          next: response.next,
-          previous: response.previous,
+          count: data.count,
+          next: data.next,
+          previous: data.previous,
           current_page: params.page || 1,
-          total_pages: Math.ceil(response.count / (params.page_size || 10))
+          total_pages: Math.ceil(data.count / (params.page_size || 10))
         });
       } else {
-        setMantenimientos(Array.isArray(response) ? response : []);
+        setMantenimientos(Array.isArray(data) ? data : []);
         setPagination({
-          count: Array.isArray(response) ? response.length : 0,
+          count: Array.isArray(data) ? data.length : 0,
           next: null,
           previous: null,
           current_page: 1,
@@ -82,12 +86,29 @@ export const useMantenimientos = () => {
     setLoading(true);
     setError(null);
     try {
-      const newMantenimiento = await mantenimientoApi.createMantenimiento(mantenimientoData);
+      // DEBUG: Ver datos recibidos del formulario
+      console.log('=== DEBUG HOOK: Datos recibidos del formulario ===');
+      console.log('mantenimientoData:', JSON.stringify(mantenimientoData, null, 2));
+      console.log('=================================================');
+      const response = await mantenimientoApi.createMantenimiento(mantenimientoData);
+      
+      // DEBUG: Ver respuesta del backend
+      console.log('=== DEBUG HOOK: Respuesta del backend ===');
+      console.log('response:', response);
+      console.log('==========================================');
+      
+      // La API retorna { success: true, data: {...}, status: 200 }
+      const newMantenimiento = response.data || response;
+      
       setMantenimientos((prev) => [newMantenimiento, ...prev]);
       setPagination(prev => ({
         ...prev,
         count: prev.count + 1
       }));
+      
+      // Mostrar notificación de éxito
+      showNotification.success(mantenimientoMessages.created);
+      
       return newMantenimiento;
     } catch (err) {
       const errorInfo = handleMantenimientoError(err);
@@ -110,6 +131,10 @@ export const useMantenimientos = () => {
       setMantenimientos((prev) =>
         prev.map((m) => (m.id === id ? updatedMantenimiento : m))
       );
+      
+      // Mostrar notificación de éxito
+      showNotification.success(mantenimientoMessages.updated);
+      
       return updatedMantenimiento;
     } catch (err) {
       const errorInfo = handleMantenimientoError(err);
@@ -134,6 +159,9 @@ export const useMantenimientos = () => {
         ...prev,
         count: prev.count - 1
       }));
+      
+      // Mostrar notificación de éxito
+      showNotification.success(mantenimientoMessages.deleted);
     } catch (err) {
       const errorInfo = handleMantenimientoError(err);
       setError(errorInfo.message);
@@ -177,6 +205,9 @@ export const useMantenimientos = () => {
       setMantenimientos((prev) =>
         prev.map((m) => (m.id === id ? { ...m, eliminado: true } : m))
       );
+      
+      // Mostrar notificación de éxito
+      showNotification.success(mantenimientoMessages.deleted);
     } catch (err) {
       const errorInfo = handleMantenimientoError(err);
       setError(errorInfo.message);
@@ -198,33 +229,13 @@ export const useMantenimientos = () => {
       setMantenimientos((prev) =>
         prev.map((m) => (m.id === id ? { ...m, eliminado: false } : m))
       );
+      
+      // Mostrar notificación de éxito
+      showNotification.success(mantenimientoMessages.restored);
     } catch (err) {
       const errorInfo = handleMantenimientoError(err);
       setError(errorInfo.message);
       console.error(`Error al restaurar mantenimiento con ID ${id}:`, errorInfo, err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Eliminar mantenimiento permanentemente.
-   */
-  const hardDeleteMantenimiento = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await mantenimientoApi.hardDelete(id);
-      setMantenimientos((prev) => prev.filter((m) => m.id !== id));
-      setPagination(prev => ({
-        ...prev,
-        count: prev.count - 1
-      }));
-    } catch (err) {
-      const errorInfo = handleMantenimientoError(err);
-      setError(errorInfo.message);
-      console.error(`Error al eliminar permanentemente mantenimiento con ID ${id}:`, errorInfo, err);
       throw err;
     } finally {
       setLoading(false);
@@ -251,11 +262,105 @@ export const useMantenimientos = () => {
   }, []);
 
   /**
+   * Obtener mantenimientos eliminados (soft delete).
+   */
+  const getDeletedMantenimientos = useCallback(async (params = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await mantenimientoApi.getDeleted(params);
+      return response;
+    } catch (err) {
+      const errorInfo = handleMantenimientoError(err);
+      setError(errorInfo.message);
+      console.error('Error al obtener mantenimientos eliminados:', errorInfo, err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Eliminar múltiples mantenimientos temporalmente (soft delete).
+   */
+  const softDeleteMultipleMantenimiento = useCallback(async (ids) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await mantenimientoApi.softDeleteMultiple(ids);
+      setMantenimientos((prev) =>
+        prev.filter((m) => !ids.includes(m.id))
+      );
+      setPagination(prev => ({
+        ...prev,
+        count: prev.count - ids.length
+      }));
+      return response;
+    } catch (err) {
+      const errorInfo = handleMantenimientoError(err);
+      setError(errorInfo.message);
+      console.error('Error al eliminar múltiples mantenimientos:', errorInfo, err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Restaurar múltiples mantenimientos eliminados.
+   */
+  const restoreMultipleMantenimiento = useCallback(async (ids) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await mantenimientoApi.restoreMultiple(ids);
+      return response;
+    } catch (err) {
+      const errorInfo = handleMantenimientoError(err);
+      setError(errorInfo.message);
+      console.error('Error al restaurar múltiples mantenimientos:', errorInfo, err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
    * Limpiar error.
    */
   const clearError = useCallback(() => {
     setError(null);
   }, []);
+
+  /**
+   * Manejar acciones de mantenimiento (soft delete, restore, etc.)
+   */
+  const handleMantenimientoAction = useCallback(async (id, type) => {
+    setLoading(true);
+    setError(null);
+    try {
+      switch (type) {
+        case 'softDelete':
+          await softDeleteMantenimiento(id);
+          break;
+        case 'restore':
+          await restoreMantenimiento(id);
+          break;
+        case 'toggleActivo':
+          // No implementado en este hook, usar update
+          throw new Error('Acción toggleActivo no implementada');
+        default:
+          throw new Error(`Tipo de acción desconocido: ${type}`);
+      }
+    } catch (err) {
+      const errorInfo = handleMantenimientoError(err);
+      setError(errorInfo.message);
+      console.error(`Error en handleMantenimientoAction (${type}):`, err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [softDeleteMantenimiento, restoreMantenimiento]);
 
   return {
     mantenimientos,
@@ -270,8 +375,12 @@ export const useMantenimientos = () => {
     cambiarEstadoMantenimiento,
     softDeleteMantenimiento,
     restoreMantenimiento,
-    hardDeleteMantenimiento,
     getMantenimientoStats,
+    fetchEstadisticas: getMantenimientoStats, // Alias para compatibilidad
+    getDeletedMantenimientos,
+    softDeleteMultipleMantenimiento,
+    restoreMultipleMantenimiento,
+    handleMantenimientoAction,
     clearError,
   };
 };

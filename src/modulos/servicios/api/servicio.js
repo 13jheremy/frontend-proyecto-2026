@@ -23,15 +23,10 @@ export const servicioApi = {
     return response.data;
   },
 
-  // ELIMINACIÓN TEMPORAL Y PERMANENTE
+  // ELIMINACIÓN TEMPORAL
   softDeleteServicio: async (id) => {
     const response = await servicesAPI.softDelete(id);
     return response.data;
-  },
-
-  hardDeleteServicio: async (id) => {
-    const response = await servicesAPI.hardDelete(id);
-    return response.status;
   },
 
   // RESTAURAR SERVICIO
@@ -41,8 +36,8 @@ export const servicioApi = {
   },
 
   // TOGGLE ESTADO ACTIVO/INACTIVO
-  toggleActivoServicio: async (id) => {
-    const response = await servicesAPI.toggleActivo(id);
+  toggleActivoServicio: async (id, activo) => {
+    const response = await servicesAPI.toggleActivo(id, activo);
     return response.data;
   },
 

@@ -166,13 +166,13 @@ const MotoCreateModal = ({ isOpen, onClose, onCreate, loading, error, usuariosDi
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Registrar Nueva Moto">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Error general */}
-        {error && (
-          <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
-            <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline ml-1">{error}</span>
-          </div>
-        )}
+         {/* Error general */}
+         {error && (
+           <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
+             <strong className="font-bold">Error:</strong>
+             <span className="block sm:inline ml-1">{error.message}</span>
+           </div>
+         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Propietario con búsqueda avanzada */}

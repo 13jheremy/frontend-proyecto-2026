@@ -14,11 +14,11 @@ const CategoriaActionModal = ({ isOpen, onClose, categoria, actionType, onConfir
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Categoría (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente la categoría "${categoria.nombre}"? Podrá restaurarla después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Categoría',
+          message: `¿Está seguro de eliminar la categoría "${categoria.nombre}"`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente "${categoria.nombre}"...`,
+          loadingText: `Eliminando"${categoria.nombre}"...`,
           icon: faRecycle
         };
       case 'hardDelete':

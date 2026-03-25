@@ -1,5 +1,5 @@
 // src/modulos/perfil/pages/PerfilPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import usePerfil from '../hooks/usePerfil';
 import PasswordForm from './components/PasswordForm';
@@ -12,7 +12,11 @@ import {
   faEnvelope,
   faIdCard,
   faUserCircle,
-  faKey
+  faKey,
+  faPhone,
+  faMapMarkerAlt,
+  faCalendarAlt,
+  faShieldAlt
 } from '@fortawesome/free-solid-svg-icons';
 
 const Field = ({ label, icon, children }) => (
@@ -27,15 +31,26 @@ const Field = ({ label, icon, children }) => (
 
 const PerfilPage = () => {
   const { perfil, loading, error, updatePerfil, changePassword } = usePerfil();
-  const [form, setForm] = useState({ username: '', correo_electronico: '', persona_nombre: '', persona_apellido: '' });
+  const [form, setForm] = useState({
+    username: '',
+    correo_electronico: '',
+    first_name: '',
+    last_name: '',
+    telefono: '',
+    direccion: '',
+    ci: ''
+  });
 
-  React.useEffect(() => {
-    if (perfil?.user) {
+  useEffect(() => {
+    if (perfil) {
       setForm({
-        username: perfil.user.username || '',
-        correo_electronico: perfil.user.correo_electronico || '',
-        persona_nombre: perfil.user.persona?.nombre || '',
-        persona_apellido: perfil.user.persona?.apellido || '',
+        username: perfil.username || '',
+        correo_electronico: perfil.correo_electronico || '',
+        first_name: perfil.persona?.nombre || perfil.first_name || '',
+        last_name: perfil.persona?.apellido || perfil.last_name || '',
+        telefono: perfil.persona?.telefono || '',
+        direccion: perfil.persona?.direccion || '',
+        ci: perfil.persona?.ci || '',
       });
     }
   }, [perfil]);
@@ -53,25 +68,34 @@ const PerfilPage = () => {
       toast.error('Ingresa un correo válido');
       return;
     }
-    if (form.persona_nombre && form.persona_nombre.trim().length < 2) {
+    if (form.first_name && form.first_name.trim().length < 2) {
       toast.error('El nombre debe tener al menos 2 caracteres');
       return;
     }
-    if (form.persona_apellido && form.persona_apellido.trim().length < 2) {
+    if (form.last_name && form.last_name.trim().length < 2) {
       toast.error('El apellido debe tener al menos 2 caracteres');
       return;
     }
+    
     const payload = {
       username: form.username,
       correo_electronico: form.correo_electronico,
-      persona_nombre: form.persona_nombre,
-      persona_apellido: form.persona_apellido,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      persona: {
+        nombre: form.first_name,
+        apellido: form.last_name,
+        telefono: form.telefono,
+        direccion: form.direccion,
+        ci: form.ci
+      }
     };
+    
     try {
       await updatePerfil(payload);
       toast.success('Perfil actualizado correctamente');
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'No se pudo actualizar el perfil');
+      toast.error(err?.response?.data?.error || err?.response?.data?.detail || 'No se pudo actualizar el perfil');
     }
   };
 
@@ -85,6 +109,18 @@ const PerfilPage = () => {
       </div>
     );
   }
+
+  // Obtener el nombre del rol para mostrar
+  const getRoleDisplayName = (roles) => {
+    if (!roles || !Array.isArray(roles)) return 'Usuario';
+    const roleMap = {
+      'administrador': 'Administrador',
+      'empleado': 'Empleado',
+      'tecnico': 'Técnico',
+      'cliente': 'Cliente'
+    };
+    return roles.map(r => roleMap[r] || r).join(', ');
+  };
 
   return (
     <div className="container mx-auto p-4 dark:bg-gray-900 min-h-screen">
@@ -105,6 +141,34 @@ const PerfilPage = () => {
 
       {/* SECCIONES */}
       <div className="space-y-6">
+        {/* INFORMACIÓN DE LA CUENTA */}
+        <div className="p-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+              <FontAwesomeIcon icon={faShieldAlt} className="mr-3 text-blue-600" />
+              Información de la Cuenta
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Rol</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{getRoleDisplayName(perfil?.roles)}</div>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Estado</div>
+              <div className="font-semibold text-green-600">
+                {perfil?.is_active ? 'Activo' : 'Inactivo'}
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Fecha de Registro</div>
+              <div className="font-semibold text-gray-900 dark:text-white">
+                {perfil?.date_joined ? new Date(perfil.date_joined).toLocaleDateString('es-BO') : '-'}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* DATOS PERSONALES */}
         <div className="p-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md space-y-4">
           <div className="flex items-center justify-between">
@@ -135,8 +199,8 @@ const PerfilPage = () => {
             
             <Field label="Nombre" icon={faIdCard}>
               <input 
-                value={form.persona_nombre} 
-                onChange={(e) => setForm({ ...form, persona_nombre: e.target.value })} 
+                value={form.first_name} 
+                onChange={(e) => setForm({ ...form, first_name: e.target.value })} 
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 placeholder="Tu nombre"
               />
@@ -144,10 +208,38 @@ const PerfilPage = () => {
             
             <Field label="Apellido" icon={faIdCard}>
               <input 
-                value={form.persona_apellido} 
-                onChange={(e) => setForm({ ...form, persona_apellido: e.target.value })} 
+                value={form.last_name} 
+                onChange={(e) => setForm({ ...form, last_name: e.target.value })} 
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                 placeholder="Tu apellido"
+              />
+            </Field>
+
+            <Field label="Teléfono" icon={faPhone}>
+              <input 
+                type="tel"
+                value={form.telefono} 
+                onChange={(e) => setForm({ ...form, telefono: e.target.value })} 
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Tu número de teléfono"
+              />
+            </Field>
+
+            <Field label="C.I. (Identificación)" icon={faIdCard}>
+              <input 
+                value={form.ci} 
+                onChange={(e) => setForm({ ...form, ci: e.target.value })} 
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Tu número de identificación"
+              />
+            </Field>
+
+            <Field label="Dirección" icon={faMapMarkerAlt}>
+              <input 
+                value={form.direccion} 
+                onChange={(e) => setForm({ ...form, direccion: e.target.value })} 
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 md:col-span-2"
+                placeholder="Tu dirección"
               />
             </Field>
             
@@ -191,5 +283,3 @@ const PerfilPage = () => {
 };
 
 export default PerfilPage;
-
-

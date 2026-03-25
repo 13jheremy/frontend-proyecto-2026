@@ -11,6 +11,12 @@ const CategoriaServicioActionModal = ({ isOpen, onClose, servicio, actionType, o
 
   if (!servicio || !actionType) return null;
 
+  // Handle different field names between API responses
+  const getNombre = () => servicio.nombre_servicio || servicio.nombre || 'Sin nombre';
+  const getPrecio = () => servicio.precio || 0;
+  const getDuracion = () => servicio.duracion_estimada_minutos || servicio.duracion_estimada || 0;
+  const getCategoriaId = () => servicio.categoria_id || servicio.categoria;
+
   const getCategoriaNombre = (categorias, categoriaId) => {
     if (!categorias || !categoriaId) return 'N/A';
     const categoria = categorias.find(cat => cat.id === categoriaId);
@@ -18,47 +24,48 @@ const CategoriaServicioActionModal = ({ isOpen, onClose, servicio, actionType, o
   };
 
   const getModalConfig = () => {
+    const nombre = getNombre();
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Servicio (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente el servicio "${servicio.nombre_servicio}"? Podrá restaurarlo después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Servicio',
+          message: `¿Está seguro de eliminar el servicio "${nombre}"?`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente "${servicio.nombre_servicio}"...`,
+          loadingText: `Eliminando"${nombre}"...`,
           icon: faRecycle
         };
       case 'hardDelete':
         return {
           title: 'Eliminar Servicio (Permanente)',
-          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE el servicio "${servicio.nombre_servicio}"? Esta acción no se puede deshacer.`,
+          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE el servicio "${nombre}"? Esta acción no se puede deshacer.`,
           confirmText: 'Eliminar Permanentemente',
           confirmClass: 'bg-red-600 hover:bg-red-700',
-          loadingText: `Eliminando permanentemente "${servicio.nombre_servicio}"...`,
+          loadingText: `Eliminando permanentemente "${nombre}"...`,
           icon: faTrash
         };
       case 'restore':
         return {
           title: 'Restaurar Servicio',
-          message: `¿Desea restaurar el servicio "${servicio.nombre_servicio}"?`,
+          message: `¿Desea restaurar el servicio "${nombre}"?`,
           confirmText: 'Restaurar',
           confirmClass: 'bg-green-600 hover:bg-green-700',
-          loadingText: `Restaurando servicio "${servicio.nombre_servicio}"...`,
+          loadingText: `Restaurando servicio "${nombre}"...`,
           icon: faTrashRestore
         };
       case 'toggleActivo':
         return {
           title: 'Cambiar Estado',
           message: servicio.activo
-            ? `¿Desea desactivar el servicio "${servicio.nombre_servicio}"?`
-            : `¿Desea activar el servicio "${servicio.nombre_servicio}"?`,
+            ? `¿Desea desactivar el servicio "${nombre}"?`
+            : `¿Desea activar el servicio "${nombre}"?`,
           confirmText: servicio.activo ? 'Desactivar' : 'Activar',
           confirmClass: servicio.activo
             ? 'bg-red-600 hover:bg-red-700'
             : 'bg-green-600 hover:bg-green-700',
           loadingText: servicio.activo
-            ? `Desactivando servicio "${servicio.nombre_servicio}"...`
-            : `Activando servicio "${servicio.nombre_servicio}"...`,
+            ? `Desactivando servicio "${nombre}"...`
+            : `Activando servicio "${nombre}"...`,
           icon: servicio.activo ? faToggleOff : faToggleOn
         };
       default:
@@ -99,16 +106,16 @@ const CategoriaServicioActionModal = ({ isOpen, onClose, servicio, actionType, o
             </div>
             <div className="flex-1">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {servicio.nombre_servicio}
+                {getNombre()}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 ID: {servicio.id}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                Categoría: {getCategoriaNombre(categoriasDisponibles, servicio.categoria_id)}
+                Categoría: {getCategoriaNombre(categoriasDisponibles, getCategoriaId())}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                Precio: {formatPrecioServicio(servicio.precio)} | Duración: {servicio.duracion_estimada_minutos} min
+                Precio: {formatPrecioServicio(getPrecio())} | Duración: {getDuracion()} min
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 Estado: {servicio.activo ? 'Activo' : 'Inactivo'}
@@ -161,12 +168,16 @@ CategoriaServicioActionModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   servicio: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    nombre_servicio: PropTypes.string.isRequired,
+    nombre_servicio: PropTypes.string,
+    nombre: PropTypes.string,
     descripcion_servicio: PropTypes.string,
+    descripcion: PropTypes.string,
     categoria_id: PropTypes.number,
+    categoria: PropTypes.number,
     precio: PropTypes.number,
     duracion_estimada_minutos: PropTypes.number,
-    activo: PropTypes.bool.isRequired,
+    duracion_estimada: PropTypes.number,
+    activo: PropTypes.bool,
   }),
   actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']).isRequired,
   onConfirm: PropTypes.func.isRequired,

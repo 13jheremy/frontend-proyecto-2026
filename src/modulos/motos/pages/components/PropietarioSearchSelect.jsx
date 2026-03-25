@@ -9,7 +9,8 @@ const PropietarioSearchSelect = ({
   onChange, 
   clientesDisponibles, 
   error, 
-  placeholder = "Buscar propietario por nombre o cédula..." 
+  placeholder = "Buscar propietario por nombre o cédula...",
+  propietarioNombre = null
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,16 +21,26 @@ const PropietarioSearchSelect = ({
   // Encontrar usuario seleccionado cuando cambie el value
   useEffect(() => {
     if (value) {
-      const user = clientesDisponibles.find(cliente => cliente.id.toString() === value.toString());
+      // El value ahora es el ID de la persona, buscar usuario que tenga esa persona
+      const user = clientesDisponibles.find(cliente => 
+        cliente.persona && cliente.persona.id.toString() === value.toString()
+      );
       setSelectedUser(user);
+      // Si no se encuentra el usuario pero tenemos el nombre del propietario, usarlo
+      if (!user && propietarioNombre) {
+        setSearchTerm(propietarioNombre);
+      }
     } else {
       setSelectedUser(null);
       setSearchTerm('');
     }
-  }, [value, clientesDisponibles]);
+  }, [value, clientesDisponibles, propietarioNombre]);
 
-  // Filtrar usuarios por término de búsqueda
+  // Filtrar usuarios por término de búsqueda - solo mostrar usuarios con persona
   const filteredUsers = clientesDisponibles.filter(cliente => {
+    // Solo mostrar usuarios que tienen persona asociada
+    if (!cliente.persona) return false;
+    
     if (!searchTerm) return true;
     
     const searchLower = searchTerm.toLowerCase();
@@ -71,11 +82,17 @@ const PropietarioSearchSelect = ({
     setSelectedUser(cliente);
     setSearchTerm('');
     setIsOpen(false);
-    // Enviar el ID del cliente (usuario), no el ID de la persona
+    // Enviar el ID de la persona asociada al usuario
+    // El backend espera propietario_id que es el ID de Persona
+    const personaId = cliente.persona?.id;
+    if (!personaId) {
+      console.error('El usuario seleccionado no tiene persona asociada');
+      return;
+    }
     onChange({
       target: {
         name: 'propietario',
-        value: cliente.id
+        value: personaId
       }
     });
   };
@@ -238,6 +255,7 @@ PropietarioSearchSelect.propTypes = {
   clientesDisponibles: PropTypes.array.isRequired,
   error: PropTypes.bool,
   placeholder: PropTypes.string,
+  propietarioNombre: PropTypes.string,
 };
 
 export default PropietarioSearchSelect;

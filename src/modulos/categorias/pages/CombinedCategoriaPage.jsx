@@ -189,13 +189,15 @@ const CombinedCategoriaPage = () => {
   }, []);
 
   // Handlers para modales de acción
-  const openCategoriaActionModal = (categoria, type) => {
+  const openCategoriaActionModal = async (categoria, type) => {
+    // Ya no verificamos relaciones antes - el backend mostrará el mensaje de error si hay productos relacionados
     setSelectedCategoriaAction(categoria);
     setCategoriaActionType(type);
     setCategoriaActionModalOpen(true);
   };
 
-  const openCategoriaServicioActionModal = (servicio, type) => {
+  const openCategoriaServicioActionModal = async (servicio, type) => {
+    // Ya no verificamos relaciones antes - el backend mostrará el mensaje de error si hay servicios relacionados
     setSelectedCategoriaServicioAction(servicio);
     setCategoriaServicioActionType(type);
     setCategoriaServicioActionModalOpen(true);
@@ -207,27 +209,41 @@ const CombinedCategoriaPage = () => {
       switch (actionType) {
         case 'softDelete':
           await softDeleteCategoria(categoriaId);
-          toast.success('Categoría eliminada temporalmente exitosamente!');
+          toast.success('¡Categoría eliminada temporalmente exitosamente!');
           break;
         case 'hardDelete':
           await hardDeleteCategoria(categoriaId);
-          toast.success('Categoría eliminada permanentemente exitosamente!');
+          toast.success('¡Categoría eliminada permanentemente exitosamente!');
           break;
         case 'restore':
           await restoreCategoria(categoriaId);
-          toast.success('Categoría restaurada exitosamente!');
+          toast.success('¡Categoría restaurada exitosamente!');
           break;
         case 'toggleActivo':
           await toggleActiveCategoria(categoriaId);
-          toast.success('Estado de la categoría actualizado exitosamente!');
+          toast.success('¡Estado de la categoría actualizado exitosamente!');
           break;
         default:
           break;
       }
       memoizedFetchCategorias();
     } catch (err) {
-      const errorMessage = err.message || 'Error desconocido en la acción';
-      toast.error(`Error: ${errorMessage}`);
+      // Extraer mensaje de error del backend
+      let errorMessage = 'Error al realizar la acción';
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data) {
+        // Si es un objeto con otros errores
+        const data = err.response.data;
+        if (typeof data === 'object') {
+          errorMessage = Object.values(data).flat().join(' ') || errorMessage;
+        } else {
+          errorMessage = String(data);
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      toast.error(errorMessage);
     }
   };
 
@@ -236,27 +252,41 @@ const CombinedCategoriaPage = () => {
       switch (actionType) {
         case 'softDelete':
           await softDeleteCategoriaServicio(servicioId);
-          toast.success('Servicio eliminado temporalmente exitosamente!');
+          toast.success('¡Servicio eliminado temporalmente exitosamente!');
           break;
         case 'hardDelete':
           await hardDeleteCategoriaServicio(servicioId);
-          toast.success('Servicio eliminado permanentemente exitosamente!');
+          toast.success('¡Servicio eliminado permanentemente exitosamente!');
           break;
         case 'restore':
           await restoreCategoriaServicio(servicioId);
-          toast.success('Servicio restaurado exitosamente!');
+          toast.success('¡Servicio restaurado exitosamente!');
           break;
         case 'toggleActivo':
           await toggleActiveCategoriaServicio(servicioId);
-          toast.success('Estado del servicio actualizado exitosamente!');
+          toast.success('¡Estado del servicio actualizado exitosamente!');
           break;
         default:
           break;
       }
       memoizedFetchCategoriaServicios();
     } catch (err) {
-      const errorMessage = err.message || 'Error desconocido en la acción';
-      toast.error(`Error: ${errorMessage}`);
+      // Extraer mensaje de error del backend
+      let errorMessage = 'Error al realizar la acción';
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data) {
+        // Si es un objeto con otros errores
+        const data = err.response.data;
+        if (typeof data === 'object') {
+          errorMessage = Object.values(data).flat().join(' ') || errorMessage;
+        } else {
+          errorMessage = String(data);
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      toast.error(errorMessage);
     }
   };
 
@@ -498,7 +528,6 @@ const CombinedCategoriaPage = () => {
               onInfo={handleInfoCategoria}
               onSoftDelete={(id) => openCategoriaActionModal(categorias.find(c => c.id === id), 'softDelete')}
               onRestore={(id) => openCategoriaActionModal(categorias.find(c => c.id === id), 'restore')}
-              onHardDelete={(id) => openCategoriaActionModal(categorias.find(c => c.id === id), 'hardDelete')}
               loading={loadingCategorias}
             />
           </div>
@@ -540,7 +569,6 @@ const CombinedCategoriaPage = () => {
               onInfo={handleInfoCategoriaServicio}
               onSoftDelete={(id) => openCategoriaServicioActionModal(categoriaServicios.find(s => s.id === id), 'softDelete')}
               onRestore={(id) => openCategoriaServicioActionModal(categoriaServicios.find(s => s.id === id), 'restore')}
-              onHardDelete={(id) => openCategoriaServicioActionModal(categoriaServicios.find(s => s.id === id), 'hardDelete')}
               loading={loadingServicios}
             />
           </div>

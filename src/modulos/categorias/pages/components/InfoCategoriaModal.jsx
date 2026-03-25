@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Modal from '../../../../components/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faInfoCircle, faListAlt, faCheckCircle, faTimesCircle, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { faInfoCircle, faListAlt, faCheckCircle, faTimesCircle, faCalendarAlt, faUser, faUserEdit, faUserSlash } from '@fortawesome/free-solid-svg-icons';
 
 const InfoCategoriaModal = ({ isOpen, onClose, categoria }) => {
   if (!isOpen || !categoria) return null;
@@ -66,6 +66,68 @@ const InfoCategoriaModal = ({ isOpen, onClose, categoria }) => {
               <p className="ml-6">{formatDate(categoria.fecha_actualizacion)}</p>
             </div>
           )}
+        </div>
+
+        {/* Trazabilidad - Información de auditoría */}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+            <FontAwesomeIcon icon={faUser} className="mr-2 text-blue-500" />
+            Trazabilidad
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Creado por */}
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border-l-4 border-green-500">
+              <p className="font-semibold flex items-center text-green-700 dark:text-green-400 text-sm">
+                <FontAwesomeIcon icon={faUser} className="mr-2" />
+                Creado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {categoria.creado_por_nombre || 'No disponible'}
+              </p>
+              {categoria.fecha_creacion && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(categoria.fecha_creacion)}
+                </p>
+              )}
+            </div>
+
+            {/* Actualizado por */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-l-4 border-blue-500">
+              <p className="font-semibold flex items-center text-blue-700 dark:text-blue-400 text-sm">
+                <FontAwesomeIcon icon={faUserEdit} className="mr-2" />
+                Actualizado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {categoria.actualizado_por_nombre || 'No disponible'}
+              </p>
+              {categoria.fecha_actualizacion && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(categoria.fecha_actualizacion)}
+                </p>
+              )}
+            </div>
+
+            {/* Eliminado por - solo mostrar si la categoría está eliminada */}
+            {categoria.eliminado && (
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border-l-4 border-red-500 md:col-span-2">
+                <p className="font-semibold flex items-center text-red-700 dark:text-red-400 text-sm">
+                  <FontAwesomeIcon icon={faUserSlash} className="mr-2" />
+                  Eliminado por:
+                </p>
+                <p className="ml-6 text-gray-900 dark:text-gray-100">
+                  {categoria.eliminado_por_nombre || 'No disponible'}
+                </p>
+                {categoria.fecha_eliminacion && (
+                  <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                    <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                    {formatDate(categoria.fecha_eliminacion)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end mt-4">

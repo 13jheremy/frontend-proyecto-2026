@@ -43,8 +43,19 @@ export const mantenimientoApi = {
    */
   createMantenimiento: async (mantenimientoData) => {
     try {
+      // DEBUG: Ver datos que se envían a la API
+      console.log('=== DEBUG API: Enviando datos al backend ===');
+      console.log('mantenimientoData:', JSON.stringify(mantenimientoData, null, 2));
+      console.log('===============================================');
       const response = await maintenanceAPI.create(mantenimientoData);
-      return response;
+      
+      // DEBUG: Ver respuesta completa
+      console.log('=== DEBUG API: Respuesta del backend ===');
+      console.log('response:', response);
+      console.log('response.data:', response.data);
+      console.log('=========================================');
+      
+      return response.data;
     } catch (error) {
       console.error('Error en createMantenimiento:', error);
       throw new Error(error.message || 'Error al crear mantenimiento');
@@ -104,7 +115,7 @@ export const mantenimientoApi = {
    */
   softDelete: async (id) => {
     try {
-      const response = await maintenanceAPI.patch(id, { eliminado: true });
+      const response = await maintenanceAPI.softDelete(id);
       return response;
     } catch (error) {
       console.error('Error en softDelete:', error);
@@ -119,26 +130,11 @@ export const mantenimientoApi = {
    */
   restore: async (id) => {
     try {
-      const response = await maintenanceAPI.patch(id, { eliminado: false });
+      const response = await maintenanceAPI.restore(id);
       return response;
     } catch (error) {
       console.error('Error en restore:', error);
       throw new Error(error.message || 'Error al restaurar el mantenimiento');
-    }
-  },
-
-  /**
-   * Elimina un mantenimiento permanentemente.
-   * @param {string} id - ID del mantenimiento.
-   * @returns {Promise<number>} - Promesa que resuelve con el status code.
-   */
-  hardDelete: async (id) => {
-    try {
-      const response = await maintenanceAPI.delete(id);
-      return response;
-    } catch (error) {
-      console.error('Error en hardDelete:', error);
-      throw new Error(error.message || 'Error al eliminar permanentemente el mantenimiento');
     }
   },
 
@@ -148,7 +144,7 @@ export const mantenimientoApi = {
    */
   getStats: async () => {
     try {
-      const response = await maintenanceAPI.get('/estadisticas/');
+      const response = await maintenanceAPI.getStats();
       return response;
     } catch (error) {
       console.error('Error en getStats:', error);
@@ -209,5 +205,51 @@ export const mantenimientoApi = {
       console.error('Error en getAssignedMaintenances:', error);
       throw new Error(error.message || 'Error al obtener mantenimientos asignados');
     }
-  }
+  },
+
+  /**
+   * Obtiene mantenimientos eliminados (soft delete).
+   * @param {object} params - Parámetros de consulta.
+   * @returns {Promise<object>} - Promesa que resuelve con la lista de eliminados.
+   */
+  getDeleted: async (params = {}) => {
+    try {
+      const response = await maintenanceAPI.getDeleted(params);
+      return response;
+    } catch (error) {
+      console.error('Error en getDeleted:', error);
+      throw new Error(error.message || 'Error al obtener mantenimientos eliminados');
+    }
+  },
+
+  /**
+   * Elimina múltiples mantenimientos temporalmente (soft delete).
+   * @param {Array} ids - Lista de IDs de mantenimientos.
+   * @returns {Promise<object>} - Promesa que resuelve con el resultado.
+   */
+  softDeleteMultiple: async (ids) => {
+    try {
+      const response = await maintenanceAPI.softDeleteMultiple(ids);
+      return response;
+    } catch (error) {
+      console.error('Error en softDeleteMultiple:', error);
+      throw new Error(error.message || 'Error al eliminar múltiples mantenimientos');
+    }
+  },
+
+  /**
+   * Restaura múltiples mantenimientos eliminados.
+   * @param {Array} ids - Lista de IDs de mantenimientos.
+   * @returns {Promise<object>} - Promesa que resuelve con el resultado.
+   */
+  restoreMultiple: async (ids) => {
+    try {
+      const response = await maintenanceAPI.restoreMultiple(ids);
+      return response;
+    } catch (error) {
+      console.error('Error en restoreMultiple:', error);
+      throw new Error(error.message || 'Error al restaurar múltiples mantenimientos');
+    }
+  },
+
 };

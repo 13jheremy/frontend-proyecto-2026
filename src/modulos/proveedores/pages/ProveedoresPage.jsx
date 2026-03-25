@@ -9,6 +9,7 @@ import ProveedorActionModal from './components/ProveedorActionModal';
 import InfoProveedorModal from './components/InfoProveedorModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faBuilding, faCheckCircle, faBan, faBoxes, faArchive } from '@fortawesome/free-solid-svg-icons';
+import { faCog } from '@fortawesome/free-solid-svg-icons';
 import { PERMISSIONS } from '../../../utils/constants';
 import { hasPermission } from '../../../utils/rolePermissions';
 import { useAuth } from '../../../context/AuthContext';
@@ -86,7 +87,7 @@ const ProveedoresPage = () => {
   const [selectedInfoProveedor, setSelectedInfoProveedor] = useState(null);
 
   // Estados para búsqueda y paginación
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState({ activo: 'true' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -132,12 +133,6 @@ const ProveedoresPage = () => {
     openActionModal(proveedor, 'softDelete');
   }, [proveedores]);
 
-  const handleHardDeleteProveedor = useCallback((proveedorId) => {
-    const proveedor = proveedores.find(p => p.id === proveedorId);
-    if (!proveedor) return;
-    openActionModal(proveedor, 'hardDelete');
-  }, [proveedores]);
-
   const handleRestoreProveedor = useCallback((proveedorId) => {
     const proveedor = proveedores.find(p => p.id === proveedorId);
     if (!proveedor) return;
@@ -179,7 +174,18 @@ const ProveedoresPage = () => {
 
   // Handler para búsqueda
   const handleSearch = (newFilters) => {
-    setFilters(newFilters);
+    let filtrosFinales = { ...newFilters };
+
+    // Si está buscando algo → mostrar todos (activos + inactivos)
+    if (newFilters.search && newFilters.search.trim() !== '') {
+      delete filtrosFinales.activo;
+    } else if (newFilters.activo === undefined) {
+      // Si no hay búsqueda y no hay selección de estado → solo activos por defecto
+      filtrosFinales.activo = 'true';
+    }
+    // Si el usuario explícitamente seleccionó activo='' (Todos) o activo='true'/'false', respetar esa selección
+
+    setFilters(filtrosFinales);
     setPage(1);
   };
 
@@ -252,6 +258,17 @@ const ProveedoresPage = () => {
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Activos
+            </div>
+          </div>
+
+          <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+              {estadisticasLocales.inactivos}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Inactivos
             </div>
           </div>
 
@@ -345,7 +362,6 @@ const ProveedoresPage = () => {
           permissions={tablePermissions}
           onEdit={handleEditProveedor}
           onSoftDelete={handleSoftDeleteProveedor}
-          onHardDelete={handleHardDeleteProveedor}
           onRestore={handleRestoreProveedor}
           onToggleActivo={handleToggleActivoProveedor}
           onInfo={handleInfoProveedor}

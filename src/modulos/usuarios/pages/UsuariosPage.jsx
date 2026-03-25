@@ -60,9 +60,7 @@ const UsuariosPage = () => {
       console.log('✅ PERMISOS FINALES:', {
         userRole: currentUser.roles?.[0],
         expectedRestore: PERMISSIONS.USERS.RESTORE,
-        expectedHardDelete: PERMISSIONS.USERS.HARD_DELETE,
         canRestore: canPerformAction('RESTORE'),
-        canHardDelete: canPerformAction('HARD_DELETE'),
         match: PERMISSIONS.USERS.RESTORE.includes(currentUser.roles?.[0])
       });
     }
@@ -158,9 +156,6 @@ const UsuariosPage = () => {
       case 'softDelete':
         canPerform = canDeleteUser(user);
         break;
-      case 'hardDelete':
-        canPerform = canPerformAction('HARD_DELETE');
-        break;
       case 'restore':
         canPerform = canPerformAction('RESTORE');
         break;
@@ -209,6 +204,10 @@ const UsuariosPage = () => {
       await resetPassword(userId, newPassword);
       setResetModalOpen(false);
       setSelectedUser(null);
+      // Limpiar filtros de búsqueda y recargar usuarios
+      setFilters({});
+      setPage(1);
+      fetchUsuarios({}, 1, pageSize);
     } catch (err) {
       // Error manejado por el hook
     }
@@ -219,12 +218,6 @@ const UsuariosPage = () => {
     const user = usuarios.find(u => u.id === userId);
     if (!user || !canDeleteUser(user)) return;
     openActionModal(user, 'softDelete');
-  }, [usuarios, currentUser]);
-
-  const handleHardDeleteUsuario = useCallback((userId) => {
-    const user = usuarios.find(u => u.id === userId);
-    if (!user || !canPerformAction('HARD_DELETE')) return;
-    openActionModal(user, 'hardDelete');
   }, [usuarios, currentUser]);
 
   const handleRestoreUsuario = useCallback((userId) => {
@@ -273,6 +266,21 @@ const UsuariosPage = () => {
       return;
     }
     
+     // Si es una persona sin usuario, abrimos el modal de creación completa
+     if (usuario.es_persona_sin_usuario) {
+       // Pasar la información de la persona para precargar el formulario
+       setCurrentUsuario({
+         ...usuario,
+         // Indicar que es una creación para persona existente
+         es_creacion_persona_existente: true,
+         // ID de la persona para asociar
+         persona_id_asociar: usuario.persona_asociada ? usuario.persona_asociada.id : null
+       });
+       setIsCompleteCreateModalOpen(true);
+       return;
+     }
+    
+    // Para usuarios existentes, abrir el modal de edición
     setCurrentUsuario(usuario);
     setIsEditModalOpen(true);
   };
@@ -326,7 +334,6 @@ const UsuariosPage = () => {
     canEdit: canPerformAction('EDIT'),
     canDelete: canPerformAction('DELETE'),
     canRestore: canPerformAction('RESTORE'),
-    canHardDelete: canPerformAction('HARD_DELETE'),
     canView: canPerformAction('VIEW')
   };
 
@@ -399,7 +406,6 @@ const UsuariosPage = () => {
           onEdit={handleEditUsuario}
           onInfo={handleInfoUsuario}
           onSoftDelete={handleSoftDeleteUsuario}
-          onHardDelete={handleHardDeleteUsuario}
           onRestore={handleRestoreUsuario}
           onResetPassword={handleOpenResetModal}
           onToggleStatus={handleToggleUserStatus}
@@ -458,6 +464,7 @@ const UsuariosPage = () => {
             loading={loading}
             apiError={apiError}
             rolesDisponibles={rolesDisponibles}
+            currentUsuario={currentUsuario}
           />
         </>
       )}
@@ -479,6 +486,10 @@ const UsuariosPage = () => {
         onClose={() => {
           setResetModalOpen(false);
           setSelectedUser(null);
+          // Limpiar filtros de búsqueda y recargar usuarios
+          setFilters({});
+          setPage(1);
+          fetchUsuarios({}, 1, pageSize);
         }}
         user={selectedUser}
         onResetPassword={handleResetPassword}

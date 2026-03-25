@@ -25,9 +25,10 @@ export const PERMISSIONS = {
     EDIT: [ROLES.ADMINISTRADOR],
     DELETE: [ROLES.ADMINISTRADOR],
     RESTORE: [ROLES.ADMINISTRADOR],
-    HARD_DELETE: [ROLES.ADMINISTRADOR],
     ACTIVATE: [ROLES.ADMINISTRADOR],
-    DEACTIVATE: [ROLES.ADMINISTRADOR]
+    DEACTIVATE: [ROLES.ADMINISTRADOR],
+    ACTIVATE_DEACTIVATE: [ROLES.ADMINISTRADOR],
+    RESET_PASSWORD: [ROLES.ADMINISTRADOR]
   },
 
   // Productos
@@ -152,7 +153,6 @@ export const ROLE_ROUTES = {
     { path: '/inventario', name: 'Inventario' },
     { path: '/movimientos', name: 'Movimientos' },
     { path: '/reportes', name: 'Reportes' },
-    { path: '/business-intelligence', name: 'Business Intelligence' },
   ],
   [ROLES.EMPLEADO]: [
     { path: '/', name: 'Dashboard' },
@@ -166,7 +166,6 @@ export const ROLE_ROUTES = {
     { path: '/recordatorios', name: 'Recordatorios' },
     { path: '/inventario', name: 'Inventario' },
     { path: '/movimientos', name: 'Movimientos' },
-    { path: '/business-intelligence', name: 'Business Intelligence' },
   ],
   [ROLES.TECNICO]: [
     { path: '/', name: 'Dashboard' },
@@ -174,8 +173,7 @@ export const ROLE_ROUTES = {
     { path: '/servicios', name: 'Servicios' },
     { path: '/inventario', name: 'Inventario' },
     { path: '/movimientos', name: 'Movimientos' },
-    { path: '/pos', name: 'POS' },
-    { path: '/pos/nuevo-mantenimiento-pos', name: 'Nuevo Mantenimiento POS' }
+    { path: '/pos', name: 'POS' }
   ],
   [ROLES.CLIENTE]: [
     { path: '/dashboard', name: 'Mi Panel' },
@@ -188,7 +186,7 @@ export const ROLE_ROUTES = {
 
 // Configuración de la API
 export const API_CONFIG = {
-  BASE_URL: 'https://proyecto-2026-ts4b.onrender.com/api/',
+  BASE_URL: 'http://127.0.0.1:8000/api/',
   ENDPOINTS: {
     LOGIN: '/auth/login/',
     REFRESH: '/auth/refresh/',
@@ -219,7 +217,7 @@ export const API_CONFIG = {
     PAYMENTS: '/pagos/',
     INVENTORY: '/inventario/',
     INVENTORYMOVEMENT: '/inventario-movimientos/',
-    MAINTENANCEREMINDER: '/recordatorios/',
+    MAINTENANCEREMINDER: '/recordatorios-mantenimiento/',
     
     //endpoints usuarios
     CREATECOMPLETE: '/usuarios/crear_completo/',
@@ -265,7 +263,7 @@ export const API_CONFIG = {
     POS_DASHBOARD_STATS: '/pos/dashboard/stats/',
 
     // Recordatorios endpoints
-    RECORDATORIOS: '/recordatorios/',
+    RECORDATORIOS: '/recordatorios-mantenimiento/',
   }
 };
 

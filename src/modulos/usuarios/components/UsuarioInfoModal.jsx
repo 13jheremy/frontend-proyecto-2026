@@ -14,7 +14,11 @@ import {
   faTimesCircle, 
   faCalendarAlt,
   faUserTag,
-  faUserShield
+  faUserShield,
+  faUserPlus,
+  faUserEdit,
+  faUserMinus,
+  faHistory
 } from '@fortawesome/free-solid-svg-icons';
 
 const UsuarioInfoModal = ({ isOpen, onClose, usuario = null, allRoles }) => {
@@ -47,6 +51,24 @@ const UsuarioInfoModal = ({ isOpen, onClose, usuario = null, allRoles }) => {
       .join(', ');
 
     return roleNames || 'Roles no encontrados';
+  };
+
+  // Función para formatear nombres de usuario con nombre completo y correo
+  const formatUserName = (userObj) => {
+    if (!userObj) return 'N/A';
+    if (typeof userObj === 'string') return userObj;
+    
+    // Si tiene objeto de persona asociado, mostrar nombre completo
+    if (userObj.persona) {
+      const nombreCompleto = userObj.persona.nombre_completo || 
+                            (userObj.persona.nombre ? `${userObj.persona.nombre} ${userObj.persona.apellido || ''}` : '');
+      if (nombreCompleto) {
+        return `${nombreCompleto} (${userObj.correo || userObj.username})`;
+      }
+    }
+    
+    // Por defecto mostrar username y correo
+    return `${userObj.username} (${userObj.correo || userObj.correo_electronico || 'Sin correo'})`;
   };
 
   return (
@@ -174,6 +196,68 @@ const UsuarioInfoModal = ({ isOpen, onClose, usuario = null, allRoles }) => {
           )}
         </div>
 
+        {/* Trazabilidad - Información de auditoría */}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+            <FontAwesomeIcon icon={faUser} className="mr-2 text-blue-500" />
+            Trazabilidad
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Creado por */}
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border-l-4 border-green-500">
+              <p className="font-semibold flex items-center text-green-700 dark:text-green-400 text-sm">
+                <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+                Creado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {usuario.creado_por?.nombre || usuario.creado_por?.username || 'No disponible'}
+              </p>
+              {usuario.fecha_registro && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(usuario.fecha_registro)}
+                </p>
+              )}
+            </div>
+
+            {/* Actualizado por */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-l-4 border-blue-500">
+              <p className="font-semibold flex items-center text-blue-700 dark:text-blue-400 text-sm">
+                <FontAwesomeIcon icon={faUserEdit} className="mr-2" />
+                Actualizado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {usuario.actualizado_por?.nombre || usuario.actualizado_por?.username || 'No disponible'}
+              </p>
+              {usuario.fecha_actualizacion && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(usuario.fecha_actualizacion)}
+                </p>
+              )}
+            </div>
+
+            {/* Eliminado por - solo mostrar si el usuario está eliminado */}
+            {usuario.eliminado && (
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border-l-4 border-red-500 md:col-span-2">
+                <p className="font-semibold flex items-center text-red-700 dark:text-red-400 text-sm">
+                  <FontAwesomeIcon icon={faUserMinus} className="mr-2" />
+                  Eliminado por:
+                </p>
+                <p className="ml-6 text-gray-900 dark:text-gray-100">
+                  {usuario.eliminado_por?.nombre || usuario.eliminado_por?.username || 'No disponible'}
+                </p>
+                {usuario.fecha_eliminacion && (
+                  <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                    <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                    {formatDate(usuario.fecha_eliminacion)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex justify-end mt-4">
           <button
             onClick={onClose}
@@ -206,6 +290,25 @@ UsuarioInfoModal.propTypes = {
     }),
     date_joined: PropTypes.string,
     last_login: PropTypes.string,
+    // Campos de auditoría
+    creado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      correo: PropTypes.string,
+    }),
+    actualizado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      correo: PropTypes.string,
+    }),
+    eliminado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      correo: PropTypes.string,
+    }),
+    fecha_registro: PropTypes.string,
+    fecha_actualizacion: PropTypes.string,
+    fecha_eliminacion: PropTypes.string,
   }),
   allRoles: PropTypes.arrayOf(
     PropTypes.shape({

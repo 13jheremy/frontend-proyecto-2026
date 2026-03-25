@@ -23,16 +23,16 @@ const RecordatorioActionModal = ({ isOpen, onClose, recordatorio, actionType, on
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Recordatorio (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente el recordatorio para "${recordatorio.categoria_servicio?.nombre || 'Sin nombre'}"? Podrá restaurarlo después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Recordatorio',
+          message: `¿Está seguro de eliminar el recordatorio para "${recordatorio.categoria_servicio?.nombre || ''}"?`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente el recordatorio...`,
+          loadingText: `Eliminando el recordatorio...`,
           icon: faRecycle
         };
       case 'hardDelete':
         return {
-          title: 'Eliminar Recordatorio (Permanente)',
+          title: 'Eliminar Recordatorio',
           message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE el recordatorio para "${recordatorio.categoria_servicio?.nombre || 'Sin nombre'}"? Esta acción no se puede deshacer.`,
           confirmText: 'Eliminar Permanentemente',
           confirmClass: 'bg-red-600 hover:bg-red-700',

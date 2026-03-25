@@ -87,12 +87,21 @@ export const getEstadoMantenimientoClass = (estado) => {
 
 /**
  * Obtiene el nombre de la moto
- * @param {object} moto - Objeto moto
+ * @param {object} moto - Objeto moto o null
  * @returns {string} Nombre formateado de la moto
  */
 export const getMotoNombre = (moto) => {
   if (!moto) return 'N/A';
-  return `${moto.marca || ''} ${moto.modelo || ''} (${moto.placa || ''})`.trim() || 'Moto sin información';
+  // Support both new format (moto object with marca, modelo, placa) 
+  // and legacy format (null when API doesn't return full object)
+  if (typeof moto === 'string') return moto;
+  const marca = moto.marca || '';
+  const modelo = moto.modelo || '';
+  const placa = moto.placa || '';
+  if (placa) {
+    return `${marca} ${modelo} (${placa})`.trim();
+  }
+  return `${marca} ${modelo}`.trim() || 'Moto sin información';
 };
 
 /**
@@ -102,7 +111,9 @@ export const getMotoNombre = (moto) => {
  */
 export const getPropietarioNombre = (propietario) => {
   if (!propietario) return 'N/A';
-  return propietario.nombre_completo || `${propietario.nombre || ''} ${propietario.apellido || ''}`.trim() || 'Propietario desconocido';
+  // Support new format (nombre_completo) and legacy format (nombre + apellido)
+  if (propietario.nombre_completo) return propietario.nombre_completo;
+  return `${propietario.nombre || ''} ${propietario.apellido || ''}`.trim() || 'Propietario desconocido';
 };
 
 /**

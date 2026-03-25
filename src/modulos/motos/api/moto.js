@@ -24,20 +24,15 @@ export const motoApi = {
   },
 
   // TOGGLE ESTADO ACTIVO/INACTIVO
-  toggleActivoMoto: async (id) => {
-    const response = await motorcyclesAPI.toggleActive(id);
+  toggleActivoMoto: async (id, activo) => {
+    const response = await motorcyclesAPI.toggleActive(id, activo);
     return response.data;
   },
 
-  // ELIMINACIÓN TEMPORAL Y PERMANENTE
+  // ELIMINACIÓN TEMPORAL
   softDeleteMoto: async (id) => {
     const response = await motorcyclesAPI.softDelete(id);
     return response.data;
-  },
-
-  hardDeleteMoto: async (id) => {
-    const response = await motorcyclesAPI.hardDelete(id);
-    return response.data || { success: true }; // Para status 204, devolver objeto de éxito
   },
 
   // RESTAURAR MOTO

@@ -4,12 +4,11 @@ import PropTypes from 'prop-types';
 import Modal from '../../../../components/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faTrash, 
   faRecycle, 
-  faTrashRestore, 
+  faTrashRestore,
+  faTrash,
   faToggleOff, 
   faToggleOn,
-  faExclamationTriangle,
   faFileInvoiceDollar,
   faDollarSign,
   faUser,
@@ -46,25 +45,14 @@ const VentaActionModal = ({
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Venta (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente la venta #${venta.id} por ${formatearPrecio(venta.total)}? Podrá restaurarla después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Venta',
+          message: `¿Está seguro de eliminar la venta #${venta.id} por ${formatearPrecio(venta.total)}?`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: 'Eliminando temporalmente la venta...',
+          loadingText: 'Eliminando la venta...',
           icon: faRecycle,
           iconColor: 'text-orange-500',
           bgColor: 'bg-orange-50 dark:bg-orange-900/20'
-        };
-      case 'hardDelete':
-        return {
-          title: 'Eliminar Venta (Permanente)',
-          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE la venta #${venta.id} por ${formatearPrecio(venta.total)}? Esta acción no se puede deshacer y eliminará todos los datos asociados.`,
-          confirmText: 'Eliminar Permanentemente',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
-          loadingText: 'Eliminando permanentemente la venta...',
-          icon: faTrash,
-          iconColor: 'text-red-500',
-          bgColor: 'bg-red-50 dark:bg-red-900/20'
         };
       case 'restore':
         return {
@@ -158,9 +146,9 @@ const VentaActionModal = ({
           {venta.estado && (
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                venta.estado === 'completada' 
+                venta.estado === 'PAGADA' 
                   ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : venta.estado === 'pendiente'
+                  : venta.estado === 'PENDIENTE'
                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
               }`}>
@@ -183,22 +171,6 @@ const VentaActionModal = ({
         <div className="text-gray-700 dark:text-gray-300">
           <p>{config.message}</p>
         </div>
-
-        {/* Advertencia para eliminación permanente */}
-        {actionType === 'hardDelete' && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="h-5 w-5 text-yellow-400" aria-hidden="true" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                  Esta acción no se puede deshacer. Se eliminarán todos los datos asociados a esta venta de forma permanente.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Acciones */}
@@ -247,7 +219,7 @@ VentaActionModal.propTypes = {
     estado: PropTypes.string,
     eliminado: PropTypes.bool
   }),
-  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']).isRequired,
+  actionType: PropTypes.oneOf(['softDelete', 'restore', 'toggleActivo']).isRequired,
   onConfirm: PropTypes.func.isRequired
 };
 

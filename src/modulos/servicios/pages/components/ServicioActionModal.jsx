@@ -14,21 +14,12 @@ const ServicioActionModal = ({ isOpen, onClose, servicio, actionType, onConfirm 
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Servicio (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente el servicio "${servicio.nombre}"? Podrá restaurarlo después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Servicio',
+          message: `¿Está seguro de eliminar el servicio "${servicio.nombre}"`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente "${servicio.nombre}"...`,
+          loadingText: `Eliminando "${servicio.nombre}"...`,
           icon: faRecycle
-        };
-      case 'hardDelete':
-        return {
-          title: 'Eliminar Servicio (Permanente)',
-          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE el servicio "${servicio.nombre}"? Esta acción no se puede deshacer.`,
-          confirmText: 'Eliminar Permanentemente',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
-          loadingText: `Eliminando permanentemente "${servicio.nombre}"...`,
-          icon: faTrash
         };
       case 'restore':
         return {
@@ -181,7 +172,7 @@ ServicioActionModal.propTypes = {
     duracion_estimada: PropTypes.number,
     precio: PropTypes.number,
   }),
-  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']).isRequired,
+  actionType: PropTypes.oneOf(['softDelete', 'restore', 'toggleActivo']).isRequired,
   onConfirm: PropTypes.func.isRequired,
 };
 

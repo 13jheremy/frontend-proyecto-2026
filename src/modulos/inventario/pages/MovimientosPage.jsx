@@ -6,7 +6,6 @@ import { showNotification } from '../../../utils/notifications';
 import MovimientoTable from './components/MovimientoTable';
 import MovimientoCreateModal from './components/MovimientoCreateModal';
 import MovimientoEditModal from './components/MovimientoEditModal';
-import MovimientoDeleteModal from './components/MovimientoDeleteModal';
 import InfoMovimientoModal from './components/InfoMovimientoModal';
 import MovimientoSearch from './components/MovimientoSearch';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -57,8 +56,6 @@ const MovimientosPage = () => {
     fetchMovimientos,
     createMovimiento,
     updateMovimiento,
-    deleteMovimiento,
-    restoreMovimiento,
     clearError,
     pagination,
     fetchReporteMovimientos
@@ -68,8 +65,6 @@ const MovimientosPage = () => {
   const [modals, setModals] = useState({
     create: false,
     edit: false,
-    delete: false,
-    restore: false,
     info: false
   });
   const [selectedMovimiento, setSelectedMovimiento] = useState(null);
@@ -120,14 +115,12 @@ const MovimientosPage = () => {
 
   // Abrir modal de eliminación temporal
   const openSoftDeleteModal = (movimiento) => {
-    setSelectedMovimiento(movimiento);
-    setModals({ ...modals, delete: true });
+    // Funcionalidad de eliminación deshabilitada
   };
 
   // Abrir modal de restauración
   const openRestoreModal = (movimiento) => {
-    setSelectedMovimiento(movimiento);
-    setModals({ ...modals, restore: true });
+    // Funcionalidad de restauración deshabilitada
   };
 
   // Cerrar todos los modales
@@ -161,24 +154,14 @@ const MovimientosPage = () => {
 
   // Manejar eliminación temporal de movimiento
   const handleSoftDelete = async () => {
-    try {
-      await deleteMovimiento(selectedMovimiento.id);
-      closeModal('delete');
-      fetchMovimientos(filters, page, pageSize);
-    } catch (error) {
-      console.error('Error eliminando movimiento:', error);
-    }
+    // Funcionalidad de eliminación deshabilitada
+    closeModal('delete');
   };
 
   // Manejar restauración de movimiento
   const handleRestore = async () => {
-    try {
-      await restoreMovimiento(selectedMovimiento.id);
-      closeModal('restore');
-      fetchMovimientos(filters, page, pageSize);
-    } catch (error) {
-      console.error('Error restaurando movimiento:', error);
-    }
+    // Funcionalidad de restauración deshabilitada
+    closeModal('restore');
   };
 
   // Función para obtener estadísticas locales
@@ -263,10 +246,10 @@ const MovimientosPage = () => {
           <button
             onClick={openCreateModal}
             disabled={loading}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Crear Movimiento"
           >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Crear Movimiento
+            <FontAwesomeIcon icon={faPlus} />
           </button>
         )}
 
@@ -316,8 +299,6 @@ const MovimientosPage = () => {
           movimientos={movimientos}
           permissions={tablePermissions}
           onEdit={openEditModal}
-          onSoftDelete={openSoftDeleteModal}
-          onRestore={openRestoreModal}
           onInfo={openInfoModal}
           loading={loading}
         />
@@ -364,23 +345,6 @@ const MovimientosPage = () => {
         currentMovimiento={selectedMovimiento}
         loading={loading}
         apiError={apiError}
-      />
-      
-      <MovimientoDeleteModal
-        isOpen={modals.delete}
-        onClose={() => closeModal('delete')}
-        movimiento={selectedMovimiento}
-        onConfirm={handleSoftDelete}
-        loading={loading}
-      />
-      
-      <MovimientoDeleteModal
-        isOpen={modals.restore}
-        onClose={() => closeModal('restore')}
-        movimiento={selectedMovimiento}
-        onConfirm={handleRestore}
-        loading={loading}
-        isRestore={true}
       />
       
       <InfoMovimientoModal

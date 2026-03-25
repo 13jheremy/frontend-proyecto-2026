@@ -20,7 +20,7 @@ const VentaFormModal = ({
     subtotal: 0,
     impuesto: 0,
     total: 0,
-    estado: 'pendiente',
+    estado: 'PENDIENTE',
     metodo_pago: 'efectivo',
     observaciones: '',
     detalles: []

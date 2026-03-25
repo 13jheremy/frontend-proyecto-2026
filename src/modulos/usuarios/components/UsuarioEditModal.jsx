@@ -51,20 +51,28 @@ const UsuarioEditModal = ({ isOpen, onClose, onUpdate, currentUsuario = null, lo
           }).filter(Boolean)
         : [];
 
+      // Determinar si es una persona sin usuario (para prellenar datos de persona_asociada)
+      const esPersonaSinUsuario = currentUsuario.es_persona_sin_usuario;
+      
+      // Obtener los datos de la persona (puede estar en persona o persona_asociada)
+      const datosPersona = esPersonaSinUsuario 
+        ? currentUsuario.persona_asociada 
+        : currentUsuario.persona;
+
       // Establece los datos del formulario con la información del 'currentUsuario'.
       setFormData({
         username: currentUsuario.username || '',
-        correo_electronico: currentUsuario.correo_electronico || '',
-        is_active: currentUsuario.is_active,
-        is_staff: currentUsuario.is_staff,
+        correo_electronico: currentUsuario.correo_electronico || currentUsuario.email || '',
+        is_active: currentUsuario.is_active ?? true,
+        is_staff: currentUsuario.is_staff || false,
         roles: userRolesAsObjects, // Asigna los roles como objetos.
-        persona: currentUsuario.persona // Si el usuario tiene datos de persona, los carga.
+        persona: datosPersona // Si el usuario tiene datos de persona, los carga.
           ? {
-              nombre: currentUsuario.persona.nombre || '',
-              apellido: currentUsuario.persona.apellido || '',
-              cedula: currentUsuario.persona.cedula || '',
-              telefono: currentUsuario.persona.telefono || '',
-              direccion: currentUsuario.persona.direccion || '',
+              nombre: datosPersona.nombre || '',
+              apellido: datosPersona.apellido || '',
+              cedula: datosPersona.cedula || '',
+              telefono: datosPersona.telefono || '',
+              direccion: datosPersona.direccion || '',
             }
           : { // Si no tiene datos de persona, inicializa los campos vacíos.
               nombre: '',

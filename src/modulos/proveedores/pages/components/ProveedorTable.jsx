@@ -16,7 +16,6 @@ const ProveedorTable = ({
   permissions, // Recibir permisos como prop
   onEdit,
   onSoftDelete,
-  onHardDelete,
   onRestore,
   onToggleActivo,
   onInfo,
@@ -227,20 +226,9 @@ const ProveedorTable = ({
                     <button
                       onClick={() => onSoftDelete(proveedor.id)}
                       className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                      title="Eliminar (reversible)"
+                      title="Eliminar"
                     >
                       <FontAwesomeIcon icon={faRecycle} />
-                    </button>
-                  )}
-
-                  {/* Botón ELIMINAR PERMANENTE (solo para eliminados) */}
-                  {canDelete && proveedor.eliminado && (
-                    <button
-                      onClick={() => onHardDelete(proveedor.id)}
-                      className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                      title="Eliminar permanentemente"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
                     </button>
                   )}
 
@@ -271,7 +259,6 @@ ProveedorTable.propTypes = {
   ).isRequired,
   onEdit: PropTypes.func.isRequired,
   onSoftDelete: PropTypes.func.isRequired,
-  onHardDelete: PropTypes.func.isRequired,
   onRestore: PropTypes.func.isRequired,
   onToggleActivo: PropTypes.func.isRequired,
   onInfo: PropTypes.func,

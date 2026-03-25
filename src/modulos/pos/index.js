@@ -12,7 +12,6 @@ export { default as TechnicianSelector } from './components/TechnicianSelector';
 // Pages
 export { default as NuevaVentaPage } from './pages/NuevaVentaPage';
 export { default as NuevoMantenimientoPage } from './pages/NuevoMantenimientoPage';
-export { default as NuevoMantenimientoPOSPage } from './pages/NuevoMantenimientoPOSPage';
 
 // Hooks
 export { usePOS } from './hooks/usePOS';

@@ -208,29 +208,6 @@ export const useDetallesMantenimiento = () => {
   }, []);
 
   /**
-   * Eliminar detalle de mantenimiento permanentemente.
-   */
-  const hardDeleteDetalle = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await detalleMantenimientoApi.hardDelete(id);
-      setDetalles((prev) => prev.filter((d) => d.id !== id));
-      setPagination(prev => ({
-        ...prev,
-        count: prev.count - 1
-      }));
-    } catch (err) {
-      const errorInfo = handleDetalleMantenimientoError(err);
-      setError(errorInfo.message);
-      console.error(`Error al eliminar permanentemente detalle con ID ${id}:`, errorInfo, err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
    * Limpiar error.
    */
   const clearError = useCallback(() => {
@@ -250,7 +227,6 @@ export const useDetallesMantenimiento = () => {
     deleteDetalleMantenimiento,
     softDeleteDetalle,
     restoreDetalle,
-    hardDeleteDetalle,
     clearError,
   };
 };

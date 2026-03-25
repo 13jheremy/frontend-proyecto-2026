@@ -8,6 +8,8 @@ import { RoleGuard } from '../guards/RoleGuard';
 import { PermissionGuard } from '../guards/PermissionGuard';
 
 //Páginas principales
+import CatalogoPage from '../pages/Catalogo';
+import ContactosPage from '../pages/Contactos';
 import UsuariosPage from '../modulos/usuarios/pages/UsuariosPage';
 import RolesPage from '../modulos/roles/pages/RolesPage';
 import ProductoPage from '../modulos/productos/pages/ProductoPage';
@@ -23,16 +25,14 @@ import InventarioPage from '../modulos/inventario/pages/InventarioPage';
 import MovimientosPage from '../modulos/inventario/pages/MovimientosPage';
 import POSRoutes from '../modulos/pos/routes/POSRoutes';
 import NuevaVentaPage from '../modulos/pos/pages/NuevaVentaPage';
-import NuevoMantenimientoPOSPage from "../modulos/pos/pages/NuevoMantenimientoPOSPage";
 import LoginPage from '../pages/Login';
 import PerfilPage from '../modulos/perfil/pages/PerfilPage.jsx';
-import BusinessIntelligencePage from '../modulos/business-intelligence/pages/BusinessIntelligencePage.jsx';
 
 // Páginas específicas para clientes
 import MisMotosPage from '../modulos/cliente/pages/MisMotosPage';
 import MisMantenimientosPage from '../modulos/cliente/pages/MisMantenimientosPage';
 import MisComprasPage from '../modulos/cliente/pages/MisComprasPage';
-import MiPerfilPage from '../modulos/cliente/pages/MiPerfilPage';
+
 import RecordatoriosPage from '../modulos/recordatorios/pages/RecordatoriosPage.jsx';
 
 // Configuración de rutas con roles
@@ -61,12 +61,10 @@ const routesConfig = [
   { path: '/inventario', component: InventarioPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
   { path: '/movimientos', component: MovimientosPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
   { path: '/reportes', component: ReportesPage, roles: ['administrador','empleado'] },
-  { path: '/business-intelligence', component: BusinessIntelligencePage, roles: ['administrador','empleado'] },
   
   // Módulo POS - Páginas independientes
   { path: '/nueva-venta', component: NuevaVentaPage, roles: ['administrador','empleado'] },
-  { path: '/nuevo-mantenimiento', component: NuevoMantenimientoPOSPage, roles: ['administrador','empleado','tecnico'] },
-  { path: '/perfil', component: PerfilPage, roles: ['administrador','empleado','técnico','cliente'] },
+  { path: '/perfil', component: PerfilPage, roles: ['administrador','empleado','tecnico','cliente'] },
 
 ];
 
@@ -83,10 +81,14 @@ const PrivateRoutes = () => {
 
   return (
     <Routes>
+      {/* Rutas públicas accesibles incluso cuando está autenticado */}
+      <Route path="/catalogo" element={<CatalogoPage />} />
+      <Route path="/contactos" element={<ContactosPage />} />
+      
       {/* Ruta de login */}
-      <Route 
-        path="/login" 
-        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} 
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
       />
 
       {/* Dashboard - Role-based */}
@@ -136,15 +138,6 @@ const PrivateRoutes = () => {
           </RoleGuard>
         } 
       />
-      <Route 
-        path="/perfil" 
-        element={
-          <RoleGuard requiredRoles={['cliente']}>
-            <MiPerfilPage />
-          </RoleGuard>
-        } 
-      />
-
       {/* POS Module Routes */}
       <Route
         path="/pos/*"
@@ -160,7 +153,10 @@ const PrivateRoutes = () => {
       {/* Rutas dinámicas protegidas */}
       {routesConfig.map(({ path, component: Component, roles, viewRoles }) => {
         // Combinar roles de escritura y solo lectura
-        const allAllowedRoles = [...(roles || []), ...(viewRoles || [])];
+        const allAllowedRoles = [
+          ...(Array.isArray(roles) ? roles : []),
+          ...(Array.isArray(viewRoles) ? viewRoles : [])
+        ];
         
         return (
           <Route

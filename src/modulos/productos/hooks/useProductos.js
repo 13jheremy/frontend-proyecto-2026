@@ -1,9 +1,12 @@
 // src/modules/productos/hooks/useProductos.js
 import { useState, useEffect, useCallback } from 'react';
 import { productoApi } from '../api/producto';
-import { handleApiError, showNotification, productMessages } from '../../../utils/notifications';
+import { productsAPI } from '../../../services/api';
+import { showNotification, productMessages } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 import { useCategorias } from './useCategorias'; // Importar hook de categorías
 import { useProveedores } from './useProveedores'; // Importar hook de proveedores
+import { generarPDFProductos, exportarCSVProductos, descargarPDF } from '../utils/exportUtils';
 
 export const useProductos = () => {
   const [productos, setProductos] = useState([]);
@@ -202,23 +205,6 @@ export const useProductos = () => {
     }
   }, []);
 
-  // Eliminación permanente
-  const hardDeleteProducto = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await productoApi.hardDeleteProducto(id);
-      showNotification.success(productMessages.productHardDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Restaurar producto
   const restoreProducto = useCallback(async (id) => {
     setLoading(true);
@@ -288,15 +274,65 @@ export const useProductos = () => {
     }
   }, []);
 
+  // Exportar productos a PDF
+  const exportarProductosPDF = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await productsAPI.getAll({ page_size: 1000 }); // Obtener todos los productos
+      const productosData = data.results || [];
+      const doc = generarPDFProductos(productosData);
+      descargarPDF(doc, `productos_${new Date().toISOString().split('T')[0]}.pdf`);
+      showNotification('Reporte PDF generado exitosamente', 'success');
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification('Error al generar reporte PDF', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Exportar productos a CSV
+  const exportarProductosCSV = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await productsAPI.getAll({ page_size: 1000 });
+      const productosData = data.results || [];
+      exportarCSVProductos(productosData, `productos_${new Date().toISOString().split('T')[0]}.csv`);
+      showNotification('Reporte CSV generado exitosamente', 'success');
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification('Error al generar reporte CSV', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Obtener reporte de productos por categoría
+  const fetchReporteProductos = useCallback(async (filters = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await productsAPI.getReporteProductos(filters);
+      return data;
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Función unificada para manejar acciones de producto
   const handleProductAction = useCallback(async (productoId, actionType, additionalData = null) => {
     try {
       switch (actionType) {
         case 'softDelete':
           await softDeleteProducto(productoId);
-          break;
-        case 'hardDelete':
-          await hardDeleteProducto(productoId);
           break;
         case 'restore':
           await restoreProducto(productoId);
@@ -326,7 +362,7 @@ export const useProductos = () => {
       console.error(`Error en acción ${actionType}:`, err);
       throw err;
     }
-  }, [productos, softDeleteProducto, hardDeleteProducto, restoreProducto, toggleProductoActivo, toggleDestacado, updateStock]);
+  }, [productos, softDeleteProducto, restoreProducto, toggleProductoActivo, toggleDestacado, updateStock]);
 
   // Inicialización de productos
   useEffect(() => {
@@ -349,7 +385,6 @@ export const useProductos = () => {
     
     // Funciones de gestión de estado
     softDeleteProducto,
-    hardDeleteProducto,
     restoreProducto,
     toggleProductoActivo,
     toggleDestacado,
@@ -358,5 +393,10 @@ export const useProductos = () => {
 
     // Utilidades
     clearError,
+    
+    // Funciones de exportación
+    exportarProductosPDF,
+    exportarProductosCSV,
+    fetchReporteProductos,
   };
 };

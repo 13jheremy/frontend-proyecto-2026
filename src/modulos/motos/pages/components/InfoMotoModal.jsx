@@ -15,7 +15,9 @@ import {
   faTachometerAlt,
   faPalette,
   faHashtag,
-  faUserCog
+  faUserCog,
+  faUserEdit,
+  faUserSlash
 } from '@fortawesome/free-solid-svg-icons';
 
 const InfoMotoModal = ({ isOpen, onClose, moto = null }) => {
@@ -189,7 +191,7 @@ const InfoMotoModal = ({ isOpen, onClose, moto = null }) => {
           
           {/* Última actualización */}
           {moto.fecha_actualizacion && (
-            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg md:col-span-2">
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
               <p className="font-semibold flex items-center">
                 <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
                 Última Actualización:
@@ -197,6 +199,79 @@ const InfoMotoModal = ({ isOpen, onClose, moto = null }) => {
               <p className="ml-6 text-sm">{formatDate(moto.fecha_actualizacion)}</p>
             </div>
           )}
+          
+          {/* Fecha de eliminación */}
+          {moto.eliminado && moto.fecha_eliminacion && (
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+              <p className="font-semibold flex items-center">
+                <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-red-500" />
+                Fecha de Eliminación:
+              </p>
+              <p className="ml-6 text-sm">{formatDate(moto.fecha_eliminacion)}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Trazabilidad - Información de auditoría */}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+            <FontAwesomeIcon icon={faUser} className="mr-2 text-blue-500" />
+            Trazabilidad
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Creado por */}
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border-l-4 border-green-500">
+              <p className="font-semibold flex items-center text-green-700 dark:text-green-400 text-sm">
+                <FontAwesomeIcon icon={faUser} className="mr-2" />
+                Creado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {moto.creado_por_nombre || moto.registrado_por_nombre || 'No disponible'}
+              </p>
+              {moto.fecha_registro && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(moto.fecha_registro)}
+                </p>
+              )}
+            </div>
+
+            {/* Actualizado por */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-l-4 border-blue-500">
+              <p className="font-semibold flex items-center text-blue-700 dark:text-blue-400 text-sm">
+                <FontAwesomeIcon icon={faUserEdit} className="mr-2" />
+                Actualizado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {moto.actualizado_por_nombre || 'No disponible'}
+              </p>
+              {moto.fecha_actualizacion && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(moto.fecha_actualizacion)}
+                </p>
+              )}
+            </div>
+
+            {/* Eliminado por - solo mostrar si la moto está eliminada */}
+            {moto.eliminado && (
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border-l-4 border-red-500 md:col-span-2">
+                <p className="font-semibold flex items-center text-red-700 dark:text-red-400 text-sm">
+                  <FontAwesomeIcon icon={faUserSlash} className="mr-2" />
+                  Eliminado por:
+                </p>
+                <p className="ml-6 text-gray-900 dark:text-gray-100">
+                  {moto.eliminado_por_nombre || 'No disponible'}
+                </p>
+                {moto.fecha_eliminacion && (
+                  <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                    <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                    {formatDate(moto.fecha_eliminacion)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Información adicional si está disponible */}
@@ -252,9 +327,32 @@ InfoMotoModal.propTypes = {
     registrado_por_nombre: PropTypes.string,
     fecha_registro: PropTypes.string,
     fecha_actualizacion: PropTypes.string,
+    fecha_eliminacion: PropTypes.string,
     observaciones: PropTypes.string,
     historial_count: PropTypes.number,
+    creado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      nombre: PropTypes.string,
+      persona_nombre: PropTypes.string,
+    }),
+    actualizado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      nombre: PropTypes.string,
+      persona_nombre: PropTypes.string,
+    }),
+    eliminado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      nombre: PropTypes.string,
+      persona_nombre: PropTypes.string,
+    }),
   }),
+};
+
+InfoMotoModal.defaultProps = {
+  moto: null,
 };
 
 export default InfoMotoModal;

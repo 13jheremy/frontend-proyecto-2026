@@ -29,6 +29,7 @@ import ProductSearchInput from '../components/ProductSearchInput';
 import ClientSearchInput from '../components/ClientSearchInput';
 import ProductImage from '../components/ProductImage';
 import CreateClientModal from '../components/CreateClientModal';
+import pdfService from '../../../services/pdfService';
 
 const NuevaVentaPage = () => {
   console.log('🔄 NuevaVentaPage - RENDERIZANDO COMPONENTE');
@@ -120,6 +121,47 @@ const NuevaVentaPage = () => {
       if (resultado && (resultado.success || resultado.venta_id)) {
         console.log('✅ Venta exitosa');
         toast.success('Venta procesada exitosamente');
+        
+        // Generar recibo PDF automaticamente
+        if (resultado.venta_id) {
+          try {
+            // Obtener los datos completos de la venta
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const ventaResponse = await fetch(`${apiUrl}/api/ventas/${resultado.venta_id}/`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+              }
+            });
+            const ventaData = await ventaResponse.json();
+            
+            if (ventaData) {
+              // Preparar datos para el PDF
+              const pdfData = {
+                venta_id: ventaData.id,
+                fecha_venta: ventaData.fecha_venta,
+                estado: 'PAGADA',
+                cliente: ventaData.cliente || { nombre_completo: 'Cliente General', cedula: 'N/A', telefono: 'N/A' },
+                productos: ventaData.detalles?.map(d => ({
+                  nombre: d.producto?.nombre || 'Producto',
+                  cantidad: d.cantidad,
+                  precio_unitario: d.precio_unitario,
+                  subtotal: d.subtotal
+                })) || [],
+                subtotal: ventaData.subtotal || 0,
+                descuento: ventaData.descuento || 0,
+                impuesto: ventaData.impuesto || 0,
+                total: ventaData.total || 0,
+                metodo_pago: datosVenta.metodo_pago || 'No especificado'
+              };
+              
+              const doc = pdfService.generarComprobanteVenta(pdfData);
+              pdfService.descargarPDF(doc, `recibo_venta_${ventaData.id}_${new Date().toISOString().split('T')[0]}.pdf`);
+            }
+          } catch (pdfError) {
+            console.error('Error generando PDF:', pdfError);
+          }
+        }
+        
         limpiarCarrito();
         navigate('/');
       } else {

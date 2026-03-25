@@ -6,7 +6,7 @@ import { clientAPI } from '../../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faWrench, faSpinner, faEye, faClock, faCheckCircle, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import ClienteMantenimientoTable from './components/ClienteMantenimientoTable';
-import DetalleMantenimientoModal from '../../mantenimiento/pages/components/DetalleMantenimientoModal';
+import ClienteDetalleMantenimientoModal from './components/ClienteDetalleMantenimientoModal';
 import { showNotification } from '../../../utils/notifications';
 
 const MisMantenimientosPage = () => {
@@ -27,14 +27,26 @@ const MisMantenimientosPage = () => {
     try {
       setLoading(true);
       console.log('🔍 Cargando mantenimientos del cliente...');
+      
       const result = await clientAPI.getMantenimientos();
       console.log('📋 Respuesta de clientAPI.getMantenimientos():', result);
+      
+      // Verificar si la respuesta es un error de red
+      if (result.success === false && result.originalError) {
+        console.error('❌ Error de red:', result.originalError.message);
+        if (result.originalError.message === 'Network Error' || result.originalError.code === 'ERR_NETWORK') {
+          showNotification.error('Error de conexión. Verifica que el servidor esté funcionando.');
+          setMantenimientos([]);
+          setLoading(false);
+          return;
+        }
+      }
       
       if (result.success && result.data) {
         // Manejar estructura anidada: result.data.data contiene los datos reales
         const responseData = result.data.data || result.data;
         const mantenimientosArray = Array.isArray(responseData) ? responseData : [];
-        console.log('🔧 Mantenimientos encontrados:', mantenimientosArray);
+        console.log('🔧 Mantenimientos encontrados:', mantenimientosArray.length);
         console.log('🔍 Estructura del primer mantenimiento:', mantenimientosArray[0]);
         setMantenimientos(mantenimientosArray);
         
@@ -49,7 +61,7 @@ const MisMantenimientosPage = () => {
         // Manejo alternativo si no tiene success pero tiene data
         const responseData = result.data.data || result.data;
         const mantenimientosArray = Array.isArray(responseData) ? responseData : [];
-        console.log('🔧 Mantenimientos encontrados (sin success):', mantenimientosArray);
+        console.log('🔧 Mantenimientos encontrados (sin success):', mantenimientosArray.length);
         setMantenimientos(mantenimientosArray);
         
         setStats({
@@ -64,7 +76,12 @@ const MisMantenimientosPage = () => {
       }
     } catch (error) {
       console.error('❌ Error loading mantenimientos:', error);
-      showNotification.error('Error al cargar los mantenimientos');
+      // Manejar error de red específico
+      if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+        showNotification.error('Error de conexión. Verifica que el servidor esté funcionando.');
+      } else {
+        showNotification.error('Error al cargar los mantenimientos');
+      }
       setMantenimientos([]);
     } finally {
       setLoading(false);
@@ -194,7 +211,7 @@ const MisMantenimientosPage = () => {
 
         {/* Modal de detalles */}
         {showDetalleModal && selectedMantenimiento && (
-          <DetalleMantenimientoModal
+          <ClienteDetalleMantenimientoModal
             isOpen={showDetalleModal}
             onClose={() => setShowDetalleModal(false)}
             mantenimiento={selectedMantenimiento}

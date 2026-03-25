@@ -1,10 +1,13 @@
 // src/modulos/reportes/hooks/useReportes.js
 import { useCallback, useState } from 'react';
 import reportesAPI from '../api/reportesAPI';
+import pdfService from '../../../services/pdfService';
 
 export default function useReportes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [loadingStates, setLoadingStates] = useState({});
+  
   const [stats, setStats] = useState(null);
   const [reporteVentas, setReporteVentas] = useState(null);
   const [reporteProductos, setReporteProductos] = useState(null);
@@ -13,18 +16,6 @@ export default function useReportes() {
   const [reporteMotos, setReporteMotos] = useState(null);
   const [reporteProveedores, setReporteProveedores] = useState(null);
   const [reporteUsuarios, setReporteUsuarios] = useState(null);
-  
-  // Individual loading states for each report
-  const [loadingStates, setLoadingStates] = useState({
-    stats: false,
-    ventas: false,
-    productos: false,
-    inventario: false,
-    mantenimientos: false,
-    motos: false,
-    proveedores: false,
-    usuarios: false,
-  });
 
   const setReportLoading = (report, isLoading) => {
     setLoadingStates(prev => ({ ...prev, [report]: isLoading }));
@@ -33,14 +24,12 @@ export default function useReportes() {
   const fetchStats = useCallback(async () => {
     try {
       setReportLoading('stats', true);
-      setError(null);
       const data = await reportesAPI.obtenerDashboardStats();
       setStats(data);
       return data;
     } catch (e) {
-      console.error('Error fetching dashboard stats:', e);
+      console.error('Error fetching stats:', e);
       setError(e);
-      throw e;
     } finally {
       setReportLoading('stats', false);
     }
@@ -50,11 +39,41 @@ export default function useReportes() {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Generando reporte de ventas con params:', params);
+      
       const data = await reportesAPI.generarReporteVentas(params);
+      console.log('Datos recibidos:', data);
+      
+      // Verificar si la respuesta es un error
+      if (data && data.error) {
+        throw new Error(data.error || data.detail || 'Error en el servidor');
+      }
+      
+      // Verificar que tenemos los datos necesarios
+      if (!data || !data.resumen) {
+        console.warn('Datos del reporte pueden estar incompletos:', data);
+      }
+      
       setReporteVentas(data);
+      
+      // Si el formato es pdf, generar y descargar automáticamente
+      if (params.formato === 'pdf') {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const doc = pdfService.generarReporteVentas(data);
+        if (doc) {
+          pdfService.descargarPDF(doc, `reporte_ventas_${timestamp}.pdf`);
+        } else {
+          throw new Error('No se pudo generar el documento PDF');
+        }
+      }
+      
       return data;
     } catch (e) {
-      setError(e);
+      console.error('Error generando reporte de ventas:', e);
+      // Extraer mensaje de error legible
+      const errorMessage = e.response?.data?.detail || e.response?.data?.error || e.message || 'Error al generar reporte';
+      setError(new Error(errorMessage));
       throw e;
     } finally {
       setLoading(false);
@@ -71,7 +90,6 @@ export default function useReportes() {
     } catch (e) {
       console.error('Error fetching productos report:', e);
       setError(e);
-      // Don't throw error to prevent blocking other reports
       return null;
     } finally {
       setReportLoading('productos', false);
@@ -96,6 +114,7 @@ export default function useReportes() {
 
   const fetchReporteMantenimientos = useCallback(async () => {
     try {
+      setReportLoading('mantenimientos', true);
       setError(null);
       const data = await reportesAPI.obtenerReporteMantenimientos();
       setReporteMantenimientos(data);
@@ -103,12 +122,15 @@ export default function useReportes() {
     } catch (e) {
       console.error('Error fetching mantenimientos report:', e);
       setError(e);
-      throw e;
+      return null;
+    } finally {
+      setReportLoading('mantenimientos', false);
     }
   }, []);
 
   const fetchReporteMotos = useCallback(async () => {
     try {
+      setReportLoading('motos', true);
       setError(null);
       const data = await reportesAPI.obtenerReporteMotos();
       setReporteMotos(data);
@@ -116,7 +138,9 @@ export default function useReportes() {
     } catch (e) {
       console.error('Error fetching motos report:', e);
       setError(e);
-      throw e;
+      return null;
+    } finally {
+      setReportLoading('motos', false);
     }
   }, []);
 
@@ -154,8 +178,8 @@ export default function useReportes() {
 
   return {
     loading,
-    loadingStates,
     error,
+    loadingStates,
     stats,
     reporteVentas,
     reporteProductos,
@@ -174,5 +198,3 @@ export default function useReportes() {
     fetchReporteUsuarios,
   };
 }
-
-

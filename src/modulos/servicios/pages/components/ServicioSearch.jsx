@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter, faTimes, faCog } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faFilter, faTimes, faStar, faBox, faClock } from '@fortawesome/free-solid-svg-icons';
 
 const ServicioSearch = ({ filters, setFilters, onSearch, categorias }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -52,17 +52,18 @@ const ServicioSearch = ({ filters, setFilters, onSearch, categorias }) => {
     const clearedFilters = {};
     setFilters(clearedFilters);
     onSearch(clearedFilters);
+    setShowAdvanced(false); // Cerrar el panel de filtros avanzados
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-all duration-300 ease-in-out">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         {/* Campo de búsqueda principal */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por nombre o descripción..."
+              placeholder="Buscar por nombre, código o descripción..."
               value={filters?.search || ''}
               onChange={(e) => handleInputChange('search', e.target.value)}
               className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
@@ -127,7 +128,7 @@ const ServicioSearch = ({ filters, setFilters, onSearch, categorias }) => {
               >
                 <option value="">Todos</option>
                 <option value="false">No Eliminados</option>
-                <option value="true">Eliminados Temporalmente</option>
+                <option value="true">Eliminados</option>
               </select>
             </div>
 
@@ -198,7 +199,7 @@ const ServicioSearch = ({ filters, setFilters, onSearch, categorias }) => {
           {categorias && categorias.length > 0 && (
             <div className="mt-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                <FontAwesomeIcon icon={faCog} className="mr-2" />
+                <FontAwesomeIcon icon={faBox} className="mr-2" />
                 Filtrar por Categorías
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">

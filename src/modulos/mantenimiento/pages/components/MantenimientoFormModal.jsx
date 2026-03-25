@@ -1,8 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
+import { X, Plus, Trash2, Save, AlertCircle, Package } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faMotorcycle,
+  faUser,
+  faCalendarAlt,
+  faTachometerAlt,
+  faDollarSign,
+  faFileAlt,
+  faStethoscope,
+  faWrench,
+  faTools,
+  faFlag,
+  faPlusCircle
+} from '@fortawesome/free-solid-svg-icons';
 import MotoSearchInput from '../../../../components/ui/MotoSearchInput';
 import ProductoSearchInput from '../../../../components/ui/ProductoSearchInput';
+import TecnicoSearchInput from '../../../../components/ui/TecnicoSearchInput';
 import { buscarServicios } from '../../../../services/busqueda';
+import { posAPI } from '../../../../services/api';
 import { toast } from 'react-toastify';
 
 const MantenimientoFormModal = ({
@@ -21,8 +37,27 @@ const MantenimientoFormModal = ({
     diagnostico: '',
     estado: 'pendiente',
     kilometraje_ingreso: '',
-    total: '0.00'
+    total: '0.00',
+    adicional: '0.00',
+    tecnico_asignado: null
   });
+
+  const [tecnicos, setTecnicos] = useState([]);
+  const [tecnicoLoading, setTecnicoLoading] = useState(false);
+
+  // Estado para campos de aceite (cuando se agrega servicio de cambio de aceite)
+  const [aceiteData, setAceiteData] = useState({
+    tipo_aceite: '',
+    tipo_recordatorio: 'km',
+    km_proximo: '',
+    fecha_programada: ''
+  });
+
+  // Verificar si hay servicio de cambio de aceite (se evalúa en render)
+  // const tieneCambioAceite = servicios.some(
+  //   s => s.servicio_nombre?.toLowerCase().includes('cambio de aceite') || 
+  //        s.servicio?.nombre?.toLowerCase().includes('cambio de aceite')
+  // );
 
   const [servicios, setServicios] = useState([]);
   const [repuestos, setRepuestos] = useState([]);
@@ -77,6 +112,27 @@ const MantenimientoFormModal = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [isOpen]);
 
+  // Fetch tecnicos on mount
+  useEffect(() => {
+    const fetchTecnicos = async () => {
+      setTecnicoLoading(true);
+      try {
+        const response = await posAPI.buscarTecnicos('');
+        console.log('FETCH TECNICOS - Response:', response);
+        setTecnicos(response.data?.data || []);
+      } catch (error) {
+        console.error('Error fetching tecnicos:', error);
+        setTecnicos([]);
+      } finally {
+        setTecnicoLoading(false);
+      }
+    };
+    
+    if (isOpen) {
+      fetchTecnicos();
+    }
+  }, [isOpen]);
+
   // Función para generar clases de grid dinámicas
   const getGridClasses = (maxCols = 4) => {
     const cols = Math.min(gridConfig.cols, maxCols);
@@ -103,8 +159,45 @@ const MantenimientoFormModal = ({
 
   useEffect(() => {
     if (mantenimiento) {
+      console.log('MANTENIMIENTO DATA:', JSON.stringify(mantenimiento, null, 2));
+      
+      // Usar los campos del serializer directamente o el objeto moto
+      let motoData = null;
+      const marca = mantenimiento.moto_marca || mantenimiento.moto?.marca || '';
+      const modelo = mantenimiento.moto_modelo || mantenimiento.moto?.modelo || '';
+      const placa = mantenimiento.moto_placa || mantenimiento.moto?.placa || '';
+      const kilometraje = mantenimiento.moto?.kilometraje || 0;
+      const motoId = mantenimiento.moto?.id || mantenimiento.moto;
+      
+      console.log('MOTO FIELDS - marca:', marca, 'modelo:', modelo, 'placa:', placa);
+      
+      // Solo crear motoData si hay información de la moto
+      if (marca || modelo || placa || motoId) {
+        const displayText = placa ? `${marca} ${modelo} (${placa})`.trim() : `${marca} ${modelo}`.trim();
+        
+        motoData = {
+          id: motoId,
+          marca: marca,
+          modelo: modelo,
+          placa: placa,
+          display_text: displayText || 'Moto sin información',
+          kilometraje: kilometraje
+        };
+      }
+      console.log('MOTO DATA CREATED:', motoData);
+
+      // Preparar datos del técnico
+      let tecnicoData = null;
+      if (mantenimiento.tecnico_asignado) {
+        const tecnico = mantenimiento.tecnico_asignado;
+        tecnicoData = {
+          id: tecnico.id || tecnico,
+          display_text: mantenimiento.tecnico_asignado_persona_nombre || tecnico.username || 'Técnico'
+        };
+      }
+
       setFormData({
-        moto: mantenimiento.moto || null,
+        moto: motoData,
         fecha_ingreso: mantenimiento.fecha_ingreso ? 
           new Date(mantenimiento.fecha_ingreso).toISOString().slice(0, 16) : '',
         fecha_entrega: mantenimiento.fecha_entrega ? 
@@ -113,10 +206,26 @@ const MantenimientoFormModal = ({
         diagnostico: mantenimiento.diagnostico || '',
         estado: mantenimiento.estado || 'pendiente',
         kilometraje_ingreso: mantenimiento.kilometraje_ingreso || '',
-        total: mantenimiento.total || '0.00'
+        total: mantenimiento.total || '0.00',
+        tecnico_asignado: tecnicoData
       });
       setServicios(mantenimiento.detalles || []);
       setRepuestos(mantenimiento.repuestos || []);
+      
+      // Cargar datos de aceite si existen
+      if (mantenimiento.detalles && mantenimiento.detalles.length > 0) {
+        const detalleConAceite = mantenimiento.detalles.find(
+          d => d.tipo_aceite || d.km_proximo_cambio
+        );
+        if (detalleConAceite) {
+          setAceiteData({
+            tipo_aceite: detalleConAceite.tipo_aceite || '',
+            tipo_recordatorio: detalleConAceite.km_proximo_cambio ? 'km' : 'fecha',
+            km_proximo: detalleConAceite.km_proximo_cambio || '',
+            fecha_programada: ''
+          });
+        }
+      }
     } else {
       resetForm();
     }
@@ -131,11 +240,18 @@ const MantenimientoFormModal = ({
       diagnostico: '',
       estado: 'pendiente',
       kilometraje_ingreso: '',
-      total: '0.00'
+      total: '0.00',
+      tecnico_asignado: null
     });
     setServicios([]);
     setRepuestos([]);
     setErrors({});
+    setAceiteData({
+      tipo_aceite: '',
+      tipo_recordatorio: 'km',
+      km_proximo: '',
+      fecha_programada: ''
+    });
   };
 
   const searchServicios = async (query) => {
@@ -209,7 +325,7 @@ const MantenimientoFormModal = ({
   };
 
   const addRepuesto = (producto) => {
-    if (!producto.stock_disponible) {
+    if (!producto.disponible) {
       toast.error('El producto no tiene stock disponible');
       return;
     }
@@ -222,7 +338,8 @@ const MantenimientoFormModal = ({
       cantidad: 1,
       precio_unitario: producto.precio_venta,
       subtotal: producto.precio_venta,
-      stock_disponible: producto.stock_actual
+      stock_disponible: producto.stock_actual,
+      imagen_url: producto.imagen_url || null
     };
     setRepuestos(prev => [...prev, nuevoRepuesto]);
     calcularTotal(servicios, [...repuestos, nuevoRepuesto]);
@@ -262,8 +379,55 @@ const MantenimientoFormModal = ({
     const totalRepuestos = repuestosList.reduce((sum, repuesto) => 
       sum + parseFloat(repuesto.subtotal || 0), 0);
     
-    const total = totalServicios + totalRepuestos;
+    // Obtener el valor del adicional directamente del estado actual
+    const adicionalValue = formData.adicional || '0';
+    const adicional = Number(adicionalValue) || 0;
+    
+    const total = totalServicios + totalRepuestos + adicional;
     handleInputChange('total', total.toFixed(2));
+  };
+
+  // Calcular kilómetros para próximo cambio según tipo de aceite
+  const calcularProximoCambioKm = (tipo) => {
+    const kmActual = parseInt(formData.kilometraje_ingreso) || 0;
+    let kmAdicional = 0;
+    
+    switch (tipo) {
+      case 'sintetico':
+        kmAdicional = 6000;
+        break;
+      case 'semisintetico':
+        kmAdicional = 4000;
+        break;
+      case 'mineral':
+      default:
+        kmAdicional = 2000;
+        break;
+    }
+    
+    return (kmActual + kmAdicional).toString();
+  };
+
+  // Calcular fecha para próximo cambio según tipo de aceite
+  const calcularProximaFecha = (tipo) => {
+    const fechaActual = new Date();
+    let diasAdicionales = 0;
+    
+    switch (tipo) {
+      case 'sintetico':
+        diasAdicionales = 180;
+        break;
+      case 'semisintetico':
+        diasAdicionales = 90;
+        break;
+      case 'mineral':
+      default:
+        diasAdicionales = 30;
+        break;
+    }
+    
+    fechaActual.setDate(fechaActual.getDate() + diasAdicionales);
+    return fechaActual.toISOString().split('T')[0];
   };
 
   const validateForm = () => {
@@ -281,6 +445,24 @@ const MantenimientoFormModal = ({
     if (!formData.kilometraje_ingreso) {
       newErrors.kilometraje_ingreso = 'El kilometraje de ingreso es requerido';
     }
+    if (!formData.tecnico_asignado || !formData.tecnico_asignado.id) {
+      newErrors.tecnico_asignado = 'Debe asignar un técnico';
+    }
+
+    // Validar campos de aceite si hay servicio de cambio de aceite
+    const tieneCambioAceite = servicios.some(s => {
+      const nombre = s.servicio_nombre || s.servicio?.nombre || '';
+      return nombre.toLowerCase().includes('cambio de aceite');
+    });
+    
+    if (tieneCambioAceite && aceiteData.tipo_aceite) {
+      if (aceiteData.tipo_recordatorio === 'km' && !aceiteData.km_proximo) {
+        newErrors.km_proximo = 'Ingrese los km para próximo cambio';
+      }
+      if (aceiteData.tipo_recordatorio === 'fecha' && !aceiteData.fecha_programada) {
+        newErrors.fecha_programada = 'Ingrese la fecha para próximo cambio';
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -294,12 +476,77 @@ const MantenimientoFormModal = ({
       return;
     }
 
+    // Verificar si hay servicio de cambio de aceite
+    const tieneCambioAceite = servicios.some(s => {
+      const nombre = s.servicio_nombre || s.servicio?.nombre || '';
+      return nombre.toLowerCase().includes('cambio de aceite');
+    });
+
+    // Preparar datos de servicios con información de aceite
+    const serviciosConAceite = servicios.map(servicio => {
+      const nombre = servicio.servicio_nombre || servicio.servicio?.nombre || '';
+      const isCambioAceite = nombre.toLowerCase().includes('cambio de aceite');
+      
+      return {
+        ...servicio,
+        tipo_aceite: isCambioAceite && aceiteData.tipo_aceite ? aceiteData.tipo_aceite : null,
+        km_proximo_cambio: isCambioAceite && aceiteData.tipo_recordatorio === 'km' ? parseInt(aceiteData.km_proximo) || null : null
+      };
+    });
+
+    // Preparar datos del recordatorio si aplica
+    let recordatorioData = null;
+    if (tieneCambioAceite && aceiteData.tipo_aceite) {
+      recordatorioData = {
+        tipo: aceiteData.tipo_recordatorio,
+        km_proximo: aceiteData.tipo_recordatorio === 'km' ? parseInt(aceiteData.km_proximo) || null : null,
+        fecha_programada: aceiteData.tipo_recordatorio === 'fecha' ? aceiteData.fecha_programada : null
+      };
+    }
+
+    // Asegurar que kilometraje_ingreso sea un número válido
+    const kilometrajeIngreso = parseInt(formData.kilometraje_ingreso) || 0;
+
+    // Asegurar que fecha_ingreso tenga el formato correcto para Django
+    let fechaIngresoFormateada = formData.fecha_ingreso;
+    if (formData.fecha_ingreso) {
+      // Convertir formato YYYY-MM-DDTHH:MM a formato ISO
+      fechaIngresoFormateada = new Date(formData.fecha_ingreso).toISOString();
+    }
+
     const submitData = {
-      ...formData,
+      // Solo enviar campos requeridos
       moto: formData.moto.id,
-      servicios,
-      repuestos
+      // Extraer el ID del técnico del objeto
+      tecnico_asignado: formData.tecnico_asignado?.id || formData.tecnico_asignado || null,
+      // Convertir kilometraje a entero
+      kilometraje_ingreso: kilometrajeIngreso,
+      // Formatear fecha correctamente
+      fecha_ingreso: fechaIngresoFormateada,
+      descripcion_problema: formData.descripcion_problema,
+      // Solo enviar diagnostico si tiene contenido (no vacío)
+      ...(formData.diagnostico && formData.diagnostico.trim() !== '' && { diagnostico: formData.diagnostico }),
+      // Estado del mantenimiento
+      estado: formData.estado || 'pendiente',
+      // Tipo y prioridad con valores por defecto
+      tipo: formData.tipo || 'correctivo',
+      prioridad: formData.prioridad || 'media',
+      servicios: serviciosConAceite,
+      // El backend espera repuestos_data
+      repuestos_data: repuestos,
+      // No enviar fecha_entrega vacía - enviar null si está vacía
+      ...(formData.fecha_entrega && formData.fecha_entrega.trim() !== '' && { fecha_entrega: formData.fecha_entrega }),
+      ...(recordatorioData && { recordatorio: recordatorioData })
     };
+
+    // DEBUG: Ver qué se está enviando al backend
+    console.log('=== DEBUG: Datos enviados al backend ===');
+    console.log('formData:', formData);
+    console.log('servicios:', servicios);
+    console.log('repuestos:', repuestos);
+    console.log('aceiteData:', aceiteData);
+    console.log('submitData completo:', JSON.stringify(submitData, null, 2));
+    console.log('===========================================');
 
     onSubmit(submitData);
   };
@@ -326,6 +573,7 @@ const MantenimientoFormModal = ({
           <div className={`grid ${getGridClasses(2)} gap-4`} style={getDynamicStyle(2)}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FontAwesomeIcon icon={faMotorcycle} className="mr-2 text-blue-500" />
                 Moto *
               </label>
               <MotoSearchInput
@@ -355,6 +603,22 @@ const MantenimientoFormModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FontAwesomeIcon icon={faUser} className="mr-2 text-indigo-500" />
+                Técnico Asignado *
+              </label>
+              <TecnicoSearchInput
+                value={formData.tecnico_asignado}
+                onSelect={(tecnico) => handleInputChange('tecnico_asignado', tecnico)}
+                error={errors.tecnico_asignado}
+              />
+              {errors.tecnico_asignado && (
+                <p className="mt-1 text-sm text-red-600">{errors.tecnico_asignado}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-purple-500" />
                 Fecha de Ingreso *
               </label>
               <input
@@ -373,6 +637,7 @@ const MantenimientoFormModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-green-500" />
                 Fecha de Entrega
               </label>
               <input
@@ -385,6 +650,7 @@ const MantenimientoFormModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FontAwesomeIcon icon={faTachometerAlt} className="mr-2 text-orange-500" />
                 Kilometraje de Ingreso *
               </label>
               <input
@@ -405,6 +671,35 @@ const MantenimientoFormModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FontAwesomeIcon icon={faPlusCircle} className="mr-2 text-blue-500" />
+                Costo Adicional
+              </label>
+              <input
+                type="number"
+                value={formData.adicional}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleInputChange('adicional', value);
+                  // Recalcular total inmediatamente con el nuevo valor
+                  const serviciosTotal = servicios.reduce((sum, s) => sum + (parseFloat(s.precio) || 0), 0);
+                  const repuestosTotal = repuestos.reduce((sum, r) => sum + (parseFloat(r.subtotal) || 0), 0);
+                  const adicionalValue = Number(value) || 0;
+                  const total = serviciosTotal + repuestosTotal + adicionalValue;
+                  handleInputChange('total', total.toFixed(2));
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Para costos adicionales por complicaciones
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FontAwesomeIcon icon={faDollarSign} className="mr-2 text-green-500" />
                 Total
               </label>
               <input
@@ -418,6 +713,7 @@ const MantenimientoFormModal = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              <FontAwesomeIcon icon={faFileAlt} className="mr-2 text-orange-500" />
               Descripción del Problema *
             </label>
             <textarea
@@ -437,6 +733,7 @@ const MantenimientoFormModal = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              <FontAwesomeIcon icon={faStethoscope} className="mr-2 text-red-500" />
               Diagnóstico
             </label>
             <textarea
@@ -448,10 +745,94 @@ const MantenimientoFormModal = ({
             />
           </div>
 
+          {/* Sección de Cambio de Aceite - Solo visible si hay servicio de cambio de aceite */}
+          {servicios.some(s => {
+            const nombre = s.servicio_nombre || s.servicio?.nombre || '';
+            return nombre.toLowerCase().includes('cambio de aceite');
+          }) && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-blue-900 mb-4">Datos del Cambio de Aceite</h3>
+              <div className={`grid ${getGridClasses(2)} gap-4`} style={getDynamicStyle(2)}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Aceite
+                  </label>
+                  <select
+                    value={aceiteData.tipo_aceite}
+                    onChange={(e) => setAceiteData(prev => ({ ...prev, tipo_aceite: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Seleccionar tipo...</option>
+                    <option value="mineral">Mineral</option>
+                    <option value="semisintetico">Semisintético</option>
+                    <option value="sintetico">Sintético</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Recordatorio para próximo cambio
+                  </label>
+                  <select
+                    value={aceiteData.tipo_recordatorio}
+                    onChange={(e) => setAceiteData(prev => ({ 
+                      ...prev, 
+                      tipo_recordatorio: e.target.value,
+                      km_proximo: e.target.value === 'km' ? calcularProximoCambioKm(aceiteData.tipo_aceite) : '',
+                      fecha_programada: e.target.value === 'fecha' ? calcularProximaFecha(e.target.value) : ''
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="km">Por Kilometraje</option>
+                    <option value="fecha">Por Fecha</option>
+                  </select>
+                </div>
+
+                {aceiteData.tipo_recordatorio === 'km' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kilómetros para próximo cambio
+                    </label>
+                    <input
+                      type="number"
+                      value={aceiteData.km_proximo}
+                      onChange={(e) => setAceiteData(prev => ({ ...prev, km_proximo: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Basado en tipo de aceite: {aceiteData.tipo_aceite === 'sintetico' ? '6,000 km' : aceiteData.tipo_aceite === 'semisintetico' ? '4,000 km' : '2,000 km'}
+                    </p>
+                  </div>
+                )}
+
+                {aceiteData.tipo_recordatorio === 'fecha' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha para próximo cambio
+                    </label>
+                    <input
+                      type="date"
+                      value={aceiteData.fecha_programada}
+                      onChange={(e) => setAceiteData(prev => ({ ...prev, fecha_programada: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Basado en tipo de aceite: {aceiteData.tipo_aceite === 'sintetico' ? '180 días' : aceiteData.tipo_aceite === 'semisintetico' ? '90 días' : '30 días'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Servicios */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-gray-900">Servicios</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                <FontAwesomeIcon icon={faWrench} className="mr-2 text-blue-500" />
+                Servicios
+              </h3>
             </div>
             
             <div className="mb-4">
@@ -520,13 +901,17 @@ const MantenimientoFormModal = ({
           {/* Repuestos */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-gray-900">Repuestos</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                <FontAwesomeIcon icon={faTools} className="mr-2 text-green-500" />
+                Repuestos
+              </h3>
             </div>
             
             <div className="mb-4">
               <ProductoSearchInput
                 onSelect={addRepuesto}
                 placeholder="Buscar repuesto para agregar..."
+                showStock={true}
               />
             </div>
 
@@ -534,6 +919,17 @@ const MantenimientoFormModal = ({
               <div className="space-y-2">
                 {repuestos.map((repuesto, index) => (
                   <div key={repuesto.id} className="flex items-center space-x-2 p-3 border border-gray-200 rounded-md">
+                    {repuesto.imagen_url ? (
+                      <img 
+                        src={repuesto.imagen_url} 
+                        alt={repuesto.producto_nombre}
+                        className="h-10 w-10 rounded object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <Package className="h-5 w-5 text-gray-400" />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <div className="font-medium">{repuesto.producto_codigo} - {repuesto.producto_nombre}</div>
                       <div className="text-sm text-gray-500">Stock: {repuesto.stock_disponible}</div>

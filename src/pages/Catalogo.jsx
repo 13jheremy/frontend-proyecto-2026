@@ -13,8 +13,8 @@ const Footer = () => (
       </div>
       <p className="text-sm mb-4">Mantenimiento & Repuestos | Más de 10 años de experiencia</p>
       <div className="flex justify-center space-x-6 text-sm">
-        <span>📞 +591 123-4567</span>
-        <span>📍 Rurrenabaque, Beni</span>
+        <span>📞 +591 67386647</span>
+        <span>📍 Culpina, Chuquisaca</span>
         <span>🕐 Lun-Sáb 8:00-18:00</span>
       </div>
     </div>
@@ -87,21 +87,26 @@ const ErrorState = ({ message, onRetry }) => (
 );
 
 export default function Catalogo() {
-  const { 
-    productos, 
-    categorias, 
-    loading, 
-    error, 
-    filtros, 
-    updateFiltros, 
-    clearFiltros, 
-    catalogStats, 
-    refetch 
+  const {
+    productos,
+    categorias,
+    loading,
+    error,
+    filtros,
+    updateFiltros,
+    clearFiltros,
+    catalogStats,
+    refetch,
+    pagina,
+    totalPaginas,
+    cambiarPagina,
+    ITEMS_POR_PAGINA
   } = useCatalog();
   
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [imageErrors, setImageErrors] = useState(new Set());
+  const [clickedButton, setClickedButton] = useState(null);
 
   const handleImageError = (productId) => {
     setImageErrors(prev => new Set(prev).add(productId));
@@ -154,14 +159,7 @@ export default function Catalogo() {
             Encuentra todo lo que necesitas para tu motocicleta.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
-              Explorar Productos
-            </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-3 rounded-lg font-semibold transition-all duration-300">
-              Filtrar por Categoría
-            </button>
-          </div>
+
         </div>
         
         {/* Scroll indicator */}
@@ -220,22 +218,22 @@ export default function Catalogo() {
             </select>
 
             {/* Vista */}
-            <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-4 py-2 transition-all duration-300 ${loading ? 'opacity-50 cursor-wait' : ''} ${viewMode === 'grid' ? 'bg-red-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
-                disabled={loading}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-4 py-2 transition-all duration-300 ${loading ? 'opacity-50 cursor-wait' : ''} ${viewMode === 'list' ? 'bg-red-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
-                disabled={loading}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105"
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <List className="w-5 h-5 transition-transform duration-300" />
+                  <span>Ver Lista</span>
+                </>
+              ) : (
+                <>
+                  <Grid className="w-5 h-5 transition-transform duration-300" />
+                  <span>Ver Cuadrícula</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Filtros rápidos */}
@@ -290,7 +288,7 @@ export default function Catalogo() {
                 Cargando productos...
               </div>
             ) : (
-              `Mostrando ${productos.length} de ${catalogStats.totalProductos} productos`
+              `Mostrando ${productos.length} de ${catalogStats.totalProductos} productos (Página ${pagina} de ${totalPaginas})`
             )}
           </div>
         </div>
@@ -338,6 +336,65 @@ export default function Catalogo() {
             ))}
           </div>
         )}
+
+        {/* Paginación */}
+        {totalPaginas > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-8">
+            <button
+              onClick={() => cambiarPagina(pagina - 1)}
+              disabled={pagina === 1 || loading}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                pagina === 1 || loading
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 text-white hover:bg-red-700'
+              }`}
+            >
+              Anterior
+            </button>
+            
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
+                let pageNum;
+                if (totalPaginas <= 5) {
+                  pageNum = i + 1;
+                } else if (pagina <= 3) {
+                  pageNum = i + 1;
+                } else if (pagina >= totalPaginas - 2) {
+                  pageNum = totalPaginas - 4 + i;
+                } else {
+                  pageNum = pagina - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => cambiarPagina(pageNum)}
+                    disabled={loading}
+                    className={`w-10 h-10 rounded-lg font-medium transition-all duration-300 ${
+                      pagina === pageNum
+                        ? 'bg-red-600 text-white'
+                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button
+              onClick={() => cambiarPagina(pagina + 1)}
+              disabled={pagina === totalPaginas || loading}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                pagina === totalPaginas || loading
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 text-white hover:bg-red-700'
+              }`}
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Modal de producto */}
@@ -355,7 +412,7 @@ export default function Catalogo() {
   );
 }
 
-const ProductCard = ({ product, viewMode, imageErrors, onImageError, onClick }) => {
+const ProductCard = React.memo(({ product, viewMode, imageErrors, onImageError, onClick }) => {
   if (viewMode === 'list') {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg product-card-hover overflow-hidden group cursor-pointer"
@@ -369,6 +426,7 @@ const ProductCard = ({ product, viewMode, imageErrors, onImageError, onClick }) 
               <img
                 src={product.imagen_url || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop'}
                 alt={product.nombre}
+                loading="lazy"
                 className="w-full h-full object-contain transition-transform duration-300 hover:scale-105 bg-gray-100 dark:bg-gray-700"
                 onError={(e) => {
                   handleImageError(product.id);
@@ -390,8 +448,8 @@ const ProductCard = ({ product, viewMode, imageErrors, onImageError, onClick }) 
               <div className="flex items-center gap-4">
                 <div className="text-2xl font-bold text-red-600 mb-4">{Number(product.precio_venta || product.price || 0).toFixed(2)} BS</div>
                 <span className={`text-sm px-2 py-1 rounded-full ${
-                  product.stock_actual > 0 
-                    ? 'bg-green-100 text-green-700' 
+                  product.stock_actual > 0
+                    ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700'
                 }`}>
                   {product.stock_actual > 0 ? `Stock: ${product.stock_actual}` : 'Sin stock'}
@@ -405,7 +463,7 @@ const ProductCard = ({ product, viewMode, imageErrors, onImageError, onClick }) 
   }
 
   return (
-    <div 
+    <div
       className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer product-card-hover overflow-hidden"
       onClick={onClick}
     >
@@ -431,6 +489,7 @@ const ProductCard = ({ product, viewMode, imageErrors, onImageError, onClick }) 
           <img
             src={product.imagen_url || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop'}
             alt={product.nombre}
+            loading="lazy"
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 bg-gray-100 dark:bg-gray-700"
             onError={() => onImageError(product.id)}
           />
@@ -446,8 +505,8 @@ const ProductCard = ({ product, viewMode, imageErrors, onImageError, onClick }) 
 {Number(product.precio_venta || product.price || 0).toFixed(2)} BS
           </span>
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            product.stock_actual > 0 
-              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
+            product.stock_actual > 0
+              ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
               : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
           }`}>
             {product.stock_actual > 0 ? `Stock disponible: ${product.stock_actual}` : 'Sin stock'}
@@ -456,4 +515,4 @@ const ProductCard = ({ product, viewMode, imageErrors, onImageError, onClick }) 
       </div>
     </div>
   );
-};
+});

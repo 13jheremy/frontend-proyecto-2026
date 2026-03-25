@@ -17,7 +17,6 @@ const CategoriaServicioTable = ({
   onInfo,
   onSoftDelete,
   onRestore,
-  onHardDelete,
   loading
 }) => {
   if (loading && categoriaServicios.length === 0) {
@@ -152,19 +151,12 @@ const CategoriaServicioTable = ({
                       >
                         <FontAwesomeIcon icon={faTrashRestore} />
                       </button>
-                      <button
-                        onClick={() => onHardDelete && onHardDelete(categoria.id)}
-                        className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                        title="Eliminar permanentemente"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
                     </>
                   ) : (
                     <button
                       onClick={() => onSoftDelete && onSoftDelete(categoria.id)}
                       className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                      title="Eliminar temporalmente"
+                      title="Eliminar"
                     >
                       <FontAwesomeIcon icon={faRecycle} />
                     </button>

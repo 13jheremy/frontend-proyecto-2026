@@ -41,15 +41,21 @@ const ProveedorSearch = ({ filters = {}, setFilters, onSearch }) => {
   };
 
   const handleClearFilters = () => {
-    const clearedFilters = {};
+    // Volver a mostrar solo activos al limpiar
+    const clearedFilters = { activo: 'true' };
     setFilters(clearedFilters);
     onSearch(clearedFilters);
+    setShowAdvanced(false);
   };
 
-  // Verificar si hay filtros activos
-  const hasActiveFilters = Object.keys(filters).some(key => 
-    filters[key] !== '' && filters[key] !== null && filters[key] !== undefined
-  );
+  // Verificar si hay filtros activos (incluyendo activo cuando no es el valor por defecto)
+  const hasActiveFilters = Object.keys(filters).some(key => {
+    // Ignorar 'activo' solo cuando es el valor por defecto 'true'
+    if (key === 'activo') {
+      return filters[key] !== 'true' && filters[key] !== '' && filters[key] !== undefined;
+    }
+    return filters[key] !== '' && filters[key] !== null && filters[key] !== undefined;
+  });
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-all duration-300 ease-in-out">
@@ -72,17 +78,13 @@ const ProveedorSearch = ({ filters = {}, setFilters, onSearch }) => {
         <div className="col-span-1">
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`w-full flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              showAdvanced || hasActiveFilters
-                ? 'bg-blue-100 text-blue-800 border-2 border-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-600'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+            className="w-full flex items-center justify-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
           >
             <FontAwesomeIcon icon={faFilter} className="mr-2" />
             {showAdvanced ? 'Ocultar' : 'Filtros'}
             {hasActiveFilters && (
-              <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-blue-100 bg-blue-600 rounded-full">
-                {Object.keys(filters).filter(key => filters[key] && filters[key] !== '').length}
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                {Object.keys(filters).filter(key => key !== 'activo' && filters[key] && filters[key] !== '').length}
               </span>
             )}
           </button>
@@ -101,7 +103,7 @@ const ProveedorSearch = ({ filters = {}, setFilters, onSearch }) => {
         </div>
       </div>
 
-      {/* Sección de filtros avanzados */}
+      {/* Sección de filtros avanzados - solo visible cuando se expande */}
       {showAdvanced && (
         <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -135,8 +137,7 @@ const ProveedorSearch = ({ filters = {}, setFilters, onSearch }) => {
               >
                 <option value="">Todos</option>
                 <option value="false">No Eliminados</option>
-                <option value="true">Eliminados Temporalmente</option>
-                <option value="all">Incluir Eliminados</option>
+                <option value="true">Eliminados</option>
               </select>
             </div>
 
@@ -176,33 +177,7 @@ const ProveedorSearch = ({ filters = {}, setFilters, onSearch }) => {
             </span>
           )}
           
-          {filters.activo === 'true' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
-              <FontAwesomeIcon icon={faCheckCircle} className="mr-1 h-3 w-3" />
-              Activos
-              <button
-                type="button"
-                onClick={() => handleInputChange('activo', '')}
-                className="ml-2 h-4 w-4 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
-              >
-                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-
-          {filters.activo === 'false' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200">
-              <FontAwesomeIcon icon={faBan} className="mr-1 h-3 w-3" />
-              Inactivos
-              <button
-                type="button"
-                onClick={() => handleInputChange('activo', '')}
-                className="ml-2 h-4 w-4 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
-              >
-                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
-              </button>
-            </span>
-          )}
+          {/* NOTE: activo filter is applied silently in background, not shown as badge */}
 
           {filters.eliminado === 'true' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">

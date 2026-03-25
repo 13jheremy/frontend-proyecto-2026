@@ -5,9 +5,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usuarioApi } from '../api/index'; // Importa la API de usuarios.
 import { personsAPI } from '../../../services/api'; // Importa la API de personas.
-import { handleApiError, handleUserCreationError, showNotification, userMessages } from '../../../utils/notifications'; // Importa utilidades de notificación y manejo de errores.
+import { handleUserCreationError, showNotification, userMessages } from '../../../utils/notifications'; // Importa utilidades de notificación y manejo de errores.
+import { handleApiError } from '../../../utils/apiErrorHandlers'; // Importa manejo de errores de API.
+import { useAuth } from '../../../hooks/useAuth'; // Importa el hook de autenticación.
 
 export const useUsuarios = () => {
+  // Obtener el usuario actual logueado
+  const { user: currentUser } = useAuth();
+  
   // Estado para almacenar la lista de usuarios (incluyendo personas sin usuario).
   const [usuarios, setUsuarios] = useState([]);
   // Estado para almacenar la lista de roles disponibles.
@@ -57,76 +62,94 @@ export const useUsuarios = () => {
     return params; // Retorna los parámetros procesados.
   };
 
-  // fetchUsuarios: Función asíncrona para obtener usuarios y personas sin usuario de la API.
-  // Incluye manejo de filtros, paginación y errores.
-  const fetchUsuarios = useCallback(async (filters = {}, page = 1, pageSize = 10) => {
-    setLoading(true); // Activa el estado de carga.
-    setError(null); // Limpia cualquier error previo.
+   // fetchUsuarios: Función asíncrona para obtener usuarios y personas sin usuario de la API.
+   // Incluye manejo de filtros, paginación y errores.
+   const fetchUsuarios = useCallback(async (filters = {}, page = 1, pageSize = 10) => {
+     setLoading(true); // Activa el estado de carga.
+     setError(null); // Limpia cualquier error previo.
 
-    try {
-      const processedFilters = processFilters(filters); // Procesa los filtros.
-      const params = {
-        ...processedFilters, // Incluye los filtros procesados.
-        page, // Número de página.
-        page_size: pageSize, // Tamaño de la página.
-      };
+     try {
+       const processedFilters = processFilters(filters); // Procesa los filtros.
+       const params = {
+         ...processedFilters, // Incluye los filtros procesados.
+         page, // Número de página.
+         page_size: pageSize, // Tamaño de la página.
+       };
 
-      // Obtener usuarios y personas sin usuario en paralelo
-      const [usuariosResponse, personasResponse] = await Promise.all([
-        usuarioApi.getUsuarios(params),
-        personsAPI.getWithoutUser()
-      ]);
+       // Obtener usuarios y personas sin usuario en paralelo
+       const [usuariosResult, personasResult] = await Promise.allSettled([
+         usuarioApi.getUsuarios(params),
+         personsAPI.getWithoutUser()
+       ]);
 
-      let usuariosCombinados = [];
+       let usuariosCombinados = [];
 
-      // Procesar usuarios si hay datos
-      if (usuariosResponse && usuariosResponse.results) {
-        usuariosCombinados = [...usuariosResponse.results];
-      }
+       // Procesar usuarios si hay datos
+       if (usuariosResult.status === 'fulfilled' && usuariosResult.value?.results) {
+         usuariosCombinados = [...usuariosResult.value.results];
+       }
 
-      // Procesar personas sin usuario si hay datos
-      if (personasResponse && personasResponse.success && personasResponse.data) {
-        const personasFormateadas = personasResponse.data.map(persona => ({
-          ...persona,
-          id: `persona_${persona.id}`, // Prefijo para distinguir de usuarios reales
-          username: 'Sin usuario',
-          email: persona.email || 'No especificado',
-          is_active: true,
-          eliminado: false,
-          roles: [],
-          fecha_creacion: persona.fecha_creacion,
-          fecha_actualizacion: persona.fecha_actualizacion,
-          es_persona_sin_usuario: true, // Flag para identificar que es una persona sin usuario
-          persona_asociada: persona
-        }));
-        usuariosCombinados = [...usuariosCombinados, ...personasFormateadas];
-      }
+       // Procesar personas sin usuario si hay datos
+       if (personasResult.status === 'fulfilled' && personasResult.value?.success && personasResult.value?.data) {
+         const personasFormateadas = personasResult.value.data.map(persona => ({
+           ...persona,
+           id: `persona_${persona.id}`, // Prefijo para distinguir de usuarios reales
+           username: 'Sin usuario',
+           email: persona.email || 'No especificado',
+           is_active: true,
+           eliminado: false,
+           roles: [],
+           fecha_creacion: persona.fecha_creacion,
+           fecha_actualizacion: persona.fecha_actualizacion,
+           es_persona_sin_usuario: true, // Flag para identificar que es una persona sin usuario
+           persona_asociada: persona
+         }));
+         usuariosCombinados = [...usuariosCombinados, ...personasFormateadas];
+       }
 
-      // Actualizar estados
-      if (usuariosResponse && usuariosResponse.results) {
-        const totalItems = usuariosResponse.count || 0;
-        const totalPages = Math.ceil(totalItems / pageSize);
+       // Actualizar estados - solo si tenemos datos de al menos una fuente
+       const hasValidData = 
+         (usuariosResult.status === 'fulfilled' && usuariosResult.value?.results) ||
+         (personasResult.status === 'fulfilled' && personasResult.value?.success && personasResult.value?.data);
 
-        setUsuarios(usuariosCombinados); // Actualiza la lista combinada.
-        setPagination({ // Actualiza la información de paginación.
-          page,
-          pageSize,
-          totalItems,
-          totalPages,
-          next: usuariosResponse.next,
-          previous: usuariosResponse.previous,
-        });
-      }
-    } catch (err) {
-      // Captura y maneja los errores de la API.
-      const apiError = handleApiError(err); // Procesa el error para obtener un formato legible.
-      setError(apiError); // Establece el error.
-      setUsuarios([]); // Limpia la lista de usuarios en caso de error.
-      setPagination({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 }); // Restablece la paginación.
-    } finally {
-      setLoading(false); // Desactiva el estado de carga, independientemente del resultado.
-    }
-  }, []); // Dependencias: se recrea si alguna de sus dependencias cambia (actualmente ninguna).
+       if (hasValidData) {
+         // Filtrar el usuario actual de la lista
+         const currentUserId = currentUser?.id;
+         const usuariosFiltrados = currentUserId 
+           ? usuariosCombinados.filter(u => u.id !== currentUserId) 
+           : usuariosCombinados;
+         
+         // Para paginación, usamos el conteo de usuarios si está disponible, de lo contrario estimamos
+         const totalItems = (usuariosResult.status === 'fulfilled' && usuariosResult.value?.count) 
+           ? Math.max(0, usuariosResult.value.count - (currentUserId ? 1 : 0))
+           : (usuariosFiltrados.length > 0 ? usuariosFiltrados.length : 0);
+         const totalPages = Math.ceil(totalItems / pageSize);
+
+         setUsuarios(usuariosFiltrados); // Actualiza la lista combinada filtrada.
+         setPagination({ // Actualiza la información de paginación.
+           page,
+           pageSize,
+           totalItems,
+           totalPages,
+           // Para next/previous, solo los establecemos si tenemos la respuesta de usuarios
+           next: usuariosResult.status === 'fulfilled' ? usuariosResult.value?.next || null : null,
+           previous: usuariosResult.status === 'fulfilled' ? usuariosResult.value?.previous || null : null,
+         });
+       } else {
+         // No hay datos válidos de ninguna fuente
+         setUsuarios([]);
+         setPagination({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 });
+       }
+     } catch (err) {
+       // Captura y maneja los errores de la API.
+       const apiError = handleApiError(err); // Procesa el error para obtener un formato legible.
+       setError(apiError); // Establece el error.
+       setUsuarios([]); // Limpia la lista de usuarios en caso de error.
+       setPagination({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 }); // Restablece la paginación.
+     } finally {
+       setLoading(false); // Desactiva el estado de carga, independientemente del resultado.
+     }
+   }, [currentUser]); // Dependencias: se recrea si el usuario actual cambia.
 
 
   // fetchRolesDisponibles: Función asíncrona para obtener los roles disponibles de la API.
@@ -160,9 +183,11 @@ export const useUsuarios = () => {
       const apiError = handleUserCreationError(err); // Procesa el error para obtener mensajes específicos.
       setError(apiError); // Establece el error.
 
-      // Solo muestra una notificación general si no hay errores de campo específicos.
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        showNotification.error(apiError.message);
+      // Si hay errores de campo específicos, mostrar el primer mensaje claro
+      if (Object.keys(apiError.fieldErrors).length > 0) {
+        showNotification.error(apiError.message); // Muestra mensaje específico como "Ya existe un usuario con ese correo"
+      } else {
+        showNotification.error(apiError.message); // Muestra mensaje genérico
       }
 
       throw apiError; // Relanza el error para que el componente que llama pueda manejarlo.
@@ -185,9 +210,14 @@ export const useUsuarios = () => {
       const apiError = handleUserCreationError(err); // Procesa el error.
       setError(apiError); // Establece el error.
 
-      // Solo muestra una notificación general si no hay errores de campo específicos.
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        showNotification.error(apiError.message);
+      // Si hay errores de campo específicos, mostrar el primer mensaje claro
+      if (Object.keys(apiError.fieldErrors).length > 0) {
+        // Obtener el primer mensaje de error específico
+        const firstErrorField = Object.keys(apiError.fieldErrors)[0];
+        const specificMessage = apiError.fieldErrors[firstErrorField];
+        showNotification.error(specificMessage); // Muestra mensaje específico del campo
+      } else {
+        showNotification.error(apiError.message); // Muestra mensaje genérico
       }
 
       throw apiError; // Relanza el error.
@@ -210,8 +240,10 @@ export const useUsuarios = () => {
       const apiError = handleApiError(err); // Procesa el error.
       setError(apiError); // Establece el error.
 
-      // Solo muestra una notificación general si no hay errores de campo específicos.
-      if (Object.keys(apiError.fieldErrors).length === 0) {
+      // Si hay errores de campo específicos, mostrar el primer mensaje claro
+      if (Object.keys(apiError.fieldErrors).length > 0) {
+        showNotification.error(apiError.message);
+      } else {
         showNotification.error(apiError.message);
       }
 
@@ -229,24 +261,6 @@ export const useUsuarios = () => {
     try {
       await usuarioApi.softDeleteUsuario(id); // Llama a la API para la eliminación temporal.
       showNotification.success(userMessages.userSoftDeleted); // Muestra una notificación de éxito.
-    } catch (err) {
-      // Captura y maneja los errores.
-      const apiError = handleApiError(err); // Procesa el error.
-      setError(apiError); // Establece el error.
-      throw apiError; // Relanza el error.
-    } finally {
-      setLoading(false); // Desactiva el estado de carga.
-    }
-  }, []); // Dependencias: se recrea si alguna de sus dependencias cambia (actualmente ninguna).
-
-  // hardDeleteUsuario: Función asíncrona para eliminar permanentemente un usuario.
-  const hardDeleteUsuario = useCallback(async (id) => {
-    setLoading(true); // Activa el estado de carga.
-    setError(null); // Limpia cualquier error previo.
-
-    try {
-      await usuarioApi.hardDeleteUsuario(id); // Llama a la API para la eliminación permanente.
-      showNotification.success(userMessages.userHardDeleted); // Muestra una notificación de éxito.
     } catch (err) {
       // Captura y maneja los errores.
       const apiError = handleApiError(err); // Procesa el error.
@@ -282,7 +296,7 @@ export const useUsuarios = () => {
 
     try {
       const result = await usuarioApi.resetPassword(id, newPassword); // Llama a la API para restablecer la contraseña.
-      showNotification.success(userMessages.passwordReset); // Muestra una notificación de éxito.
+      // Nota: La notificación de éxito se muestra en el componente ResetPasswordModal
       return result; // Retorna el resultado de la operación.
     } catch (err) {
       // Captura y maneja los errores.
@@ -321,9 +335,6 @@ export const useUsuarios = () => {
         case 'softDelete':
           await softDeleteUsuario(userId); // Llama a la función de eliminación temporal.
           break;
-        case 'hardDelete':
-          await hardDeleteUsuario(userId); // Llama a la función de eliminación permanente.
-          break;
         case 'restore':
           await restoreUsuario(userId); // Llama a la función de restauración.
           break;
@@ -340,7 +351,7 @@ export const useUsuarios = () => {
     } catch (err) {
       throw err; // Relanza el error.
     }
-  }, [usuarios, softDeleteUsuario, hardDeleteUsuario, restoreUsuario, toggleUserStatus]); // Dependencias: se recrea si alguna de estas funciones o 'usuarios' cambia.
+  }, [usuarios, softDeleteUsuario, restoreUsuario, toggleUserStatus]); // Dependencias: se recrea si alguna de estas funciones o 'usuarios' cambia.
 
   // useEffect de inicialización: Se ejecuta una vez al montar el componente.
   // Carga los roles disponibles y los usuarios (incluyendo personas sin usuario).
@@ -367,7 +378,6 @@ export const useUsuarios = () => {
 
     // Funciones de gestión de estado y acciones:
     softDeleteUsuario,
-    hardDeleteUsuario,
     restoreUsuario,
     toggleUserStatus,
     handleUserAction, // Función unificada para acciones.

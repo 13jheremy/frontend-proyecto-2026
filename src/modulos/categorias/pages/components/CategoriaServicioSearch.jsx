@@ -1,16 +1,16 @@
 // src/modulos/servicios/pages/components/CategoriaServicioSearch.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faFilter, faTimes, faCheckCircle, faBan } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faFilter, faTimes, faCheckCircle, faBan, faTrash } from '@fortawesome/free-solid-svg-icons';
 
 /**
  * Componente de búsqueda y filtros para servicios de categoría.
  */
-const CategoriaServicioSearch = ({ onSearch, initialFilters = {}, categoriasDisponibles }) => {
+const CategoriaServicioSearch = ({ onSearch, initialFilters = {} }) => {
   const [filters, setFilters] = useState({
     search: '', // Búsqueda por nombre_servicio, descripcion_servicio
-    categoria_id: '', // Filtrar por categoría
     activo: '', // 'true', 'false', '' (todos)
+    eliminado: '', // 'true', 'false', '' (todos)
     ...initialFilters
   });
 
@@ -51,11 +51,11 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {}, categoriasDisp
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', categoria_id: '', activo: '' });
+    setFilters({ search: '', activo: '', eliminado: '' });
     setShowAdvanced(false);
   };
 
-  const hasActiveFilters = filters.search || filters.categoria_id || filters.activo;
+  const hasActiveFilters = filters.search || filters.activo || filters.eliminado;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-4">
@@ -85,7 +85,7 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {}, categoriasDisp
           Filtros
           {hasActiveFilters && (
             <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-blue-100 bg-blue-600 rounded-full">
-              {[filters.search, filters.categoria_id, filters.activo].filter(f => f && f !== '').length}
+              {[filters.search, filters.activo, filters.eliminado].filter(f => f && f !== '').length}
             </span>
           )}
         </button>
@@ -93,23 +93,7 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {}, categoriasDisp
 
       {showAdvanced && (
         <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Categoría
-              </label>
-              <select
-                value={filters.categoria_id}
-                onChange={(e) => handleInputChange('categoria_id', e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              >
-                <option value="">Todas las categorías</option>
-                {categoriasDisponibles.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
-                ))}
-              </select>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Estado
@@ -122,6 +106,21 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {}, categoriasDisp
                 <option value="">Todos los estados</option>
                 <option value="true">Activos</option>
                 <option value="false">Inactivos</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Eliminación
+              </label>
+              <select
+                value={filters.eliminado}
+                onChange={(e) => handleInputChange('eliminado', e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+              >
+                <option value="">Todos</option>
+                <option value="false">No Eliminados</option>
+                <option value="true">Eliminados</option>
               </select>
             </div>
           </div>
@@ -187,6 +186,19 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {}, categoriasDisp
               <button
                 onClick={() => handleInputChange('activo', '')}
                 className="ml-2 h-4 w-4 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+              >
+                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+
+          {filters.eliminado === 'true' && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+              <FontAwesomeIcon icon={faTrash} className="mr-1 h-3 w-3" />
+              Eliminados
+              <button
+                onClick={() => handleInputChange('eliminado', '')}
+                className="ml-2 h-4 w-4 text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
               >
                 <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
               </button>

@@ -130,7 +130,7 @@ const UsuarioSearch = ({ filters, setFilters, onSearch, rolesDisponibles = [] })
               </select>
             </div>
 
-            {/* Filtro por Estado de Eliminación (Eliminados temporalmente/No eliminados) */}
+            {/* Filtro por Estado de Eliminación (Eliminados/No eliminados) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Estado de Eliminación
@@ -142,7 +142,7 @@ const UsuarioSearch = ({ filters, setFilters, onSearch, rolesDisponibles = [] })
               >
                 <option value="">Todos</option>
                 <option value="false">No Eliminados</option>
-                <option value="true">Eliminados Temporalmente</option>
+                <option value="true">Eliminados</option>
               </select>
             </div>
 

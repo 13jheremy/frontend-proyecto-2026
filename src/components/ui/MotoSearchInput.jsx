@@ -7,7 +7,7 @@ import { buscarMotos } from '../../services/busqueda';
 const MotoSearchInput = ({ 
   onSelect, 
   value = null, 
-  placeholder = "Buscar moto por placa, marca, modelo o propietario...",
+  placeholder = "Buscar moto: placa, modelo, marca, nombre, CI, teléfono...",
   className = "",
   disabled = false,
   required = false,
@@ -22,7 +22,18 @@ const MotoSearchInput = ({
   const dropdownRef = useRef(null);
 
   useEffect(() => {
+    console.log('MotoSearchInput - value changed:', value);
     setSelectedMoto(value);
+    console.log('Setting query from value:', value?.display_text);
+    // Force update to ensure the input value is rendered
+    if (value && value.display_text) {
+      setQuery(value.display_text);
+    } else if (value && value.placa) {
+      // Fallback: construct display text from individual fields
+      const text = `${value.marca || ''} ${value.modelo || ''} (${value.placa})`.trim();
+      console.log('Constructing display text:', text);
+      setQuery(text);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -46,7 +57,8 @@ const MotoSearchInput = ({
     setLoading(true);
     try {
       const response = await buscarMotos(searchQuery);
-      setResults(response.results || []);
+      // El backend retorna { success: true, data: [...], status: 200 }
+      setResults(response.data?.results || response.data || []);
       setIsOpen(true);
     } catch (error) {
       console.error('Error buscando motos:', error);

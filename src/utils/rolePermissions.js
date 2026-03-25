@@ -220,7 +220,7 @@ export const normalizeRoles = (roles) => {
  */
 export const validateRoles = (roles) => {
   const normalized = normalizeRoles(roles);
-  const validRoles = ['Administrador', 'Empleado', 'Tecnico', 'Cliente'];
+  const validRoles = ['administrador', 'empleado', 'tecnico', 'cliente'];
   
   return {
     isValid: normalized.every(role => validRoles.includes(role)),

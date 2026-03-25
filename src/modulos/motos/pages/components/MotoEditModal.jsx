@@ -44,10 +44,18 @@ const MotoEditModal = ({ isOpen, onClose, onUpdate, currentMoto, loading, error,
     if (isOpen && currentMoto) {
       console.log('📥 Cargando datos de la moto en el formulario:', currentMoto);
       
+      // Obtener el ID del propietario (puede ser objeto o número)
+      const propietarioId = typeof currentMoto.propietario === 'object' 
+        ? currentMoto.propietario?.id 
+        : currentMoto.propietario;
+      
       // Encontrar el usuario que tiene la persona asociada como propietario
       const usuarioPropietario = usuariosDisponibles.find(usuario => 
-        usuario.persona && usuario.persona.id === currentMoto.propietario
+        usuario.persona && usuario.persona.id === propietarioId
       );
+      
+      console.log('🔍 Propietario ID:', propietarioId);
+      console.log('🔍 Usuarios disponibles:', usuariosDisponibles.map(u => ({id: u.id, personaId: u.persona?.id})));
       
       console.log('👤 Usuario propietario encontrado:', usuarioPropietario);
       
@@ -61,7 +69,8 @@ const MotoEditModal = ({ isOpen, onClose, onUpdate, currentMoto, loading, error,
         color: currentMoto.color || '',
         cilindrada: currentMoto.cilindrada?.toString() || '',
         kilometraje: currentMoto.kilometraje?.toString() || '',
-        propietario: usuarioPropietario ? usuarioPropietario.persona.id.toString() : '',
+        // Usar el ID del usuario si se encuentra, o el ID directo del propietario
+        propietario: propietarioId ? propietarioId.toString() : '',
         activo: Boolean(currentMoto.activo),
       });
       setFormErrors({});
@@ -218,6 +227,7 @@ const MotoEditModal = ({ isOpen, onClose, onUpdate, currentMoto, loading, error,
               clientesDisponibles={usuariosDisponibles}
               error={!!formErrors.propietario}
               placeholder="Buscar por nombre, cédula o usuario..."
+              propietarioNombre={currentMoto?.propietario_nombre}
             />
             {formErrors.propietario && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.propietario}</p>

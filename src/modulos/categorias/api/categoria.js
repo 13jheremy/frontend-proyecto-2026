@@ -86,4 +86,112 @@ export const categoriaApi = {
       throw new Error(error.message || 'Error al eliminar categoría');
     }
   },
+
+  /**
+   * Alternar estado activo/inactivo de categoría.
+   * @param {string} id - ID de la categoría.
+   * @param {boolean} activo - Estado activo a establecer.
+   * @returns {Promise<object>} - Promesa que resuelve con los datos de la categoría actualizada.
+   */
+  toggleActive: async (id, activo) => {
+    try {
+      const response = await categoriesAPI.toggleActive(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en toggleActive:', error);
+      // Si es un error de Axios, preservar la respuesta para obtener el mensaje del backend
+      if (error.response) {
+        throw error; // Re-lanzar para preservar response
+      }
+      throw new Error(error.message || 'Error al cambiar estado de categoría');
+    }
+  },
+
+  /**
+   * Eliminar categoría temporalmente (soft delete).
+   * @param {string} id - ID de la categoría.
+   * @returns {Promise<object>} - Promesa que resuelve con la respuesta.
+   */
+  softDelete: async (id) => {
+    try {
+      const response = await categoriesAPI.softDelete(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en softDelete:', error);
+      // Si es un error de Axios, preservar la respuesta para obtener el mensaje del backend
+      if (error.response) {
+        throw error; // Re-lanzar para preservar response
+      }
+      throw new Error(error.message || 'Error al eliminar categoría');
+    }
+  },
+
+  /**
+   * Restaurar categoría eliminada.
+   * @param {string} id - ID de la categoría.
+   * @returns {Promise<object>} - Promesa que resuelve con los datos de la categoría restaurada.
+   */
+  restore: async (id) => {
+    try {
+      const response = await categoriesAPI.restore(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en restore:', error);
+      // Si es un error de Axios, preservar la respuesta para obtener el mensaje del backend
+      if (error.response) {
+        throw error; // Re-lanzar para preservar response
+      }
+      throw new Error(error.message || 'Error al restaurar categoría');
+    }
+  },
+
+  /**
+   * Eliminar categoría permanentemente.
+   * @param {string} id - ID de la categoría.
+   * @returns {Promise<number>} - Promesa que resuelve con el status code.
+   */
+  deletePermanent: async (id) => {
+    try {
+      const response = await categoriesAPI.deletePermanent(id);
+      if (response.success) return response.status;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en deletePermanent:', error);
+      throw new Error(error.message || 'Error al eliminar permanentemente categoría');
+    }
+  },
+
+  /**
+   * Obtener estadísticas de categorías.
+   * @returns {Promise<object>} - Promesa que resuelve con las estadísticas.
+   */
+  getStats: async () => {
+    try {
+      const response = await categoriesAPI.getStats();
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en getStats:', error);
+      throw new Error(error.message || 'Error al obtener estadísticas');
+    }
+  },
+
+  /**
+   * Verifica las relaciones de la categoría antes de eliminar/desactivar.
+   * @param {string} id - ID de la categoría.
+   * @returns {Promise<object>} - Promesa que resuelve con la información de relaciones.
+   */
+  verificarRelaciones: async (id) => {
+    try {
+      const response = await categoriesAPI.verificarRelaciones(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en verificarRelaciones:', error);
+      throw new Error(error.message || 'Error al verificar relaciones');
+    }
+  },
 };

@@ -31,10 +31,24 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // Suprimir errores de red del console para evitar "Network Error" en la consola
+    if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+      // No loggear estos errores al console - serán manejados por el componente
+      // Crear un error personalizado sin el mensaje de red
+      const customError = new Error('Error de conexión');
+      customError.config = error.config;
+      customError.request = error.request;
+      customError.code = error.code;
+      return Promise.reject(customError);
+    }
+
     const originalRequest = error.config;
 
-    // Si el error es 401 y no hemos intentado refresh ya
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // IGNORAR errores 401 del endpoint de login - el login fallido NO debe recargar la página
+    const isLoginRequest = originalRequest.url?.includes('/auth/login');
+    
+    // Si el error es 401 y no hemos intentado refresh ya Y no es request de login
+    if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {
       originalRequest._retry = true;
 
       const refreshToken = localStorage.getItem('refresh_token');
@@ -68,6 +82,8 @@ api.interceptors.response.use(
       }
     }
 
+    // Para login fallido (401 sin retry), solo rechazar el error normalmente
+    // NO recargar la página - dejar que el componente maneje el error
     return Promise.reject(error);
   }
 );
@@ -80,6 +96,10 @@ api.interceptors.response.use(
  * CORREGIDA: Ahora lanza errores de Axios directamente para preservar error.response
  */
 const apiRequest = async (method, endpoint, data = null, config = {}) => {
+  // Solo mostrar en desarrollo
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📡 [API] ${method} ${endpoint}`, data);
+  }
   try {
     const headers = { ...config.headers }; // Copia los headers existentes
 
@@ -99,6 +119,9 @@ const apiRequest = async (method, endpoint, data = null, config = {}) => {
       ...config // Otros configs pueden sobrescribir headers si es necesario
     });
     
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📥 [API] Respuesta ${method} ${endpoint}:`, response.data);
+    }
     return {
       success: true,
       data: response.data,
@@ -195,10 +218,15 @@ export const usersAPI = {
 
   createComplete: (data) => apiRequest('POST', API_CONFIG.ENDPOINTS.CREATECOMPLETE, data),
   getComplete: (id) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.GETCOMPLETE}${id}/`),
-  updateComplete: (id, data) => 
-    apiRequest('PUT', `${API_CONFIG.ENDPOINTS.USERS}${id}/update_complete/`, data),
+  updateComplete: (id, data) => {
+    console.log('🔍 [FRONTEND] Enviando update_complete:', { id, data });
+    return apiRequest('PUT', `${API_CONFIG.ENDPOINTS.USERS}${id}/update_complete/`, data)
+      .then(response => {
+        console.log('🔍 [FRONTEND] Respuesta update_complete:', response);
+        return response;
+      });
+  },
   softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.USERS}${id}/soft_delete/`),
-  hardDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.USERS}${id}/hard_delete/`),
   restoreUser: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.USERS}${id}/restore/`),
 
 
@@ -275,13 +303,10 @@ export const productsAPI = {
   getFeatured: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.PRODUCTS}destacados/`, null, { params }),
   toggleActive: (id, activo) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.PRODUCTS}${id}/toggle_activo/`, { activo }),
 
-  // NUEVAS FUNCIONALIDADES FALTANTES
+  // Gestión de stock
   softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.PRODUCTS}${id}/soft_delete/`),
-  hardDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.PRODUCTS}${id}/hard_delete/`),
   restoreProduct: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.PRODUCTS}${id}/restore/`),
 
-  
-  // Gestión de stock
   updateStock: (id, stockActual, motivo = 'Actualización manual') => 
     apiRequest('POST', `${API_CONFIG.ENDPOINTS.PRODUCTS}${id}/actualizar_stock/`, { stock_actual: stockActual, motivo }),
   
@@ -302,6 +327,24 @@ export const productsAPI = {
   getDestacados: () =>
     apiRequest('GET', `${API_CONFIG.ENDPOINTS.PUBLIC_PRODUCTS}destacados/`),
 
+  // NUEVAS FUNCIONALIDADES - EXPORTACIÓN E IMPORTACIÓN
+  // Exportar productos a Excel/CSV
+  exportProductos: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.PRODUCTS}exportar/`, null, { params }),
+  
+  // Importar productos desde CSV
+  importProductos: (formData) => apiRequest('POST', `${API_CONFIG.ENDPOINTS.PRODUCTS}importar/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+
+  // bulk actions
+  activateMultiple: (ids) => apiRequest('POST', `${API_CONFIG.ENDPOINTS.PRODUCTS}activar_multiples/`, { ids }),
+  deactivateMultiple: (ids) => apiRequest('POST', `${API_CONFIG.ENDPOINTS.PRODUCTS}desactivar_multiples/`, { ids }),
+  softDeleteMultiple: (ids) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.PRODUCTS}eliminar_multiples_temporal/`, { ids }),
+  restoreMultiple: (ids) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.PRODUCTS}restaurar_multiples/`, { ids }),
+
+  // REPORTES
+  getReporteInventario: (params = {}) => apiRequest('GET', 'reportes/inventario/', null, { params }),
+  getReporteProductos: (params = {}) => apiRequest('GET', 'reportes/productos/', null, { params }),
 
 };
 
@@ -317,10 +360,10 @@ export const servicesAPI = {
   delete: (id) => apiRequest("DELETE", `${API_CONFIG.ENDPOINTS.SERVICES}${id}/`),
 
   // FUNCIONALIDADES EXISTENTES
-  toggleActivo: (id) => apiRequest("PATCH", `${API_CONFIG.ENDPOINTS.SERVICES}${id}/toggle_activo/`),
-  softDelete: (id) => apiRequest("PATCH", `${API_CONFIG.ENDPOINTS.SERVICES}${id}/soft_delete/`),
-  restore: (id) => apiRequest("PATCH", `${API_CONFIG.ENDPOINTS.SERVICES}${id}/restore/`),
-  hardDelete: (id) => apiRequest("DELETE", `${API_CONFIG.ENDPOINTS.SERVICES}${id}/hard_delete/`),
+  toggleActivo: (id, activo) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICES}${id}/toggle_activo/`, { activo }),
+  softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICES}${id}/soft_delete/`),
+  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICES}${id}/restore/`),
+  hardDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.SERVICES}${id}/hard_delete/`),
 
 
 
@@ -349,10 +392,9 @@ export const suppliersAPI = {
   patch: (id, data) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SUPPLIERS}${id}/`, data),
   delete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.SUPPLIERS}${id}/`),
 
-  toggleActive: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SUPPLIERS}${id}/toggle_activo/`),
+  toggleActive: (id, activo) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SUPPLIERS}${id}/toggle_activo/`, { activo }),
   softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SUPPLIERS}${id}/soft_delete/`),
   restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SUPPLIERS}${id}/restore/`),
-  hardDelete: (id) => apiRequest("DELETE", `${API_CONFIG.ENDPOINTS.SUPPLIERS}${id}/hard_delete/`),
   // Consultas específicas
   getActive: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.SUPPLIERS}activos/`, null, { params }),
   getInactive: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.SUPPLIERS}inactivos/`, null, { params }),
@@ -378,8 +420,8 @@ export const categoriesAPI = {
   activate: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/activar/`),
   deactivate: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/desactivar/`),
   toggleActive: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/toggle_activo/`),
-  softDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/borrar_temporal/`),
-  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/restaurar/`),
+  softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/soft_delete/`),
+  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/restore/`),
   deletePermanent: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/eliminar-permanente/`),
 
   // Consultas específicas
@@ -389,11 +431,14 @@ export const categoriesAPI = {
   search: (query, params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.CATEGORIES}buscar/`, null, { params: { q: query, ...params } }),
   getStats: () => apiRequest('GET', `${API_CONFIG.ENDPOINTS.CATEGORIES}estadisticas/`),
 
+  // Verificar relaciones antes de eliminar/desactivar
+  verificarRelaciones: (id) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.CATEGORIES}${id}/verificar_relaciones/`),
+
   // Acciones múltiples
   activateMultiple: (ids) => apiRequest('POST', `${API_CONFIG.ENDPOINTS.CATEGORIES}activar_multiples/`, { ids }),
   deactivateMultiple: (ids) => apiRequest('POST', `${API_CONFIG.ENDPOINTS.CATEGORIES}desactivar_multiples/`, { ids }),
-  softDeleteMultiple: (ids) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.CATEGORIES}eliminar_multiples_temporal/`, { ids }),
-  restoreMultiple: (ids) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}restaurar_multiples/`, { ids })
+  softDeleteMultiple: (ids) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}soft_delete_multiple/`, { ids }),
+  restoreMultiple: (ids) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.CATEGORIES}restore_multiple/`, { ids })
 };
 
 // =======================================
@@ -416,10 +461,10 @@ export const serviceCategoriesAPI = {
   delete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/`),
 
   // NUEVAS FUNCIONALIDADES
-  toggleActive: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/toggle_activo/`),
-  softDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/soft_delete/`),
-  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/restore/`),
-  hardDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/hard_delete/`),
+  toggleActive: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/toggle_activo/`, {}),
+  softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/soft_delete/`, {}),
+  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/restore/`, {}),
+  hardDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/eliminar-permanente/`),
 
   // Consultas específicas
   getActive: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}activos/`, null, { params }),
@@ -427,6 +472,9 @@ export const serviceCategoriesAPI = {
   getDeleted: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}eliminados/`, null, { params }),
   search: (query, params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}buscar/`, null, { params: { q: query, ...params } }),
   getStats: () => apiRequest('GET', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}estadisticas/`),
+
+  // Verificar relaciones antes de eliminar/desactivar
+  verificarRelaciones: (id) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}${id}/verificar_relaciones/`),
 
   // Acciones múltiples
   activateMultiple: (ids) => apiRequest('POST', `${API_CONFIG.ENDPOINTS.SERVICE_CATEGORIES}activar_multiples/`, { ids }),
@@ -447,7 +495,7 @@ export const motorcyclesAPI = {
   delete: (id) => apiRequest("DELETE", `${API_CONFIG.ENDPOINTS.MOTORCYCLES}${id}/`),
 
   // FUNCIONALIDADES EXISTENTES
-  toggleActive: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MOTORCYCLES}${id}/toggle_activo/`),
+  toggleActive: (id, activo) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MOTORCYCLES}${id}/toggle_activo/`, { activo }),
   softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MOTORCYCLES}${id}/soft_delete/`),
   restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MOTORCYCLES}${id}/restore/`),
   hardDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.MOTORCYCLES}${id}/hard_delete/`),
@@ -477,10 +525,10 @@ export const maintenanceAPI = {
   patch: (id, data) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/`, data),
   delete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/`),
 
-  // NUEVAS FUNCIONALIDADES
-  softDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/borrar_temporal/`),
-  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/restaurar/`),
-  deletePermanent: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/eliminar-permanente/`),
+  // ENDPOINTS CORREGIDOS - usan los nombres correctos del backend
+  softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/soft_delete/`),
+  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/restore/`),
+  deletePermanent: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.MAINTENANCE}${id}/eliminar_permanente/`),
 
   // Consultas específicas
   getDeleted: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.MAINTENANCE}eliminados/`, null, { params }),
@@ -555,22 +603,9 @@ export const inventoryAPI = {
   patch: (id, data) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORY}${id}/`, data),
   delete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.INVENTORY}${id}/`),
 
-  // NUEVAS FUNCIONALIDADES
-  softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORY}${id}/soft_delete/`),
-  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORY}${id}/restore/`),
-  deletePermanent: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.INVENTORY}${id}/hard_delete/`),
-
   // Consultas específicas
-  getDeleted: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.INVENTORY}eliminados/`, null, { params }),
   search: (query, params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.INVENTORY}buscar/`, null, { params: { q: query, ...params } }),
   getStats: () => apiRequest('GET', `${API_CONFIG.ENDPOINTS.INVENTORY}estadisticas/`),
-
-  // Toggle activo/inactivo
-  toggleActive: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORY}${id}/toggle_activo/`),
-
-  // Acciones múltiples
-  softDeleteMultiple: (ids) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.INVENTORY}eliminar_multiples_temporal/`, { ids }),
-  restoreMultiple: (ids) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORY}restaurar_multiples/`, { ids })
 };
 
 // =======================================
@@ -584,19 +619,9 @@ export const inventoryMovementAPI = {
   patch: (id, data) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}${id}/`, data),
   delete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}${id}/`),
 
-  // NUEVAS FUNCIONALIDADES
-  softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}${id}/soft_delete/`),
-  restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}${id}/restore/`),
-  deletePermanent: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}${id}/hard_delete/`),
-
   // Consultas específicas
-  getDeleted: (params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}eliminados/`, null, { params }),
   search: (query, params = {}) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}buscar/`, null, { params: { q: query, ...params } }),
   getStats: () => apiRequest('GET', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}estadisticas/`),
-
-  // Acciones múltiples
-  softDeleteMultiple: (ids) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}eliminar_multiples_temporal/`, { ids }),
-  restoreMultiple: (ids) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.INVENTORYMOVEMENT}restaurar_multiples/`, { ids })
 };
 
 // =======================================
@@ -669,16 +694,16 @@ export const dashboardAPI = {
   healthCheck: () => apiRequest('GET', API_CONFIG.ENDPOINTS.HEALTH_CHECK)
 };
 
-// API específica para clientes
+// API específica para clientes - usando apiRequestSafe para manejo consistente de errores
 export const clientAPI = {
   getMotos: () =>
-    apiRequest('GET', API_CONFIG.ENDPOINTS.CLIENT_MOTOS),
+    apiRequestSafe('GET', API_CONFIG.ENDPOINTS.CLIENT_MOTOS),
   
   getVentas: () =>
-    apiRequest('GET', API_CONFIG.ENDPOINTS.CLIENT_VENTAS),
+    apiRequestSafe('GET', API_CONFIG.ENDPOINTS.CLIENT_VENTAS),
   
   getMantenimientos: () =>
-    apiRequest('GET', API_CONFIG.ENDPOINTS.CLIENT_MANTENIMIENTOS)
+    apiRequestSafe('GET', API_CONFIG.ENDPOINTS.CLIENT_MANTENIMIENTOS)
 };
 
 // =======================================
@@ -749,7 +774,6 @@ export const recordatoriosAPI = {
 
   // Funcionalidades específicas
   softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.RECORDATORIOS}${id}/soft_delete/`),
-  hardDelete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.RECORDATORIOS}${id}/hard_delete/`),
   restore: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.RECORDATORIOS}${id}/restore/`),
   toggleActivo: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.RECORDATORIOS}${id}/toggle_activo/`),
 
@@ -759,6 +783,9 @@ export const recordatoriosAPI = {
   proximos: (dias = 7) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.RECORDATORIOS}proximos/`, null, { params: { dias } }),
   vencidos: () => apiRequest('GET', `${API_CONFIG.ENDPOINTS.RECORDATORIOS}vencidos/`),
   estadisticas: () => apiRequest('GET', `${API_CONFIG.ENDPOINTS.RECORDATORIOS}estadisticas/`),
+  
+  // Enviar notificación push
+  post: (endpoint, data = null) => apiRequest('POST', endpoint, data),
 };
 
 // =======================================
@@ -791,7 +818,7 @@ export const posAPI = {
   // Búsquedas
   buscarProductos: (query) => apiRequest('GET', API_CONFIG.ENDPOINTS.POS_BUSCAR_PRODUCTOS, null, { params: { q: query } }),
   buscarClientes: (query) => apiRequest('GET', API_CONFIG.ENDPOINTS.POS_BUSCAR_CLIENTES, null, { params: { q: query } }),
-  buscarTecnicos: () => apiRequest('GET', API_CONFIG.ENDPOINTS.POS_BUSCAR_TECNICOS),
+  buscarTecnicos: (query = '') => apiRequest('GET', API_CONFIG.ENDPOINTS.POS_BUSCAR_TECNICOS, null, { params: { q: query } }),
   buscarMotos: (query) => apiRequest('GET', API_CONFIG.ENDPOINTS.POS_BUSCAR_MOTOS, null, { params: { q: query } }),
   buscarServicios: (query) => apiRequest('GET', API_CONFIG.ENDPOINTS.POS_BUSCAR_SERVICIOS, null, { params: { q: query } }),
   

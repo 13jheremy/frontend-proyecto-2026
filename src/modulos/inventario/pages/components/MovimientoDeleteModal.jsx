@@ -33,12 +33,12 @@ const MovimientoDeleteModal = ({ isOpen, onClose, movimiento, onConfirm, isResto
       };
     } else {
       return {
-        title: 'Eliminar Movimiento (Temporal)',
-        message: `¿Está seguro de eliminar temporalmente el movimiento de ${tipoMovimiento.toLowerCase()} del producto "${productoNombre}" por cantidad ${movimiento.cantidad}? Podrá restaurarlo después.`,
-        confirmText: 'Eliminar Temporalmente',
-        confirmClass: 'bg-orange-600 hover:bg-orange-700',
-        loadingText: 'Eliminando temporalmente...',
-        icon: faArchive
+        title: 'Eliminar Movimiento',
+        message: `¿Está seguro de eliminar el movimiento de ${tipoMovimiento.toLowerCase()} del producto "${productoNombre}" por cantidad ${movimiento.cantidad}?`,
+        confirmText: 'Eliminar',
+        confirmClass: 'bg-red-600 hover:bg-red-700',
+        loadingText: 'Eliminando movimiento...',
+        icon: faTrash
       };
     }
   };
@@ -52,7 +52,7 @@ const MovimientoDeleteModal = ({ isOpen, onClose, movimiento, onConfirm, isResto
       await onConfirm();
       onClose();
     } catch (err) {
-      console.error(`Error en acción ${isRestore ? 'restore' : 'softDelete'}:`, err);
+      console.error(`Error en acción ${isRestore ? 'restore' : 'delete'}:`, err);
     } finally {
       setLoading(false);
     }

@@ -33,6 +33,14 @@ const AUTH_TYPES = {
 // Reducer
 const authReducer = (state, action) => {
   switch (action.type) {
+    case 'SET_INITIAL_STATE':
+      // NUNCA tocar el error - preservar siempre el error existente
+      return {
+        ...state,
+        ...action.payload,
+        error: state.error  // preservar siempre
+      };
+
     case AUTH_TYPES.LOGIN_START:
       return {
         ...state,
@@ -116,7 +124,7 @@ const authReducer = (state, action) => {
         refreshToken: null,
         isAuthenticated: false,
         isLoading: false,
-        error: action.payload,
+        // NO resetear error aquí, solo en LOGIN_FAILURE y CLEAR_ERROR
         roles: [],
         primaryRole: null
       };
@@ -158,7 +166,7 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // Función para login
-  const login = async (correo_electronico, password) => {
+  const login = async (correo_electronico, password, rememberMe = false) => {
     try {
       dispatch({ type: AUTH_TYPES.LOGIN_START });
 
@@ -168,8 +176,8 @@ export const AuthProvider = ({ children }) => {
         // Guardar tokens en localStorage
         localStorage.setItem('access_token', result.data.access);
         localStorage.setItem('refresh_token', result.data.refresh);
-        // No guardar user_data aquí directamente, loadUser lo hará con datos completos
-        // localStorage.setItem('user_data', JSON.stringify(result.data.user)); // <-- ELIMINADA/COMENTADA
+        // Guardar preferencia rememberMe
+        localStorage.setItem('remember_me', rememberMe ? 'true' : 'false');
 
         // Despachar LOGIN_SUCCESS con los datos mínimos del login (tokens)
         // El 'user' completo se obtendrá y despachará en loadUser()
@@ -182,11 +190,12 @@ export const AuthProvider = ({ children }) => {
           }
         });
 
-        // Después de un login exitoso, SIEMPRE carga los datos completos del usuario
-        await loadUser(); // <-- AÑADIDA ESTA LÍNEA
+        // Después de un login exitoso, carga los datos completos del usuario
+        await loadUser();
 
         return { success: true };
       } else {
+        // Login fallido - NO guardar nada en localStorage
         dispatch({
           type: AUTH_TYPES.LOGIN_FAILURE,
           payload: result.error
@@ -202,7 +211,12 @@ export const AuthProvider = ({ children }) => {
         const data = error.response.data;
         
         if (status === 401) {
-          errorMessage = 'Usuario o contraseña incorrectos';
+          // Verificar si hay mensajes específicos de lockout
+          if (data.locked) {
+            errorMessage = data.error || 'Cuenta bloqueada por demasiados intentos';
+          } else {
+            errorMessage = data.detail || data.error || 'Usuario o contraseña incorrectos';
+          }
         } else if (status === 400) {
           errorMessage = data.detail || data.error || 'Datos de acceso inválidos';
         } else if (status === 403) {
@@ -213,7 +227,11 @@ export const AuthProvider = ({ children }) => {
           errorMessage = data.detail || data.error || 'Error al iniciar sesión';
         }
       } else if (error.request) {
-        errorMessage = 'No se pudo conectar con el servidor';
+        if (!navigator.onLine) {
+          errorMessage = 'Error de conexión. No hay acceso a internet.';
+        } else {
+          errorMessage = 'Error de conexión con la base de datos.';
+        }
       } else {
         errorMessage = error.message || 'Error inesperado';
       }
@@ -222,26 +240,32 @@ export const AuthProvider = ({ children }) => {
         type: AUTH_TYPES.LOGIN_FAILURE,
         payload: errorMessage
       });
+      
+      // No llamar a loadUser() cuando login falla
       return { success: false, error: errorMessage };
     }
   };
 
   // Función para logout
   const logout = async () => {
+    console.log('🔴 logout() llamado');
     try {
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         await authAPI.logout(refreshToken);
       }
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.log('🔴 Error en logout (catch):', error);
     } finally {
-      // Limpiar localStorage siempre
+      // SIEMPRE limpiar localStorage, sin importar si el logout fue exitoso o falló
+      console.log('🔴 Limpiando localStorage...');
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_data');
+      localStorage.removeItem('remember_me');
       
       dispatch({ type: AUTH_TYPES.LOGOUT });
+      console.log('🔴 Logout completado');
     }
   };
 
@@ -249,8 +273,12 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     const token = localStorage.getItem('access_token');
     
+    // Si no hay token, solo setear isLoading: false, NO tocar el error
     if (!token) {
-      dispatch({ type: AUTH_TYPES.LOAD_USER_FAILURE, payload: 'No se encontró token de autenticación' });
+      dispatch({ 
+        type: 'SET_INITIAL_STATE',
+        payload: { isLoading: false, isAuthenticated: false }
+      });
       return;
     }
 
@@ -260,8 +288,6 @@ export const AuthProvider = ({ children }) => {
       const result = await authAPI.getMe();
       
       if (result.success) {
-        console.log('API getMe response:', result.data);
-        
         // Actualizar datos en localStorage con la respuesta COMPLETA de getMe
         localStorage.setItem('user_data', JSON.stringify(result.data));
         
@@ -270,17 +296,19 @@ export const AuthProvider = ({ children }) => {
           payload: result.data
         });
       } else {
-        console.error('Error loading user:', result.error);
         // Si falla la carga del usuario, hacer logout
         logout();
       }
     } catch (error) {
-      console.error('loadUser catch:', error);
-      dispatch({
-        type: AUTH_TYPES.LOAD_USER_FAILURE,
-        payload: error.message || 'Error al cargar datos del usuario'
+      // En caso de error, solo limpiar sin afectar el error existente
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user_data');
+      
+      dispatch({ 
+        type: 'SET_INITIAL_STATE',
+        payload: { isLoading: false, isAuthenticated: false }
       });
-      logout();
     }
   };
 
@@ -290,9 +318,37 @@ export const AuthProvider = ({ children }) => {
       const result = await authAPI.changePassword(oldPassword, newPassword);
       return result;
     } catch (error) {
+      let errorMessage = 'Error al cambiar la contraseña';
+      
+      // Manejar diferentes tipos de errores
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+        
+        if (status === 400) {
+          errorMessage = data.detail || data.error || 'Datos inválidos. Verifique la contraseña actual.';
+        } else if (status === 401) {
+          errorMessage = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
+        } else if (status === 403) {
+          errorMessage = 'No tiene permisos para realizar esta acción.';
+        } else if (status >= 500) {
+          errorMessage = 'Error del servidor. Intente más tarde.';
+        } else {
+          errorMessage = data.detail || data.error || 'Error al cambiar la contraseña';
+        }
+      } else if (error.request) {
+        if (!navigator.onLine) {
+          errorMessage = 'Error de conexión. No hay acceso a internet.';
+        } else {
+          errorMessage = 'Error de conexión con la base de datos.';
+        }
+      } else {
+        errorMessage = error.message || 'Error al cambiar la contraseña';
+      }
+      
       return {
         success: false,
-        error: error.message || 'Error al cambiar la contraseña'
+        error: errorMessage
       };
     }
   };
@@ -319,6 +375,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('access_token');
     const userData = localStorage.getItem('user_data');
     
+    // SOLO cargar datos si tenemos token Y userData Y el usuario NO está en proceso de login
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData);
@@ -338,8 +395,11 @@ export const AuthProvider = ({ children }) => {
       // Si hay token pero no datos de usuario, cargar desde API
       loadUser(); 
     } else {
-      // Si no hay token, el usuario no está autenticado
-      dispatch({ type: AUTH_TYPES.LOAD_USER_FAILURE, payload: 'No hay datos de autenticación' });
+      // Solo setear isLoading: false, nada más (no afectar el error existente)
+      dispatch({
+        type: 'SET_INITIAL_STATE',
+        payload: { isLoading: false }
+      });
     }
   }, []); // El array de dependencias vacío asegura que se ejecute solo una vez al montar
 

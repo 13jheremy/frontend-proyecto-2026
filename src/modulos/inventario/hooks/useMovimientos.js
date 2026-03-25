@@ -1,7 +1,8 @@
 // src/modulos/inventario/hooks/useMovimientos.js
 import { useState, useEffect, useCallback } from 'react';
 import { inventarioApi } from '../api/inventario';
-import { handleApiError, showNotification, inventoryMessages } from '../../../utils/notifications';
+import { showNotification, inventoryMessages } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 
 export const useMovimientos = () => {
   const [movimientos, setMovimientos] = useState([]);
@@ -102,40 +103,6 @@ export const useMovimientos = () => {
     }
   }, []);
 
-  // Eliminar movimiento
-  const deleteMovimiento = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await inventarioApi.deleteMovimiento(id);
-      showNotification.success(inventoryMessages.movementDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Restaurar movimiento
-  const restoreMovimiento = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await inventarioApi.restoreMovimiento(id);
-      showNotification.success('Movimiento restaurado exitosamente');
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Obtener reporte de movimientos
   const fetchReporteMovimientos = useCallback(async (fechaInicio, fechaFin) => {
     setLoading(true);
@@ -169,8 +136,6 @@ export const useMovimientos = () => {
     fetchMovimientos,
     createMovimiento,
     updateMovimiento,
-    deleteMovimiento,
-    restoreMovimiento,
 
     // Funciones adicionales
     fetchReporteMovimientos,

@@ -79,7 +79,8 @@ const MotoPage = () => {
   const [selectedInfoMoto, setSelectedInfoMoto] = useState(null);
 
   // Estados para búsqueda y paginación
-  const [filters, setFilters] = useState({});
+  // Por defecto solo mostrar motorcycles activas
+  const [filters, setFilters] = useState({ activo: 'true' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -149,12 +150,6 @@ const MotoPage = () => {
     const moto = motos.find(m => m.id === motoId);
     if (!moto) return;
     openActionModal(moto, 'softDelete');
-  }, [motos]);
-
-  const handleHardDeleteMoto = useCallback((motoId) => {
-    const moto = motos.find(m => m.id === motoId);
-    if (!moto) return;
-    openActionModal(moto, 'hardDelete');
   }, [motos]);
 
   const handleRestoreMoto = useCallback((motoId) => {
@@ -365,7 +360,6 @@ const MotoPage = () => {
           permissions={tablePermissions}
           onEdit={handleEditMoto}
           onSoftDelete={handleSoftDeleteMoto}
-          onHardDelete={handleHardDeleteMoto}
           onRestore={handleRestoreMoto}
           onToggleActivo={handleToggleActivoMoto}
           onInfo={handleInfoMoto}

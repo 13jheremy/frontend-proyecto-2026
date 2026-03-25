@@ -123,12 +123,6 @@ const ServiciosPage = () => {
     openActionModal(servicio, 'softDelete');
   }, [servicios]);
 
-  const handleHardDeleteServicio = useCallback((servicioId) => {
-    const servicio = servicios.find(s => s.id === servicioId);
-    if (!servicio) return;
-    openActionModal(servicio, 'hardDelete');
-  }, [servicios]);
-
   const handleRestoreServicio = useCallback((servicioId) => {
     const servicio = servicios.find(s => s.id === servicioId);
     if (!servicio) return;
@@ -318,7 +312,6 @@ const ServiciosPage = () => {
           permissions={tablePermissions}
           onEdit={handleEditServicio}
           onSoftDelete={handleSoftDeleteServicio}
-          onHardDelete={handleHardDeleteServicio}
           onRestore={handleRestoreServicio}
           onToggleActivo={handleToggleActivoServicio}
           onInfo={handleInfoServicio}

@@ -5,6 +5,8 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import Modal from '../../../components/Modal'; // Importa el componente Modal genérico.
 import { showNotification, userMessages } from '../../../utils/notifications'; // Importa utilidades de notificación.
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 const ResetPasswordModal = ({ isOpen, onClose, user, onResetPassword }) => {
   // Si no hay usuario seleccionado, no renderizar el modal
@@ -15,6 +17,18 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetPassword }) => {
   const [loading, setLoading] = useState(false);
   // Estado para almacenar mensajes de error de validación locales del modal.
   const [validationError, setValidationError] = useState('');
+  // Estado para mostrar/ocultar la contraseña
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Reiniciar estado cuando cambia el usuario o se abre el modal
+  React.useEffect(() => {
+    if (isOpen && user) {
+      setNewPassword('');
+      setValidationError('');
+      setShowPassword(false);
+      setLoading(false);
+    }
+  }, [isOpen, user?.id]);
 
   // validatePassword: Función para validar la fortaleza de la contraseña.
   // Retorna un mensaje de error si la contraseña no cumple los requisitos, de lo contrario, retorna null.
@@ -105,27 +119,36 @@ const ResetPasswordModal = ({ isOpen, onClose, user, onResetPassword }) => {
       <div className="flex flex-col space-y-4">
 
         {/* Input para la nueva contraseña */}
-        <div>
+        <div className="relative">
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="Nueva contraseña (mín. 8 caracteres)"
             value={newPassword}
             onChange={handlePasswordChange} // Maneja los cambios en el input.
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+            className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 ${
               validationError
                 ? 'border-red-500 focus:ring-red-200' // Estilo para error de validación.
                 : 'border-gray-300 focus:ring-blue-200' // Estilo normal.
             }`}
             disabled={loading} // Deshabilita el input si está cargando.
           />
-
-          {/* Mensaje de error de validación local */}
-          {validationError && (
-            <p className="mt-1 text-sm text-red-600">
-              {validationError}
-            </p>
-          )}
+          {/* Botón para mostrar/ocultar contraseña */}
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            tabIndex={-1}
+          >
+            <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="h-4 w-4" />
+          </button>
         </div>
+
+        {/* Mensaje de error de validación local */}
+        {validationError && (
+          <p className="mt-1 text-sm text-red-600">
+            {validationError}
+          </p>
+        )}
 
         {/* Indicador de fortaleza de contraseña: Muestra los requisitos de la contraseña. */}
         {newPassword && (

@@ -12,7 +12,10 @@ import {
   faCheckCircle, 
   faTimesCircle, 
   faCalendarAlt,
-  faFileText
+  faFileText,
+  faUser,
+  faUserEdit,
+  faUserSlash
 } from '@fortawesome/free-solid-svg-icons';
 
 const InfoServicioModal = ({ isOpen, onClose, servicio }) => {
@@ -137,6 +140,90 @@ const InfoServicioModal = ({ isOpen, onClose, servicio }) => {
             </p>
             <p className="ml-6">{formatDate(servicio.fecha_actualizacion)}</p>
           </div>
+
+          {servicio.eliminado && (
+            <>
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                <p className="font-semibold flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
+                  Fecha de Eliminación:
+                </p>
+                <p className="ml-6">{formatDate(servicio.fecha_eliminacion)}</p>
+              </div>
+              
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                <p className="font-semibold flex items-center">
+                  <FontAwesomeIcon icon={faUserSlash} className="mr-2 text-red-500" />
+                  Eliminado Por:
+                </p>
+                <p className="ml-6 text-gray-900 dark:text-gray-100">
+                  {servicio.eliminado_por?.nombre || servicio.eliminado_por?.username || 'No disponible'}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Trazabilidad - Información de auditoría */}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+            <FontAwesomeIcon icon={faUser} className="mr-2 text-blue-500" />
+            Trazabilidad
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Creado por */}
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border-l-4 border-green-500">
+              <p className="font-semibold flex items-center text-green-700 dark:text-green-400 text-sm">
+                <FontAwesomeIcon icon={faUser} className="mr-2" />
+                Creado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {servicio.creado_por?.nombre || servicio.creado_por?.username || 'No disponible'}
+              </p>
+              {servicio.fecha_registro && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(servicio.fecha_registro)}
+                </p>
+              )}
+            </div>
+
+            {/* Actualizado por */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-l-4 border-blue-500">
+              <p className="font-semibold flex items-center text-blue-700 dark:text-blue-400 text-sm">
+                <FontAwesomeIcon icon={faUserEdit} className="mr-2" />
+                Actualizado por:
+              </p>
+              <p className="ml-6 text-gray-900 dark:text-gray-100">
+                {servicio.actualizado_por?.nombre || servicio.actualizado_por?.username || 'No disponible'}
+              </p>
+              {servicio.fecha_actualizacion && (
+                <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                  {formatDate(servicio.fecha_actualizacion)}
+                </p>
+              )}
+            </div>
+
+            {/* Eliminado por - solo mostrar si el servicio está eliminado */}
+            {servicio.eliminado && (
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border-l-4 border-red-500 md:col-span-2">
+                <p className="font-semibold flex items-center text-red-700 dark:text-red-400 text-sm">
+                  <FontAwesomeIcon icon={faUserSlash} className="mr-2" />
+                  Eliminado por:
+                </p>
+                <p className="ml-6 text-gray-900 dark:text-gray-100">
+                  {servicio.eliminado_por?.nombre || servicio.eliminado_por?.username || 'No disponible'}
+                </p>
+                {servicio.fecha_eliminacion && (
+                  <p className="ml-6 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                    <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                    {formatDate(servicio.fecha_eliminacion)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end mt-4">
@@ -167,6 +254,28 @@ InfoServicioModal.propTypes = {
     eliminado: PropTypes.bool,
     fecha_registro: PropTypes.string,
     fecha_actualizacion: PropTypes.string,
+    fecha_eliminacion: PropTypes.string,
+    creado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      persona_asociada: PropTypes.shape({
+        nombre: PropTypes.string,
+      }),
+    }),
+    actualizado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      persona_asociada: PropTypes.shape({
+        nombre: PropTypes.string,
+      }),
+    }),
+    eliminado_por: PropTypes.shape({
+      id: PropTypes.number,
+      username: PropTypes.string,
+      persona_asociada: PropTypes.shape({
+        nombre: PropTypes.string,
+      }),
+    }),
   }),
 };
 

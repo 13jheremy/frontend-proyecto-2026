@@ -45,7 +45,9 @@ const ProductoSearchInput = ({
     setLoading(true);
     try {
       const response = await buscarProductos(searchQuery);
-      setResults(response.results || []);
+      // Soportar ambos formatos de respuesta
+      const results = response.results || response.data || [];
+      setResults(results);
       setIsOpen(true);
     } catch (error) {
       console.error('Error buscando productos:', error);
@@ -73,7 +75,8 @@ const ProductoSearchInput = ({
 
   const handleSelectProducto = (producto) => {
     setSelectedProducto(producto);
-    setQuery(producto.display_text);
+    // Usar los campos que devuelve la API de POS
+    setQuery(`${producto.codigo} - ${producto.nombre}`);
     setIsOpen(false);
     setResults([]);
     onSelect(producto);
@@ -97,7 +100,8 @@ const ProductoSearchInput = ({
   const getStockBadge = (producto) => {
     if (!showStock) return null;
 
-    if (!producto.stock_disponible) {
+    // Usar campos de la API de POS
+    if (!producto.disponible) {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
           Sin stock
@@ -105,7 +109,7 @@ const ProductoSearchInput = ({
       );
     }
 
-    if (producto.stock_bajo) {
+    if (producto.stock_status === 'stock_bajo') {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
           <AlertTriangle className="w-3 h-3 mr-1" />
@@ -175,12 +179,20 @@ const ProductoSearchInput = ({
               onClick={() => handleSelectProducto(producto)}
               className={`
                 cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50
-                ${!producto.stock_disponible ? 'opacity-60' : ''}
+                ${!producto.disponible ? 'opacity-60' : ''}
               `}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center flex-1">
-                  <Package className="h-4 w-4 text-gray-400 mr-2" />
+                  {producto.imagen_url ? (
+                    <img 
+                      src={producto.imagen_url} 
+                      alt={producto.nombre}
+                      className="h-10 w-10 rounded object-cover mr-2"
+                    />
+                  ) : (
+                    <Package className="h-10 w-10 text-gray-400 mr-2" />
+                  )}
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">
                       {producto.codigo} - {producto.nombre}
@@ -189,8 +201,8 @@ const ProductoSearchInput = ({
                       {producto.categoria.nombre} | ${producto.precio_venta}
                     </div>
                     {showStock && (
-                      <div className="text-xs text-gray-400">
-                        Stock: {producto.stock_actual} unidades
+                      <div className="text-xs font-medium text-gray-600">
+                        Stock: {producto.stock_actual !== undefined ? producto.stock_actual : 'N/A'} unidades
                       </div>
                     )}
                   </div>

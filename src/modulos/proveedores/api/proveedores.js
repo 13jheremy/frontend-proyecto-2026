@@ -24,20 +24,15 @@ export const proveedorApi = {
   },
 
   // TOGGLE ESTADO ACTIVO/INACTIVO
-  toggleActivoProveedor: async (id) => {
-    const response = await suppliersAPI.toggleActive(id);
+  toggleActivoProveedor: async (id, activo) => {
+    const response = await suppliersAPI.toggleActive(id, activo);
     return response.data;
   },
 
-  // ELIMINACIÓN TEMPORAL Y PERMANENTE
+  // ELIMINACIÓN TEMPORAL
   softDeleteProveedor: async (id) => {
     const response = await suppliersAPI.softDelete(id);
     return response.data;
-  },
-
-  hardDeleteProveedor: async (id) => {
-    const response = await suppliersAPI.hardDelete(id);
-    return response.status;
   },
 
   // RESTAURAR PROVEEDOR

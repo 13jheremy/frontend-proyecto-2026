@@ -1,5 +1,5 @@
 // src/hooks/useCatalog.js
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { productsAPI, categoriesPublic } from "../services/api";
 import { handleApiError, retryWithBackoff } from "../utils/apiErrorHandlers";
 import { requestCache } from "../utils/requestCache";
@@ -24,10 +24,15 @@ export const useCatalog = () => {
     destacado: "all",
   });
 
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const ITEMS_POR_PAGINA = 20;
+
   const abortControllerRef = useRef(null);
   const filtrosRef = useRef(filtros);
   const timeoutRef = useRef(null);
   const isInitialMount = useRef(true);
+  const categoriasLoaded = useRef(false);
 
   useEffect(() => {
     filtrosRef.current = filtros;
@@ -35,15 +40,21 @@ export const useCatalog = () => {
 
   const updateFiltros = useCallback((newFiltros) => {
     setFiltros((prev) => ({ ...prev, ...newFiltros }));
+    setPagina(1); // Resetear a primera página al cambiar filtros
   }, []);
 
   const clearFiltros = useCallback(() => {
-    setFiltros({ 
-      search: "", 
-      categoria: "all", 
+    setFiltros({
+      search: "",
+      categoria: "all",
       ordering: "nombre",
       destacado: "all"
     });
+    setPagina(1);
+  }, []);
+
+  const cambiarPagina = useCallback((nuevaPagina) => {
+    setPagina(nuevaPagina);
   }, []);
 
   const fetchCatalogo = useCallback(async () => {
@@ -68,20 +79,20 @@ export const useCatalog = () => {
     if (currentFiltros.destacado === "true") params.destacado = true;
     if (currentFiltros.destacado === "false") params.destacado = false;
     params.ordering = currentFiltros.ordering;
+    params.page = pagina;
+    params.page_size = ITEMS_POR_PAGINA;
 
     // Check cache and throttling
     const cacheKey = requestCache.getCacheKey('/api/publico/productos/', params);
-    const categoriasCacheKey = requestCache.getCacheKey('/api/publico/categorias/', {});
     
     // For initial load, always try cache first without throttling check
     if (isInitialMount.current || requestCache.shouldThrottle(cacheKey)) {
       console.log('Request throttled or initial load, checking cache');
       const cachedProducts = requestCache.getCached(cacheKey);
-      const cachedCategories = requestCache.getCached(categoriasCacheKey);
       
-      if (cachedProducts && cachedCategories) {
+      if (cachedProducts) {
         const productosData = cachedProducts.results || cachedProducts || [];
-        const categoriasData = cachedCategories.results || cachedCategories || [];
+        const totalCount = cachedProducts.count || productosData.length;
         
         const productosFormateados = productosData.map(producto => ({
           id: producto.id,
@@ -97,13 +108,7 @@ export const useCatalog = () => {
         }));
         
         setProductos(productosFormateados);
-        setCategorias(categoriasData);
-        setCatalogStats({
-          totalProductos: productosFormateados.length,
-          totalCategorias: categoriasData.length,
-          productosDestacados: productosFormateados.filter((p) => p.destacado).length,
-          productosConStock: productosFormateados.filter((p) => p.stock_actual > 0).length,
-        });
+        setTotalPaginas(Math.ceil(totalCount / ITEMS_POR_PAGINA));
         
         if (isInitialMount.current) {
           isInitialMount.current = false;
@@ -117,17 +122,30 @@ export const useCatalog = () => {
     setError(null);
 
     try {
-      const [productosResp, categoriasResp] = await Promise.all([
-        retryWithBackoff(() => productsAPI.getCatalog({ ...params, signal }), 2, 2000),
-        retryWithBackoff(() => categoriesPublic.getAll({ signal }), 2, 2000)
-      ]);
+      // Cargar categorías solo una vez
+      if (!categoriasLoaded.current) {
+        const categoriasCacheKey = requestCache.getCacheKey('/api/publico/categorias/', {});
+        const cachedCategories = requestCache.getCached(categoriasCacheKey);
+        
+        if (cachedCategories) {
+          const categoriasData = cachedCategories.results || cachedCategories || [];
+          setCategorias(categoriasData);
+          categoriasLoaded.current = true;
+        } else {
+          const categoriasResp = await retryWithBackoff(() => categoriesPublic.getAll({ signal }), 2, 2000);
+          if (!signal.aborted && categoriasResp.success) {
+            const categoriasData = categoriasResp.data.results || categoriasResp.data || [];
+            setCategorias(categoriasData);
+            requestCache.setCache(categoriasCacheKey, categoriasData);
+            categoriasLoaded.current = true;
+          }
+        }
+      }
+
+      const productosResp = await retryWithBackoff(() => productsAPI.getCatalog({ ...params, signal }), 2, 2000);
 
       if (signal.aborted) {
         return;
-      }
-      
-      if (!categoriasResp.success) {
-        throw new Error(categoriasResp.error);
       }
       
       if (!productosResp.success) {
@@ -135,7 +153,7 @@ export const useCatalog = () => {
       }
 
       const productosData = productosResp.data.results || productosResp.data || [];
-      const categoriasData = categoriasResp.data.results || categoriasResp.data || [];
+      const totalCount = productosResp.data.count || productosData.length;
       
       const productosFormateados = productosData.map(producto => {
         return {
@@ -152,19 +170,11 @@ export const useCatalog = () => {
         };
       });
       
-      // Cache the responses
-      requestCache.setCache(cacheKey, productosData);
-      requestCache.setCache(categoriasCacheKey, categoriasData);
+      // Cache the response
+      requestCache.setCache(cacheKey, productosResp.data);
       
       setProductos(productosFormateados);
-      setCategorias(categoriasData);
-
-      setCatalogStats({
-        totalProductos: productosFormateados.length,
-        totalCategorias: categoriasData.length,
-        productosDestacados: productosFormateados.filter((p) => p.destacado).length,
-        productosConStock: productosFormateados.filter((p) => p.stock_actual > 0).length,
-      });
+      setTotalPaginas(Math.ceil(totalCount / ITEMS_POR_PAGINA));
 
       if (isInitialMount.current) {
         isInitialMount.current = false;
@@ -180,7 +190,7 @@ export const useCatalog = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pagina]);
 
   // Initial data fetch on mount
   useEffect(() => {
@@ -200,7 +210,7 @@ export const useCatalog = () => {
 
     timeoutRef.current = setTimeout(() => {
       fetchCatalogo();
-    }, 800);
+    }, 300); // Reducido de 800ms a 300ms
 
     return () => {
       if (timeoutRef.current) {
@@ -208,6 +218,13 @@ export const useCatalog = () => {
       }
     };
   }, [filtros, fetchCatalogo]);
+
+  // Fetch when page changes
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      fetchCatalogo();
+    }
+  }, [pagina, fetchCatalogo]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -221,15 +238,27 @@ export const useCatalog = () => {
     };
   }, []);
 
+  // Memoizar estadísticas
+  const statsMemoizadas = useMemo(() => ({
+    totalProductos: productos.length,
+    totalCategorias: categorias.length,
+    productosDestacados: productos.filter((p) => p.destacado).length,
+    productosConStock: productos.filter((p) => p.stock_actual > 0).length,
+  }), [productos, categorias]);
+
   return {
     productos,
     categorias,
-    catalogStats,
+    catalogStats: statsMemoizadas,
     loading,
     error,
     filtros,
     updateFiltros,
     clearFiltros,
     refetch: fetchCatalogo,
+    pagina,
+    totalPaginas,
+    cambiarPagina,
+    ITEMS_POR_PAGINA,
   };
 };

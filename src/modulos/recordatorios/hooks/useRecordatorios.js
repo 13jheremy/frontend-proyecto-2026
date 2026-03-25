@@ -1,7 +1,8 @@
 // src/modules/recordatorios/hooks/useRecordatorios.js
 import { useState, useEffect, useCallback } from 'react';
 import { recordatorioApi } from '../api/recordatorio';
-import { handleApiError, showNotification, recordatorioMessages } from '../../../utils/notifications';
+import { showNotification, recordatorioMessages } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 
 export const useRecordatorios = () => {
   const [recordatorios, setRecordatorios] = useState([]);
@@ -151,23 +152,6 @@ export const useRecordatorios = () => {
     }
   }, []);
 
-  // Eliminación permanente
-  const hardDeleteRecordatorio = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await recordatorioApi.hardDeleteRecordatorio(id);
-      showNotification.success(recordatorioMessages.recordatorioHardDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Restaurar recordatorio
   const restoreRecordatorio = useCallback(async (id) => {
     setLoading(true);
@@ -236,15 +220,35 @@ export const useRecordatorios = () => {
     }
   }, []);
 
+  // Enviar notificación push
+  const enviarNotificacionPush = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('[DEBUG] Intentando enviar notificación push para recordatorio ID:', id);
+      const result = await recordatorioApi.enviarNotificacionPush(id);
+      console.log('[DEBUG] Respuesta de la API:', result);
+      showNotification.success('Notificación push enviada exitosamente');
+      return result;
+    } catch (err) {
+      console.error('[DEBUG] Error al enviar notificación push:', err);
+      console.error('[DEBUG] Respuesta del servidor:', err.response?.data);
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification.error(apiError.message || 'Error al enviar la notificación push');
+      throw apiError;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Función unificada para manejar acciones de recordatorio
   const handleRecordatorioAction = useCallback(async (recordatorioId, actionType, additionalData = null) => {
     try {
       switch (actionType) {
         case 'softDelete':
           await softDeleteRecordatorio(recordatorioId);
-          break;
-        case 'hardDelete':
-          await hardDeleteRecordatorio(recordatorioId);
           break;
         case 'restore':
           await restoreRecordatorio(recordatorioId);
@@ -265,7 +269,7 @@ export const useRecordatorios = () => {
       console.error(`Error en acción ${actionType}:`, err);
       throw err;
     }
-  }, [softDeleteRecordatorio, hardDeleteRecordatorio, restoreRecordatorio, toggleRecordatorioActivo, marcarEnviado, marcarPendiente]);
+  }, [softDeleteRecordatorio, restoreRecordatorio, toggleRecordatorioActivo, marcarEnviado, marcarPendiente]);
 
   // Inicialización de recordatorios
   useEffect(() => {
@@ -286,11 +290,11 @@ export const useRecordatorios = () => {
 
     // Funciones de gestión de estado
     softDeleteRecordatorio,
-    hardDeleteRecordatorio,
     restoreRecordatorio,
     toggleRecordatorioActivo,
     marcarEnviado,
     marcarPendiente,
+    enviarNotificacionPush,
     handleRecordatorioAction,
 
     // Utilidades

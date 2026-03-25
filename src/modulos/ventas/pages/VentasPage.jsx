@@ -8,12 +8,14 @@ import VentaDetalleModal from './components/VentaDetalleModal';
 import PagoModal from './components/PagoModal';
 import VentaEditEstadoModal from './components/VentaEditEstadoModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faShoppingCart, faCheckCircle, faClock, faTimes, faArchive, faChartLine, faDollarSign } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faShoppingCart, faCheckCircle, faClock, faTimes, faArchive, faChartLine, faDollarSign, faFileExcel, faFileCsv } from '@fortawesome/free-solid-svg-icons';
 import { PERMISSIONS, PAYMENT_STATUS_COLORS } from '../../../utils/constants';
 import { pagosAPI } from '../api/ventasAPI';
 import { hasPermission } from '../../../utils/rolePermissions';
 import { useAuth } from '../../../context/AuthContext';
 import { showNotification } from '../../../utils/notifications';
+import { toCSV, downloadCSV, exportXLSX } from '../../reportes/utils/exportUtils';
+import pdfService from '../../../services/pdfService';
 
 const VentasPage = () => {
   const { user, roles } = useAuth();
@@ -42,6 +44,7 @@ const VentasPage = () => {
   const canEdit = canPerformAction(PERMISSIONS.SALES.EDIT);
   const canDelete = canPerformAction(PERMISSIONS.SALES.DELETE);
   const canManagePayments = canPerformAction(PERMISSIONS.SALES.PAYMENTS);
+  const canExport = canCreate; // Usar canCreate para exportar ventas
   
   // Objeto de permisos para pasar a la tabla
   const tablePermissions = {
@@ -133,7 +136,7 @@ const VentasPage = () => {
   const handleSoftDeleteVenta = useCallback((ventaId) => {
     const venta = ventas.find(v => v.id === ventaId);
     if (!venta) return;
-    openActionModal(venta, 'softDelete');
+    openAction(venta, 'softDelete');
   }, [ventas]);
 
   const handleRestoreVenta = useCallback((ventaId) => {
@@ -193,8 +196,52 @@ const VentasPage = () => {
   const handleConfirmarEditEstado = async (ventaId, updateData) => {
     setEditEstadoLoading(true);
     try {
+      // Guardar el estado anterior para posible PDF
+      const estadoAnterior = selectedEditVenta?.estado;
+      
       await updateVenta(ventaId, updateData);
       showNotification.success('Estado y método de pago actualizados exitosamente');
+      
+      // Si el nuevo estado es PAGADA, generar comprobante PDF
+      if (updateData.estado === 'PAGADA') {
+        try {
+          // Obtener los datos completos de la venta para el PDF
+          const ventaCompleta = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/ventas/${ventaId}/`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            }
+          }).then(res => res.json());
+          
+          if (ventaCompleta) {
+            // Preparar datos para el PDF
+            const pdfData = {
+              venta_id: ventaCompleta.id,
+              fecha_venta: ventaCompleta.fecha_venta,
+              estado: 'PAGADA',
+              cliente: ventaCompleta.cliente || { nombre_completo: 'Cliente General', cedula: 'N/A', telefono: 'N/A' },
+              productos: ventaCompleta.detalles?.map(d => ({
+                nombre: d.producto?.nombre || 'Producto',
+                cantidad: d.cantidad,
+                precio_unitario: d.precio_unitario,
+                subtotal: d.subtotal
+              })) || [],
+              subtotal: ventaCompleta.subtotal || 0,
+              descuento: ventaCompleta.descuento || 0,
+              impuesto: ventaCompleta.impuesto || 0,
+              total: ventaCompleta.total || 0,
+              metodo_pago: updateData.metodo_pago
+            };
+            
+            const doc = pdfService.generarComprobanteVenta(pdfData);
+            pdfService.descargarPDF(doc, `comprobante_venta_${ventaId}_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification.success('Comprobante de venta generado');
+          }
+        } catch (pdfError) {
+          console.error('Error generando PDF:', pdfError);
+          showNotification.info('Estado actualizado, pero el comprobante no pudo ser generado');
+        }
+      }
+      
       // Recargar ventas para mostrar cambios
       await fetchVentas(filters, page, pageSize);
       setIsEditEstadoModalOpen(false);
@@ -236,8 +283,8 @@ const VentasPage = () => {
   // Función para obtener estadísticas de la página actual
   const getEstadisticasLocales = () => {
     const total = pagination.totalItems || 0;
-    const completadas = ventas.filter(v => v.estado === 'completada' && !v.eliminado).length;
-    const pendientes = ventas.filter(v => v.estado === 'pendiente' && !v.eliminado).length;
+    const completadas = ventas.filter(v => v.estado === 'PAGADA' && !v.eliminado).length;
+    const pendientes = ventas.filter(v => v.estado === 'PENDIENTE' && !v.eliminado).length;
     const canceladas = ventas.filter(v => v.estado === 'cancelada' && !v.eliminado).length;
     const eliminadas = ventas.filter(v => v.eliminado).length;
 
@@ -245,6 +292,72 @@ const VentasPage = () => {
   };
 
   const estadisticasLocales = getEstadisticasLocales();
+
+  // Función para formatear datos de venta para exportación
+  const formatVentasForExport = (ventasData) => {
+    return ventasData.map(v => ({
+      'ID': v.id,
+      'Fecha': v.fecha ? new Date(v.fecha).toLocaleDateString('es-BO') : '',
+      'Cliente': v.cliente?.nombre || v.cliente_nombre || 'Sin cliente',
+      'Estado': v.estado || '',
+      'Método Pago': v.metodo_pago || v.metodoPago || '',
+      'Subtotal': v.subtotal || 0,
+      'Descuento': v.descuento || 0,
+      'Total': v.total || 0,
+      'Pagado': v.monto_pagado || v.pagado || 0,
+      'Saldo': v.saldo || 0,
+      'Notas': v.notas || ''
+    }));
+  };
+
+  // Función para obtener la fecha actual formateada
+  const getCurrentDateString = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Exportar a CSV
+  const handleExportCSV = () => {
+    try {
+      if (!ventas || ventas.length === 0) {
+        showNotification.warning('No hay datos de ventas para exportar');
+        return;
+      }
+      
+      const formattedData = formatVentasForExport(ventas);
+      const headers = ['ID', 'Fecha', 'Cliente', 'Estado', 'Método Pago', 'Subtotal', 'Descuento', 'Total', 'Pagado', 'Saldo', 'Notas'];
+      const csvContent = toCSV(formattedData, headers);
+      const filename = `ventas_${getCurrentDateString()}.csv`;
+      
+      downloadCSV(filename, csvContent);
+      showNotification.success(`Exportado ${ventas.length} ventas a CSV`);
+    } catch (error) {
+      console.error('Error exportando a CSV:', error);
+      showNotification.error('Error al exportar a CSV');
+    }
+  };
+
+  // Exportar a Excel
+  const handleExportExcel = async () => {
+    try {
+      if (!ventas || ventas.length === 0) {
+        showNotification.warning('No hay datos de ventas para exportar');
+        return;
+      }
+      
+      const formattedData = formatVentasForExport(ventas);
+      const filename = `ventas_${getCurrentDateString()}.xlsx`;
+      
+      await exportXLSX(filename, [{ name: 'Ventas', rows: formattedData }]);
+      showNotification.success(`Exportado ${ventas.length} ventas a Excel`);
+    } catch (error) {
+      console.error('Error exportando a Excel:', error);
+      showNotification.error('Error al exportar a Excel');
+    }
+  };
 
   // Efecto para recargar datos cuando cambien filtros o paginación
   useEffect(() => {
@@ -259,6 +372,28 @@ const VentasPage = () => {
           <FontAwesomeIcon icon={faShoppingCart} className="mr-3 text-blue-600" />
           Gestión de Ventas
         </h1>
+
+        {/* BOTONES DE EXPORTACIÓN */}
+        {canExport && (
+          <div className="flex items-center space-x-2 mr-4">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors text-sm font-medium"
+              title="Exportar a CSV"
+            >
+              <FontAwesomeIcon icon={faFileCsv} className="mr-2" />
+              CSV
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm font-medium"
+              title="Exportar a Excel"
+            >
+              <FontAwesomeIcon icon={faFileExcel} className="mr-2" />
+              Excel
+            </button>
+          </div>
+        )}
 
         {/* ESTADÍSTICAS MEJORADAS */}
         <div className="hidden md:flex items-center space-x-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">

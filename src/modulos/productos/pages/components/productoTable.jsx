@@ -17,7 +17,6 @@ const ProductoTable = ({
   permissions, // Recibir permisos como prop
   onEdit,
   onSoftDelete,
-  onHardDelete,
   onRestore,
   onToggleActivo,
   onToggleDestacado,
@@ -247,22 +246,12 @@ const ProductoTable = ({
                     <button
                       onClick={() => onSoftDelete(producto.id)}
                       className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                      title="Eliminar (reversible)"
+                      title="Eliminar"
                     >
                       <FontAwesomeIcon icon={faRecycle} className="h-4 w-4" />
                     </button>
                   )}
 
-                  {/* Botón Eliminar Permanente (solo para eliminados) */}
-                  {canDelete && producto.eliminado && (
-                    <button
-                      onClick={() => onHardDelete(producto.id)}
-                      className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                      title="Eliminar permanentemente"
-                    >
-                      <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                    </button>
-                  )}
                 </div>
               </td>
             </tr>
@@ -282,14 +271,13 @@ ProductoTable.propTypes = {
       precio_compra: PropTypes.number,
       precio_venta: PropTypes.number,
       activo: PropTypes.bool.isRequired,
-      destacado: PropTypes.bool.isRequired,
       eliminado: PropTypes.bool,
+      destacado: PropTypes.bool.isRequired,
       imagen_url: PropTypes.string,
     })
   ).isRequired,
   onEdit: PropTypes.func.isRequired,
   onSoftDelete: PropTypes.func.isRequired,
-  onHardDelete: PropTypes.func.isRequired,
   onRestore: PropTypes.func.isRequired,
   onToggleActivo: PropTypes.func.isRequired,
   onToggleDestacado: PropTypes.func,

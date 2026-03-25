@@ -22,21 +22,12 @@ const MotoActionModal = ({ isOpen, onClose, moto, actionType, onConfirm }) => {
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Moto (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente la moto "${moto.marca} ${moto.modelo}" con placa ${moto.placa}? Podrá restaurarla después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Moto',
+          message: `¿Está seguro de eliminar la moto "${moto.marca} ${moto.modelo}" con placa ${moto.placa}`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente la moto...`,
+          loadingText: `Eliminando la moto...`,
           icon: faArchive
-        };
-      case 'hardDelete':
-        return {
-          title: 'Eliminar Moto (Permanente)',
-          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE la moto "${moto.marca} ${moto.modelo}" con placa ${moto.placa}? Esta acción no se puede deshacer y eliminará todos los datos asociados incluyendo historial de mantenimientos.`,
-          confirmText: 'Eliminar Permanentemente',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
-          loadingText: `Eliminando permanentemente la moto...`,
-          icon: faTrash
         };
       case 'restore':
         return {
@@ -124,24 +115,6 @@ const MotoActionModal = ({ isOpen, onClose, moto, actionType, onConfirm }) => {
 
         <p className="text-gray-700 dark:text-gray-300">{config.message}</p>
 
-        {/* Advertencia especial para eliminación permanente */}
-        {actionType === 'hardDelete' && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-            <div className="flex">
-              <FontAwesomeIcon icon={faTrash} className="h-5 w-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                  Esta acción es irreversible
-                </h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                  Se eliminarán todos los datos de la moto incluyendo su historial de mantenimientos, 
-                  recordatorios y cualquier información asociada. Considere usar eliminación temporal en su lugar.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Información adicional para cambio de estado */}
         {actionType === 'toggleActivo' && !moto.activo && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
@@ -211,7 +184,7 @@ MotoActionModal.propTypes = {
     activo: PropTypes.bool.isRequired,
     propietario_nombre: PropTypes.string,
   }),
-  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']),
+  actionType: PropTypes.oneOf(['softDelete', 'restore', 'toggleActivo']),
   onConfirm: PropTypes.func.isRequired,
 };
 

@@ -1,5 +1,6 @@
 // src/modules/recordatorios/api/recordatorio.js
 import { recordatoriosAPI } from '../../../services/api';
+import { API_CONFIG } from '../../../utils/constants';
 
 export const recordatorioApi = {
   // SERVICIOS BÁSICOS
@@ -23,15 +24,10 @@ export const recordatorioApi = {
     return response.data;
   },
 
-  // ELIMINACIÓN TEMPORAL Y PERMANENTE
+  // ELIMINACIÓN TEMPORAL
   softDeleteRecordatorio: async (id) => {
     const response = await recordatoriosAPI.softDelete(id);
     return response.data;
-  },
-
-  hardDeleteRecordatorio: async (id) => {
-    const response = await recordatoriosAPI.hardDelete(id);
-    return response.status;
   },
 
   // RESTAURAR RECORDATORIO
@@ -82,6 +78,22 @@ export const recordatorioApi = {
       enviado: false,
       fecha_programada__lt: new Date().toISOString().split('T')[0]
     });
+    return response.data;
+  },
+
+  // ENVIAR NOTIFICACIÓN PUSH
+  enviarNotificacionPush: async (id) => {
+    console.log('[DEBUG API] Enviando notificación push para recordatorio ID:', id);
+    const response = await recordatoriosAPI.post(`${API_CONFIG.ENDPOINTS.RECORDATORIOS}${id}/enviar_notificacion/`);
+    console.log('[DEBUG API] Respuesta:', response.data);
+    return response.data;
+  },
+
+  // ENVIAR NOTIFICACIÓN PUSH (alias)
+  sendPushNotification: async (id) => {
+    console.log('[DEBUG API] Enviando notificación push (alias) para recordatorio ID:', id);
+    const response = await recordatoriosAPI.post(`${API_CONFIG.ENDPOINTS.RECORDATORIOS}${id}/enviar_notificacion/`);
+    console.log('[DEBUG API] Respuesta:', response.data);
     return response.data;
   }
 };

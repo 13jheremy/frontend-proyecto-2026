@@ -16,7 +16,8 @@ import {
   faSearch,
   faSort,
   faSortUp,
-  faSortDown
+  faSortDown,
+  faUser
 } from '@fortawesome/free-solid-svg-icons';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -214,6 +215,12 @@ const ClienteMantenimientoTable = ({
                 </div>
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+                <div className="flex items-center space-x-1">
+                  <FontAwesomeIcon icon={faUser} className="h-3 w-3" />
+                  <span>Técnico</span>
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
                 Fecha Salida
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">
@@ -227,14 +234,14 @@ const ClienteMantenimientoTable = ({
           <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
             {loading ? (
               <tr>
-                <td colSpan="6" className="px-4 py-8 text-center">
+                <td colSpan="7" className="px-4 py-8 text-center">
                   <FontAwesomeIcon icon={faSpinner} className="h-6 w-6 animate-spin text-blue-500 mx-auto" />
                   <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Cargando mantenimientos...</p>
                 </td>
               </tr>
             ) : filteredAndSortedMantenimientos.length === 0 ? (
               <tr>
-                <td colSpan="6" className="px-4 py-8 text-center">
+                <td colSpan="7" className="px-4 py-8 text-center">
                   <FontAwesomeIcon icon={faMotorcycle} className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {searchTerm ? 'No se encontraron mantenimientos que coincidan con la búsqueda.' : 'No tienes mantenimientos registrados.'}
@@ -266,15 +273,34 @@ const ClienteMantenimientoTable = ({
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-slate-900 dark:text-slate-100">
-                        {formatFecha(mantenimiento.fecha_salida)}
+                        {mantenimiento.tecnico_asignado_persona_nombre || mantenimiento.tecnico_asignado_nombre ? (
+                          <div>
+                            <div className="font-medium">
+                              {mantenimiento.tecnico_asignado_persona_nombre || mantenimiento.tecnico_asignado_nombre}
+                            </div>
+                            {mantenimiento.tecnico_asignado_cedula && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                C.I.: {mantenimiento.tecnico_asignado_cedula}
+                              </div>
+                            )}
+                            <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              Técnico
+                            </div>
+                          </div>
+                        ) : '-'}
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-slate-900 dark:text-slate-100">
-                        {mantenimiento.costo_real 
-                          ? `$${Number(mantenimiento.costo_real).toLocaleString()}`
-                          : mantenimiento.costo_estimado 
-                            ? `~$${Number(mantenimiento.costo_estimado).toLocaleString()}`
+                        {formatFecha(mantenimiento.fecha_entrega)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-slate-900 dark:text-slate-100">
+                        {mantenimiento.total 
+                          ? `Bs${Number(mantenimiento.total).toLocaleString()}`
+                          : mantenimiento.costo_adicional 
+                            ? `Bs${Number(mantenimiento.costo_adicional).toLocaleString()}`
                             : '-'
                         }
                       </div>
@@ -314,12 +340,15 @@ ClienteMantenimientoTable.propTypes = {
     PropTypes.shape({
       id: PropTypes.number.isRequired,
       fecha_ingreso: PropTypes.string.isRequired,
-      fecha_salida: PropTypes.string,
+      fecha_entrega: PropTypes.string,
       descripcion_problema: PropTypes.string,
       diagnostico: PropTypes.string,
       estado: PropTypes.string.isRequired,
-      costo_estimado: PropTypes.number,
-      costo_real: PropTypes.number,
+      total: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      costo_adicional: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      tecnico_asignado_nombre: PropTypes.string,
+      tecnico_asignado_persona_nombre: PropTypes.string,
+      tecnico_asignado_cedula: PropTypes.string,
       observaciones: PropTypes.string,
     })
   ).isRequired,

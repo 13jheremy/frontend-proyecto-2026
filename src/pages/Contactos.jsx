@@ -1,6 +1,6 @@
 import React from "react";
 import bgContactos from "../assets/bg1.jpeg";
-import { FaFacebook, FaInstagram, FaWhatsapp, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
+import { FaFacebook, FaTiktok, FaWhatsapp, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 
 const Contactos = () => {
   return (
@@ -42,8 +42,8 @@ const Contactos = () => {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Ubicación</h3>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                Av. Principal #123<br/>
-                Rurrenabaque, Beni<br/>
+                Barrio Villa Avaroa<br/>
+                Culpina, Chuquisaca<br/>
                 Bolivia
               </p>
             </div>
@@ -55,8 +55,8 @@ const Contactos = () => {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Teléfono</h3>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                <a href="tel:+59177777777" className="hover:text-red-600 transition-colors duration-300">
-                  +591 77777777
+                <a href="tel:+59167386647" className="hover:text-red-600 transition-colors duration-300">
+                  +591 67386647
                 </a><br/>
                 <a href="tel:+59188888888" className="hover:text-red-600 transition-colors duration-300">
                   +591 88888888
@@ -72,10 +72,10 @@ const Contactos = () => {
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Email</h3>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                 <a href="mailto:info@jictaller.com" className="hover:text-red-600 transition-colors duration-300">
-                  info@jictaller.com
+                  jic@gmail.com.com
                 </a><br/>
                 <a href="mailto:contacto@jictaller.com" className="hover:text-red-600 transition-colors duration-300">
-                  contacto@jictaller.com
+                  13jheremy@gmail.com.com
                 </a>
               </p>
             </div>
@@ -95,7 +95,7 @@ const Contactos = () => {
           <div className="flex justify-center gap-8">
             {/* Facebook */}
             <a 
-              href="https://facebook.com/jictaller" 
+              href="https://www.facebook.com/share/1AqNpu2kYW/" 
               target="_blank" 
               rel="noopener noreferrer"
               className="group flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
@@ -106,22 +106,22 @@ const Contactos = () => {
               <span className="text-gray-700 dark:text-gray-300 font-semibold">Facebook</span>
             </a>
             
-            {/* Instagram */}
-            <a 
-              href="https://instagram.com/jictaller" 
-              target="_blank" 
+            {/* TikTok */}
+            <a
+              href="https://www.tiktok.com/@jicmotos?_r=1&_t=ZS-94qk9tI5o3w"
+              target="_blank"
               rel="noopener noreferrer"
               className="group flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
             >
-              <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <FaInstagram className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <FaTiktok className="w-8 h-8 text-white" />
               </div>
-              <span className="text-gray-700 dark:text-gray-300 font-semibold">Instagram</span>
+              <span className="text-gray-700 dark:text-gray-300 font-semibold">TikTok</span>
             </a>
             
             {/* WhatsApp */}
             <a 
-              href="https://wa.me/59177777777" 
+              href="https://wa.me/59167386647?text=Hola,%20quiero%20cotizar%20un%20servicio%20para%20mi%20moto"
               target="_blank" 
               rel="noopener noreferrer"
               className="group flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
@@ -171,7 +171,7 @@ const Contactos = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 
-              href="https://wa.me/59177777777" 
+              href="https://wa.me/59167386647" 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
@@ -180,7 +180,7 @@ const Contactos = () => {
               Escribir por WhatsApp
             </a>
             <a 
-              href="tel:+59177777777" 
+              href="tel:+59167386647" 
               className="inline-flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
             >
               <FaPhoneAlt className="w-5 h-5" />

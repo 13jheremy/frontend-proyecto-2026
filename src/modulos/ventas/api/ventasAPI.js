@@ -45,12 +45,6 @@ export const ventasAPI = {
     return response.data;
   },
 
-  // Eliminar permanentemente
-  eliminarPermanente: async (id) => {
-    const response = await api.delete(`/ventas/${id}/hard_delete/`);
-    return response.data;
-  },
-
   // Restaurar venta eliminada
   restaurar: async (id) => {
     const response = await api.patch(`/ventas/${id}/restore/`);
@@ -135,6 +129,12 @@ export const pagosAPI = {
 
   // Obtener pagos por venta
   obtenerPorVenta: async (ventaId) => {
+    const response = await api.get(`/pagos/por_venta/?venta_id=${ventaId}`);
+    return response.data;
+  },
+
+  // Alias para compatibilidad
+  getByVenta: async (ventaId) => {
     const response = await api.get(`/pagos/por_venta/?venta_id=${ventaId}`);
     return response.data;
   },

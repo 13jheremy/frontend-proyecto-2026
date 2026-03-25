@@ -144,7 +144,7 @@ const MantenimientoSearch = ({ filters = {}, setFilters, onSearch, motosDisponib
               >
                 <option value="">Todos</option>
                 <option value="false">No Eliminados</option>
-                <option value="true">Eliminados Temporalmente</option>
+                <option value="true">Eliminados</option>
                 <option value="all">Incluir Eliminados</option>
               </select>
             </div>
@@ -360,7 +360,7 @@ const MantenimientoSearch = ({ filters = {}, setFilters, onSearch, motosDisponib
 
 MantenimientoSearch.propTypes = {
   filters: PropTypes.object,
-  setFilters: PropTypes.func.isRequired,
+  setFilters: PropTypes.func,
   onSearch: PropTypes.func.isRequired,
   motosDisponibles: PropTypes.array
 };

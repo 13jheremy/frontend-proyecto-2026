@@ -3,7 +3,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faTrash, 
   faEye, 
   faUndo, 
   faTrashAlt, 
@@ -25,7 +24,8 @@ import {
   faRecycle,
   faMoneyBillWave,
   faExclamationTriangle,
-  faEdit
+  faEdit,
+  faBox
 } from '@fortawesome/free-solid-svg-icons';
 import { PERMISSIONS, PAYMENT_STATUS_COLORS, SALE_STATES } from '../../../../utils/constants';
 import { hasPermission } from '../../../../utils/rolePermissions';
@@ -62,21 +62,25 @@ const VentaTable = ({
 
   const getEstadoBadge = (estado) => {
     const badges = {
-      'completada': {
+      'PAGADA': {
         color: 'bg-green-100 text-green-800',
         icon: faCheckCircle
       },
-      'pendiente': {
+      'PENDIENTE': {
         color: 'bg-yellow-100 text-yellow-800',
         icon: faClock
       },
       'cancelada': {
         color: 'bg-red-100 text-red-800',
         icon: faTimes
+      },
+      'ANULADA': {
+        color: 'bg-gray-100 text-gray-800',
+        icon: faTimes
       }
     };
 
-    const badge = badges[estado] || badges['pendiente'];
+    const badge = badges[estado] || badges['PENDIENTE'];
     
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
@@ -213,6 +217,9 @@ const VentaTable = ({
         <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Productos
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               ID / Fecha
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -240,6 +247,47 @@ const VentaTable = ({
                 venta.eliminado ? 'bg-red-50 dark:bg-red-900/20' : ''
               }`}
             >
+              {/* Productos */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                {venta.detalles && venta.detalles.length > 0 ? (
+                  <div className="flex -space-x-2">
+                    {venta.detalles.slice(0, 3).map((detalle, index) => (
+                      <div key={index} className="relative group">
+                        {detalle.producto_imagen ? (
+                          <img
+                            src={detalle.producto_imagen}
+                            alt={detalle.producto_nombre || 'Producto'}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-700"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center border-2 border-white dark:border-gray-700">
+                            <FontAwesomeIcon icon={faBox} className="text-gray-400 text-xs" />
+                          </div>
+                        )}
+                        <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                          {detalle.cantidad}
+                        </div>
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                          {detalle.producto_nombre || 'Producto'}
+                        </div>
+                      </div>
+                    ))}
+                    {venta.detalles.length > 3 && (
+                      <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center border-2 border-white dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300">
+                        +{venta.detalles.length - 3}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                    <FontAwesomeIcon icon={faBox} className="text-gray-400 text-xs" />
+                  </div>
+                )}
+              </td>
+
               {/* ID / Fecha */}
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -349,16 +397,6 @@ const VentaTable = ({
                             <FontAwesomeIcon icon={faTrashRestore} className="h-4 w-4" />
                           </button>
                         )}
-                        {/* Botón ELIMINAR PERMANENTEMENTE */}
-                        {canDelete && (
-                          <button
-                            onClick={() => onHardDelete && onHardDelete(venta.id)}
-                            className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                            title="Eliminar permanentemente"
-                          >
-                            <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                          </button>
-                        )}
                       </>
                     ) : (
                       /* Botón ELIMINAR TEMPORALMENTE */
@@ -366,7 +404,7 @@ const VentaTable = ({
                         <button
                           onClick={() => onSoftDelete(venta.id)}
                           className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                          title="Eliminar temporalmente"
+                          title="Eliminar"
                         >
                           <FontAwesomeIcon icon={faRecycle} className="h-4 w-4" />
                         </button>

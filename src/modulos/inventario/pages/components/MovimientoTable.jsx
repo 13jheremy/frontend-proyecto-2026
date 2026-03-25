@@ -3,16 +3,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faEdit, faTrash, faInfoCircle, faArrowUp, faArrowDown, 
-  faExchangeAlt, faBox, faUser, faCalendarAlt, faHashtag,
-  faRecycle, faTrashRestore
+  faEdit, faInfoCircle, faArrowUp, faArrowDown, 
+  faExchangeAlt, faBox, faUser, faCalendarAlt, faHashtag
 } from '@fortawesome/free-solid-svg-icons';
 const MovimientoTable = ({
   movimientos,
   permissions,
   onEdit,
-  onSoftDelete,
-  onRestore,
   onInfo,
   loading
 }) => {
@@ -172,6 +169,17 @@ const MovimientoTable = ({
               {/* Columna: Acciones */}
               <td className="px-6 py-4 whitespace-nowrap text-center">
                 <div className="flex items-center justify-center space-x-2">
+                  {/* Botón Editar */}
+                  {permissions?.canEdit && (
+                    <button
+                      onClick={() => onEdit(movimiento)}
+                      className="p-2 rounded-full text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors duration-200"
+                      title="Editar movimiento"
+                    >
+                      <FontAwesomeIcon icon={faEdit} />
+                    </button>
+                  )}
+
                   {/* Botón Información */}
                   <button
                     onClick={() => onInfo(movimiento)}
@@ -180,47 +188,6 @@ const MovimientoTable = ({
                   >
                     <FontAwesomeIcon icon={faInfoCircle} />
                   </button>
-
-                  {movimiento.eliminado ? (
-                    // Acciones para movimientos eliminados
-                    <>
-                      {/* Botón Restaurar */}
-                      {permissions?.canRestore && (
-                        <button
-                          onClick={() => onRestore(movimiento)}
-                          className="p-2 rounded-full text-green-600 hover:bg-green-100 dark:hover:bg-green-900 transition-colors duration-200"
-                          title="Restaurar movimiento"
-                        >
-                          <FontAwesomeIcon icon={faTrashRestore} />
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    // Acciones para movimientos activos
-                    <>
-                      {/* Botón Editar */}
-                      {permissions?.canEdit && (
-                        <button
-                          onClick={() => onEdit(movimiento)}
-                          className="p-2 rounded-full text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors duration-200"
-                          title="Editar movimiento"
-                        >
-                          <FontAwesomeIcon icon={faEdit} />
-                        </button>
-                      )}
-
-                      {/* Botón Eliminar Temporalmente */}
-                      {permissions?.canDelete && (
-                        <button
-                          onClick={() => onSoftDelete(movimiento)}
-                          className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                          title="Eliminar temporalmente"
-                        >
-                          <FontAwesomeIcon icon={faRecycle} />
-                        </button>
-                      )}
-                    </>
-                  )}
                 </div>
               </td>
             </tr>
@@ -259,12 +226,8 @@ MovimientoTable.propTypes = {
   ).isRequired,
   permissions: PropTypes.shape({
     canEdit: PropTypes.bool,
-    canDelete: PropTypes.bool,
-    canRestore: PropTypes.bool,
   }),
   onEdit: PropTypes.func.isRequired,
-  onSoftDelete: PropTypes.func.isRequired,
-  onRestore: PropTypes.func.isRequired,
   onInfo: PropTypes.func.isRequired,
   loading: PropTypes.bool.isRequired,
 };

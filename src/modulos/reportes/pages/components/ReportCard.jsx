@@ -1,7 +1,7 @@
 // src/modulos/reportes/pages/components/ReportCard.jsx
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSync, faDownload, faFileExport } from '@fortawesome/free-solid-svg-icons';
+import { faSync, faDownload, faFileExport, faFilePdf } from '@fortawesome/free-solid-svg-icons';
 
 const ReportCard = ({ 
   title, 
@@ -9,6 +9,7 @@ const ReportCard = ({
   iconColor, 
   iconBgColor, 
   onRefresh, 
+  onExportPDF,
   onExportJSON, 
   onExportCSV, 
   loading = false, 
@@ -17,12 +18,12 @@ const ReportCard = ({
   className = ""
 }) => {
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 min-h-[500px] ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`p-3 ${iconBgColor} rounded-lg`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 ${iconBgColor} rounded-lg`}>
               <FontAwesomeIcon 
                 icon={icon} 
                 className={`text-lg ${iconColor}`} 
@@ -33,46 +34,56 @@ const ReportCard = ({
             </h2>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <button 
               onClick={onRefresh} 
               disabled={loading}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              title="Actualizar"
             >
               <FontAwesomeIcon 
                 icon={faSync} 
-                className={`mr-2 ${loading ? 'animate-spin' : ''}`} 
+                className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} 
               />
-              Actualizar
             </button>
             
-            {canExport && onExportJSON && (
-              <button 
-                onClick={onExportJSON} 
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors duration-200" 
-                title="Descargar JSON"
-              >
-                <FontAwesomeIcon icon={faFileExport} className="mr-2" />
-                JSON
-              </button>
-            )}
-            
-            {canExport && onExportCSV && (
-              <button 
-                onClick={onExportCSV} 
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-200" 
-                title="Descargar CSV"
-              >
-                <FontAwesomeIcon icon={faDownload} className="mr-2" />
-                CSV
-              </button>
+            {canExport && (
+              <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-200 dark:border-gray-600">
+                {onExportPDF && (
+                  <button 
+                    onClick={onExportPDF} 
+                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    title="Exportar PDF"
+                  >
+                    <FontAwesomeIcon icon={faFilePdf} className="w-4 h-4" />
+                  </button>
+                )}
+                {onExportJSON && (
+                  <button 
+                    onClick={onExportJSON} 
+                    className="p-2 text-slate-600 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/20 rounded-lg transition-colors"
+                    title="Exportar JSON"
+                  >
+                    <FontAwesomeIcon icon={faFileExport} className="w-4 h-4" />
+                  </button>
+                )}
+                {onExportCSV && (
+                  <button 
+                    onClick={onExportCSV} 
+                    className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                    title="Exportar CSV"
+                  >
+                    <FontAwesomeIcon icon={faDownload} className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
       
       {/* Content */}
-      <div className="p-6">
+      <div className="p-5">
         {children}
       </div>
     </div>

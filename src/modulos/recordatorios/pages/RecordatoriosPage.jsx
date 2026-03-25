@@ -62,7 +62,8 @@ const RecordatoriosPage = () => {
     toggleRecordatorioActivo,
     handleRecordatorioAction,
     clearError,
-    pagination
+    pagination,
+    enviarNotificacionPush
   } = useRecordatorios();
 
   // Estados para modales
@@ -140,6 +141,16 @@ const RecordatoriosPage = () => {
     if (!recordatorio) return;
     openActionModal(recordatorio, 'marcarPendiente');
   }, [recordatorios]);
+
+  // Handler para enviar notificación push
+  const handleEnviarNotificacion = useCallback(async (id) => {
+    try {
+      await enviarNotificacionPush(id);
+      fetchRecordatorios(filters, page, pageSize); // Refrescar la lista después de enviar
+    } catch (err) {
+      console.error('Error al enviar notificación:', err);
+    }
+  }, [enviarNotificacionPush, fetchRecordatorios, filters, page, pageSize]);
 
   const handleToggleActivo = useCallback(async (id, activo) => {
     try {
@@ -343,6 +354,7 @@ const RecordatoriosPage = () => {
           onToggleActivo={handleToggleActivo}
           onMarcarEnviado={handleMarcarEnviado}
           onMarcarPendiente={handleMarcarPendiente}
+          onEnviarNotificacion={handleEnviarNotificacion}
           onInfo={handleInfoRecordatorio}
           loading={loading}
         />

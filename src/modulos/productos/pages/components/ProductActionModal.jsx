@@ -14,23 +14,22 @@ const ProductActionModal = ({ isOpen, onClose, producto, actionType, onConfirm }
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Producto (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente el producto "${producto.nombre}"? Podrá restaurarlo después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Producto',
+          message: `¿Está seguro de eliminar el producto "${producto.nombre}"`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente "${producto.nombre}"...`,
+          loadingText: `Eliminando"${producto.nombre}"...`,
           icon: faRecycle
         };
-      case 'hardDelete':
-        return {
-          title: 'Eliminar Producto (Permanente)',
-          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE el producto "${producto.nombre}"? Esta acción no se puede deshacer.`,
-          confirmText: 'Eliminar Permanentemente',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
-          loadingText: `Eliminando permanentemente "${producto.nombre}"...`,
-          icon: faTrash
-        };
       case 'restore':
+        return {
+          title: 'Restaurar Producto',
+          message: `¿Desea restaurar el producto "${producto.nombre}"?`,
+          confirmText: 'Restaurar',
+          confirmClass: 'bg-green-600 hover:bg-green-700',
+          loadingText: `Restaurando producto "${producto.nombre}"...`,
+          icon: faTrashRestore
+        };
         return {
           title: 'Restaurar Producto',
           message: `¿Desea restaurar el producto "${producto.nombre}"?`,
@@ -73,7 +72,8 @@ const ProductActionModal = ({ isOpen, onClose, producto, actionType, onConfirm }
 
     try {
       await onConfirm(producto.id, actionType);
-      onClose();
+      // No cerramos el modal aquí - el componente padre lo maneja
+      // Esto permite que la notificación toast se muestre antes de cerrar
     } catch (err) {
       console.error(`Error en acción ${actionType}:`, err);
     } finally {
@@ -165,7 +165,7 @@ ProductActionModal.propTypes = {
     stock_actual: PropTypes.number,
     precio_venta: PropTypes.number,
   }),
-  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']).isRequired,
+  actionType: PropTypes.oneOf(['softDelete', 'restore', 'toggleActivo']).isRequired,
   onConfirm: PropTypes.func.isRequired,
 };
 

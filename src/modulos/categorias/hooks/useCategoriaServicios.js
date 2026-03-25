@@ -157,9 +157,7 @@ export const useCategoriaServicios = () => {
       );
       return updatedServicio;
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      console.error(`Error al alternar estado de servicio de categoría con ID ${id}:`, errorInfo, err);
+      // Re-lanzar el error para preservar la respuesta del backend
       throw err;
     } finally {
       setLoading(false);
@@ -178,9 +176,7 @@ export const useCategoriaServicios = () => {
         prev.map((s) => (s.id === id ? { ...s, eliminado: true } : s))
       );
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      console.error(`Error al eliminar temporalmente servicio de categoría con ID ${id}:`, errorInfo, err);
+      // Re-lanzar el error para preservar la respuesta del backend
       throw err;
     } finally {
       setLoading(false);
@@ -199,9 +195,7 @@ export const useCategoriaServicios = () => {
         prev.map((s) => (s.id === id ? { ...s, eliminado: false } : s))
       );
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      console.error(`Error al restaurar servicio de categoría con ID ${id}:`, errorInfo, err);
+      // Re-lanzar el error para preservar la respuesta del backend
       throw err;
     } finally {
       setLoading(false);
@@ -251,6 +245,25 @@ export const useCategoriaServicios = () => {
   }, []);
 
   /**
+   * Verificar relaciones de la categoría de servicio antes de eliminar/desactivar.
+   */
+  const verificarRelacionesCategoriaServicio = useCallback(async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const relaciones = await categoriaServicioApi.verificarRelaciones(id);
+      return relaciones;
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      setError(errorInfo.message);
+      console.error('Error al verificar relaciones:', errorInfo, err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
    * Limpiar error.
    */
   const clearError = useCallback(() => {
@@ -272,6 +285,7 @@ export const useCategoriaServicios = () => {
     restoreCategoriaServicio,
     hardDeleteCategoriaServicio,
     getCategoriaServicioStats,
+    verificarRelacionesCategoriaServicio,
     clearError,
   };
 };

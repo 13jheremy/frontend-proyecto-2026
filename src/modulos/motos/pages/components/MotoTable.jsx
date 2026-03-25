@@ -35,7 +35,6 @@ const MotoTable = ({
   permissions, // Recibir permisos como prop
   onEdit,
   onSoftDelete,
-  onHardDelete,
   onRestore,
   onToggleActivo,
   onInfo,
@@ -148,6 +147,9 @@ const MotoTable = ({
               Estado
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Creado Por
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Registro
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -188,7 +190,7 @@ const MotoTable = ({
                         <FontAwesomeIcon icon={faUser} className="mr-1 h-3 w-3 text-green-500" />
                         {moto.propietario_nombre || getPropietarioNombre(moto)}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {(() => {
                           // Determinar el usuario: si propietario es objeto, usarlo directamente; sino buscar en lista
                           let usuario = null;
@@ -198,15 +200,18 @@ const MotoTable = ({
                             usuario = usuariosDisponibles.find(u => u.id === moto.propietario);
                           }
                           return usuario ? (
-                            <>
-                              <span>@{usuario.username}</span>
-                              {usuario.persona?.cedula && (
-                                <>
-                                  <span className="mx-2">•</span>
-                                  <span className="font-mono">CI: {usuario.persona.cedula}</span>
-                                </>
+                            <div className="space-y-1">
+                              {usuario.usuario_correo && (
+                                <div className="flex items-center">
+                                  <span>{usuario.usuario_correo}</span>
+                                </div>
                               )}
-                            </>
+                              {(usuario.persona?.cedula || usuario.cedula) && (
+                                <div className="flex items-center font-mono">
+                                  CI: {usuario.persona?.cedula || usuario.cedula}
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             <span>ID: {typeof moto.propietario === 'number' ? moto.propietario : 'N/A'}</span>
                           );
@@ -260,6 +265,13 @@ const MotoTable = ({
               {/* Estado */}
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 {getStatusBadge(moto)}
+              </td>
+
+              {/* Creado Por */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-gray-500 dark:text-gray-300">
+                  {moto.creado_por_nombre || moto.registrado_por_nombre || 'N/A'}
+                </div>
               </td>
 
               {/* Registro */}
@@ -316,18 +328,9 @@ const MotoTable = ({
                       <button
                         onClick={() => onRestore(moto.id)}
                         className="p-2 rounded-full text-green-600 hover:bg-green-100 dark:hover:bg-green-900 transition-colors duration-200"
-                        title="Restaurar motocicleta"
+                        title="Restaurar Motorcycle"
                       >
                         <FontAwesomeIcon icon={faTrashRestore} className="h-4 w-4" />
-                      </button>
-                    )}
-                    {canDelete && (
-                      <button
-                        onClick={() => onHardDelete(moto.id)}
-                        className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                        title="Eliminar permanentemente"
-                      >
-                        <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
                       </button>
                     )}
                   </>
@@ -336,7 +339,7 @@ const MotoTable = ({
                     <button
                       onClick={() => onSoftDelete(moto.id)}
                       className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                      title="Eliminar temporalmente"
+                      title="Eliminar"
                     >
                       <FontAwesomeIcon icon={faRecycle} className="h-4 w-4" />
                     </button>
@@ -377,7 +380,6 @@ MotoTable.propTypes = {
   ).isRequired,
   onEdit: PropTypes.func.isRequired,
   onSoftDelete: PropTypes.func.isRequired,
-  onHardDelete: PropTypes.func.isRequired,
   onRestore: PropTypes.func.isRequired,
   onToggleActivo: PropTypes.func.isRequired,
   onInfo: PropTypes.func,

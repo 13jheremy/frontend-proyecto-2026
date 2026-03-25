@@ -15,6 +15,7 @@ import {
   faEye,
   faEyeSlash 
 } from '@fortawesome/free-solid-svg-icons'; // Iconos para el botón de crear/cargar.
+import { showNotification } from '../../../utils/notifications'; // Importa utilidades de notificación.
 import RolesCheckboxSelect from './RolesCheckboxSelect'; // Componente para seleccionar roles.
 
 const UsuarioCreateModal = ({ isOpen, onClose, onCreate, loading, apiError, rolesDisponibles }) => {
@@ -178,6 +179,12 @@ const UsuarioCreateModal = ({ isOpen, onClose, onCreate, loading, apiError, role
     }
 
     setFormErrors(errors); // Actualiza el estado de los errores del formulario.
+    
+    // Si hay errores, mostrar notificación
+    if (Object.keys(errors).length > 0) {
+      showNotification.error('Por favor, complete todos los campos requeridos correctamente.');
+    }
+    
     return Object.keys(errors).length === 0; // Retorna true si no hay errores.
   };
 

@@ -12,7 +12,8 @@ import {
   faToggleOff,
   faUndo,
   faTrashRestore,
-  faRecycle
+  faRecycle,
+  faPaperPlane
 } from '@fortawesome/free-solid-svg-icons';
 import { formatRecordatorioStatus } from '../../utils/recordatorioUtils';
 
@@ -26,6 +27,7 @@ const RecordatoriosTable = ({
   onToggleActivo,
   onMarcarEnviado,
   onMarcarPendiente,
+  onEnviarNotificacion,
   onInfo,
   loading
 }) => {
@@ -172,6 +174,18 @@ const RecordatoriosTable = ({
                     <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4" />
                   </button>
 
+                  {/* Botón ENVIAR NOTIFICACIÓN PUSH */}
+                  {!recordatorio.eliminado && permissions.canEdit && (
+                    <button
+                      onClick={() => onEnviarNotificacion && onEnviarNotificacion(recordatorio.id)}
+                      className="p-2 rounded-full text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900 transition-colors duration-200"
+                      title="Enviar notificación push"
+                      disabled={recordatorio.enviado}
+                    >
+                      <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4" />
+                    </button>
+                  )}
+
                   {/* Botón EDITAR */}
                   {permissions.canEdit && (
                     <button
@@ -240,7 +254,7 @@ const RecordatoriosTable = ({
                       <button
                         onClick={() => onSoftDelete(recordatorio.id)}
                         className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                        title="Eliminar temporalmente"
+                        title="Eliminar"
                       >
                         <FontAwesomeIcon icon={faRecycle} className="h-4 w-4" />
                       </button>

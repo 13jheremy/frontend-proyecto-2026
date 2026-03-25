@@ -1,7 +1,10 @@
 // src/modulos/inventario/hooks/useInventario.js
 import { useState, useEffect, useCallback } from 'react';
 import { inventarioApi } from '../api/inventario';
-import { handleApiError, showNotification, inventoryMessages } from '../../../utils/notifications';
+import { productsAPI } from '../../../services/api';
+import { showNotification, inventoryMessages } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
+import { generarPDFInventario, exportarCSVProductos, descargarPDF } from '../../productos/utils/exportUtils';
 
 export const useInventario = () => {
   const [inventarios, setInventarios] = useState([]);
@@ -118,99 +121,7 @@ export const useInventario = () => {
     }
   }, []);
 
-  // Eliminación temporal
-  const softDeleteInventario = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await inventarioApi.softDeleteInventario(id);
-      showNotification.success(inventoryMessages.inventorySoftDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Eliminación permanente
-  const hardDeleteInventario = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await inventarioApi.hardDeleteInventario(id);
-      showNotification.success(inventoryMessages.inventoryHardDeleted);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Restaurar inventario
-  const restoreInventario = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await inventarioApi.restoreInventario(id);
-      showNotification.success(inventoryMessages.inventoryRestored);
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Toggle estado activo
-  const toggleInventarioActivo = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const updatedInventario = await inventarioApi.toggleActivoInventario(id);
-      showNotification.success(inventoryMessages.statusChanged(updatedInventario.activo));
-      return updatedInventario;
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Función unificada para manejar acciones de inventario
-  const handleInventarioAction = useCallback(async (inventarioId, actionType) => {
-    try {
-      switch (actionType) {
-        case 'softDelete':
-          await softDeleteInventario(inventarioId);
-          break;
-        case 'hardDelete':
-          await hardDeleteInventario(inventarioId);
-          break;
-        case 'restore':
-          await restoreInventario(inventarioId);
-          break;
-        case 'toggleActivo':
-          await toggleInventarioActivo(inventarioId);
-          break;
-        default:
-          throw new Error(`Acción no reconocida: ${actionType}`);
-      }
-    } catch (err) {
-      console.error(`Error en acción ${actionType}:`, err);
-      throw err;
-    }
-  }, [softDeleteInventario, hardDeleteInventario, restoreInventario, toggleInventarioActivo]);
+  // Función para manejar acciones de inventario (eliminada funcionalidad de eliminación)
 
   // Obtener estadísticas
   const fetchEstadisticas = useCallback(async () => {
@@ -236,6 +147,57 @@ export const useInventario = () => {
     }
   }, []);
 
+  // Obtener reporte de inventario desde la API
+  const fetchReporteInventario = useCallback(async (filters = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await productsAPI.getReporteInventario(filters);
+      return data;
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Exportar inventario a PDF
+  const exportarInventarioPDF = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await productsAPI.getReporteInventario({});
+      const doc = generarPDFInventario(data.inventario || []);
+      descargarPDF(doc, `reporte_inventario_${new Date().toISOString().split('T')[0]}.pdf`);
+      showNotification('Reporte PDF generado exitosamente', 'success');
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification('Error al generar reporte PDF', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Exportar inventario a CSV
+  const exportarInventarioCSV = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await productsAPI.getReporteInventario({});
+      exportarCSVProductos(data.inventario || [], `inventario_${new Date().toISOString().split('T')[0]}.csv`);
+      showNotification('Reporte CSV generado exitosamente', 'success');
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification('Error al generar reporte CSV', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Inicialización de inventarios
   useEffect(() => {
     fetchInventarios();
@@ -252,13 +214,6 @@ export const useInventario = () => {
     fetchInventarios,
     createInventario,
     updateInventario,
-    
-    // Funciones de gestión de estado
-    softDeleteInventario,
-    hardDeleteInventario,
-    restoreInventario,
-    toggleInventarioActivo,
-    handleInventarioAction,
 
     // Funciones adicionales
     fetchEstadisticas,
@@ -266,5 +221,10 @@ export const useInventario = () => {
 
     // Utilidades
     clearError,
+    
+    // Funciones de exportación
+    fetchReporteInventario,
+    exportarInventarioPDF,
+    exportarInventarioCSV,
   };
 };

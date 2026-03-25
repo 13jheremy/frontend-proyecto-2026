@@ -108,10 +108,6 @@ export const useVentas = () => {
           response = await ventasAPI.eliminar(ventaId);
           successMessage = 'Venta eliminada exitosamente';
           break;
-        case 'hardDelete':
-          response = await ventasAPI.eliminarPermanente(ventaId);
-          successMessage = 'Venta eliminada permanentemente';
-          break;
         case 'restore':
           response = await ventasAPI.restaurar(ventaId);
           successMessage = 'Venta restaurada exitosamente';

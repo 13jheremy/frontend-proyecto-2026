@@ -15,10 +15,10 @@ import { hasPermission } from '../../../utils/rolePermissions';
 import { useAuth } from '../../../context/AuthContext';
 
 const ProductosPage = () => {
-  const { user, roleNames } = useAuth();
+  const { user, roles } = useAuth();
   
   // Validar que el usuario y roles estén cargados antes de calcular permisos
-  if (!user || !roleNames) {
+  if (!user || !roles) {
     return (
       <div className="container mx-auto p-4 dark:bg-gray-900 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -29,14 +29,14 @@ const ProductosPage = () => {
   }
 
   // Logs para debugging
-  console.log("RoleNames:", roleNames);
+  console.log("Roles:", roles);
   console.log("CREATE_PERMS:", PERMISSIONS.PRODUCTS.CREATE);
   console.log("EDIT_PERMS:", PERMISSIONS.PRODUCTS.EDIT);
   console.log("DELETE_PERMS:", PERMISSIONS.PRODUCTS.DELETE);
   
   // Función para verificar permisos con normalización
   const canPerformAction = (requiredPerms) => {
-    const normalizedRoles = roleNames.map(r => r.toLowerCase());
+    const normalizedRoles = roles.map(r => r.toLowerCase());
     const normalizedPerms = requiredPerms.map(p => p.toLowerCase());
     const canDo = normalizedRoles.some(r => normalizedPerms.includes(r));
     return canDo;
@@ -96,6 +96,17 @@ const ProductosPage = () => {
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [actionCompleted, setActionCompleted] = useState(false);
+
+  // Efecto para cerrar el modal cuando la acción se complete
+  useEffect(() => {
+    if (actionCompleted && !loading) {
+      setActionModalOpen(false);
+      setSelectedActionProducto(null);
+      setActionType(null);
+      setActionCompleted(false);
+    }
+  }, [actionCompleted, loading, setActionModalOpen, setSelectedActionProducto, setActionType, setActionCompleted]);
 
   // Función para abrir modal de acción
   const openActionModal = (producto, type) => {
@@ -108,10 +119,9 @@ const ProductosPage = () => {
   const handleConfirmAction = async (productoId, type) => {
     try {
       await handleProductAction(productoId, type);
-      fetchProductos(filters, page, pageSize); // Refrescar la lista después de la acción
-      setActionModalOpen(false);
-      setSelectedActionProducto(null);
-      setActionType(null);
+      // Recargar la lista de productos después de la acción
+      fetchProductos(filters, page, pageSize);
+      setActionCompleted(true); // Marcar que la acción se completó
     } catch (err) {
       console.error(`Error en acción ${type}:`, err);
       // El error ya se maneja en useProductos y se propaga, aquí solo logueamos
@@ -135,12 +145,6 @@ const ProductosPage = () => {
     const producto = productos.find(p => p.id === productoId);
     if (!producto) return;
     openActionModal(producto, 'softDelete');
-  }, [productos]);
-
-  const handleHardDeleteProducto = useCallback((productoId) => {
-    const producto = productos.find(p => p.id === productoId);
-    if (!producto) return;
-    openActionModal(producto, 'hardDelete');
   }, [productos]);
 
   const handleRestoreProducto = useCallback((productoId) => {
@@ -209,10 +213,10 @@ const ProductosPage = () => {
     clearError(); // Limpiar cualquier error de API
   };
 
-  // Efecto para recargar datos cuando cambien filtros o paginación
+  // Efecto para recargar datos cuando cambien filtros, paginación o cuando se complete una acción
   useEffect(() => {
     fetchProductos(filters, page, pageSize);
-  }, [filters, page, pageSize, fetchProductos]);
+  }, [filters, page, pageSize, fetchProductos, actionCompleted]);
 
   // Función para obtener estadísticas
   const getEstadisticas = () => {
@@ -361,7 +365,6 @@ const ProductosPage = () => {
           permissions={tablePermissions}
           onEdit={handleEditProduct}
           onSoftDelete={handleSoftDeleteProducto}
-          onHardDelete={handleHardDeleteProducto}
           onRestore={handleRestoreProducto}
           onToggleActivo={handleToggleActivoProducto}
           onToggleDestacado={handleToggleDestacado}

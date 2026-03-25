@@ -113,18 +113,4 @@ export const detalleMantenimientoApi = {
     }
   },
 
-  /**
-   * Elimina un detalle de mantenimiento permanentemente.
-   * @param {string} id - ID del detalle.
-   * @returns {Promise<number>} - Promesa que resuelve con el status code.
-   */
-  hardDelete: async (id) => {
-    try {
-      const response = await maintenanceDetailsAPI.deletePermanent(id);
-      return response;
-    } catch (error) {
-      console.error('Error en hardDelete:', error);
-      throw handleMantenimientoError(error);
-    }
-  }
 };

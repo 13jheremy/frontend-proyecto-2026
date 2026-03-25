@@ -1,36 +1,18 @@
 // src/modulos/mantenimiento/pages/MantenimientoPage.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMantenimientos } from '../hooks/useMantenimientos';
-import { useMotos } from '../../motos/hooks/useMotos'; // Para obtener motos
+import { useMotos } from '../../motos/hooks/useMotos';
 import MantenimientoTable from './components/MantenimientoTable';
-import MantenimientoEditModal from './components/MantenimientoEditModal';
+import MantenimientoFormModal from './components/MantenimientoFormModal';
 import MantenimientoSearch from './components/MantenimientoSearch';
 import MantenimientoActionModal from './components/MantenimientoActionModal';
 import MantenimientoInfoModal from './components/MantenimientoInfoModal';
+import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faTools, 
-  faCheckCircle, 
-  faBan, 
-  faMotorcycle, 
-  faCalendarAlt,
-  faWrench,
-  faInfoCircle,
-  faTrash,
-  faUndo,
-  faEdit,
-  faArchive,
-  faClock,
-  faPlay,
-  faTimes
-} from '@fortawesome/free-solid-svg-icons';
-import { PERMISSIONS, ROLES } from '../../../utils/constants';
+import { faPlus, faTools, faCheckCircle, faClock, faPlay, faBan, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { PERMISSIONS } from '../../../utils/constants';
 import { useAuth } from '../../../context/AuthContext';
-import { hasRole } from '../../../utils/rolePermissions';
 
-/**
- * Página principal para la gestión de mantenimientos.
- */
 const MantenimientoPage = () => {
   const { user, roles } = useAuth();
   
@@ -45,12 +27,6 @@ const MantenimientoPage = () => {
     );
   }
 
-  // Logs para debugging
-  console.log("Roles:", roles);
-  console.log("CREATE_PERMS:", PERMISSIONS.MAINTENANCE?.CREATE);
-  console.log("EDIT_PERMS:", PERMISSIONS.MAINTENANCE?.EDIT);
-  console.log("DELETE_PERMS:", PERMISSIONS.MAINTENANCE?.DELETE);
-  
   // Función para verificar permisos con normalización
   const canPerformAction = (requiredPerms) => {
     const normalizedRoles = roles.map(r => r.toLowerCase());
@@ -60,25 +36,19 @@ const MantenimientoPage = () => {
   };
   
   // Calcular permisos
-  const canCreate = canPerformAction(PERMISSIONS.MAINTENANCE?.CREATE || ['administrador']);
-  const canEdit = canPerformAction(PERMISSIONS.MAINTENANCE?.EDIT || ['administrador']);
-  const canDelete = canPerformAction(PERMISSIONS.MAINTENANCE?.DELETE || ['administrador']);
-  const canChangeStatus = canPerformAction(PERMISSIONS.MAINTENANCE?.CHANGE_STATUS || []);
-  const canAddObservations = canPerformAction(PERMISSIONS.MAINTENANCE?.ADD_OBSERVATIONS || []);
-
-  // Logs después de calcular
-  console.log("canCreate:", canCreate, "canEdit:", canEdit, "canDelete:", canDelete, "canChangeStatus:", canChangeStatus);
-
+  const canCreate = canPerformAction(PERMISSIONS.MANTENIMIENTOS?.CREATE || ['administrador']);
+  const canEdit = canPerformAction(PERMISSIONS.MANTENIMIENTOS?.EDIT || ['administrador']);
+  const canDelete = canPerformAction(PERMISSIONS.MANTENIMIENTOS?.DELETE || ['administrador']);
+  
   // Objeto de permisos para pasar a la tabla
   const tablePermissions = {
     canEdit,
     canDelete,
     canToggleActive: canEdit,
     canRestore: canEdit,
-    canChangeStatus,
-    canAddObservations
+    canViewDetails: true
   };
-
+  
   // Hook principal de mantenimientos
   const {
     mantenimientos,
@@ -90,13 +60,16 @@ const MantenimientoPage = () => {
     handleMantenimientoAction,
     clearError,
     pagination,
-    fetchEstadisticas
+    fetchEstadisticas,
+    getDeletedMantenimientos
   } = useMantenimientos();
 
-  // Hook para obtener motos
-  const { motos } = useMotos();
+  // Hook para obtener motos disponibles
+  const { fetchMotos } = useMotos();
+  const [motosDisponibles, setMotosDisponibles] = useState([]);
 
   // Estados para modales
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentMantenimiento, setCurrentMantenimiento] = useState(null);
 
@@ -113,44 +86,7 @@ const MantenimientoPage = () => {
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  // Estados para estadísticas
-  const [estadisticas, setEstadisticas] = useState({
-    total: 0,
-    pendientes: 0,
-    enProgreso: 0,
-    completados: 0,
-    cancelados: 0,
-    mantenimientosEliminados: 0
-  });
-
-  // Función para filtrar mantenimientos según permisos del usuario
-  const getFilteredMantenimientos = () => {
-    if (!user || !roles) return mantenimientos;
-
-    // Si es administrador o empleado, ver todos
-    if (hasRole(roles, ROLES.ADMINISTRADOR) || hasRole(roles, ROLES.EMPLEADO)) {
-      return mantenimientos;
-    }
-
-    // Si es técnico, solo ver mantenimientos asignados
-    if (hasRole(roles, ROLES.TECNICO)) {
-      return mantenimientos.filter(mantenimiento =>
-        mantenimiento.tecnico_id === user.id ||
-        mantenimiento.tecnico?.id === user.id
-      );
-    }
-
-    // Si es cliente, solo ver sus propios mantenimientos
-    if (hasRole(roles, ROLES.CLIENTE)) {
-      return mantenimientos.filter(mantenimiento =>
-        mantenimiento.moto?.propietario_id === user.id ||
-        mantenimiento.moto?.propietario?.id === user.id
-      );
-    }
-
-    return [];
-  };
+  const [mantenimientosState, setMantenimientosState] = useState([]);
 
   // Función para abrir modal de acción
   const openActionModal = (mantenimiento, type) => {
@@ -163,7 +99,43 @@ const MantenimientoPage = () => {
   const handleConfirmAction = async (mantenimientoId, type) => {
     try {
       await handleMantenimientoAction(mantenimientoId, type);
-      fetchMantenimientos(filters, page, pageSize);
+      
+      // Si la acción fue restaurar, actualizar la lista de eliminados o volver a la lista normal
+      if (type === 'restore') {
+        if (filters?.eliminado === 'true') {
+          // Si estamos viendo eliminados, recargar la lista de eliminados
+          getDeletedMantenimientos({ page, page_size: pageSize })
+            .then(response => {
+              const data = response?.data || response;
+              if (data?.results) {
+                setMantenimientosState(data.results);
+              } else {
+                setMantenimientosState(Array.isArray(data) ? data : []);
+              }
+            })
+            .catch(err => console.error('Error al recargar eliminados:', err));
+        } else {
+          // Recargar la lista normal
+          fetchMantenimientos(filters, page, pageSize);
+        }
+      } else {
+        // Para otras acciones, recargar según el filtro actual
+        if (filters?.eliminado === 'true') {
+          getDeletedMantenimientos({ page, page_size: pageSize })
+            .then(response => {
+              const data = response?.data || response;
+              if (data?.results) {
+                setMantenimientosState(data.results);
+              } else {
+                setMantenimientosState(Array.isArray(data) ? data : []);
+              }
+            })
+            .catch(err => console.error('Error al recargar eliminados:', err));
+        } else {
+          fetchMantenimientos(filters, page, pageSize);
+        }
+      }
+      
       setActionModalOpen(false);
       setSelectedActionMantenimiento(null);
       setActionType(null);
@@ -172,14 +144,31 @@ const MantenimientoPage = () => {
     }
   };
 
-  // Handlers para edición
+  // Handlers para información
+  const handleInfoMantenimiento = useCallback((mantenimiento) => {
+    setSelectedInfoMantenimiento(mantenimiento);
+    setIsInfoModalOpen(true);
+  }, []);
 
+  // Handlers para edición
   const handleEditMantenimiento = (mantenimiento) => {
     setCurrentMantenimiento(mantenimiento);
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateMantenimiento = async (id, mantenimientoData) => {
+  // Handlers para creación
+  const handleCreateMantenimiento = useCallback(async (mantenimientoData) => {
+    try {
+      await createMantenimiento(mantenimientoData);
+      setIsCreateModalOpen(false);
+      fetchMantenimientos(filters, page, pageSize);
+    } catch (err) {
+      console.error("Error en handleCreateMantenimiento:", err);
+    }
+  }, [createMantenimiento, fetchMantenimientos, filters, page, pageSize]);
+
+  // Handler para actualización
+  const handleUpdateMantenimiento = useCallback(async (id, mantenimientoData) => {
     try {
       await updateMantenimiento(id, mantenimientoData);
       setIsEditModalOpen(false);
@@ -188,7 +177,7 @@ const MantenimientoPage = () => {
     } catch (err) {
       console.error("Error en handleUpdateMantenimiento:", err);
     }
-  };
+  }, [updateMantenimiento, fetchMantenimientos, filters, page, pageSize]);
 
   // Handler para búsqueda
   const handleSearch = (newFilters) => {
@@ -198,62 +187,74 @@ const MantenimientoPage = () => {
 
   // Handler para cerrar modales y limpiar errores
   const handleCloseModals = () => {
+    setIsCreateModalOpen(false);
     setIsEditModalOpen(false);
     setCurrentMantenimiento(null);
     clearError();
   };
 
-  const handleInfoClick = (mantenimiento) => {
-    setSelectedInfoMantenimiento(mantenimiento);
-    setIsInfoModalOpen(true);
-  };
+  // Efecto para recargar datos cuando cambien filtros o paginación
+  useEffect(() => {
+    const loadData = async () => {
+      // Verificar si el filtro es para eliminados
+      if (filters?.eliminado === 'true') {
+        try {
+          // Usar endpoint de eliminados
+          const response = await getDeletedMantenimientos({ page, page_size: pageSize });
+          const data = response?.data || response;
+          console.log('📋 Datos de eliminados:', data);
+          if (data?.results) {
+            setMantenimientosState(data.results);
+          } else {
+            setMantenimientosState(Array.isArray(data) ? data : []);
+          }
+        } catch (err) {
+          console.error('Error al cargar mantenimientos eliminados:', err);
+        }
+      } else {
+        // Usar endpoint normal
+        fetchMantenimientos(filters, page, pageSize);
+      }
+    };
+    loadData();
+  }, [filters, page, pageSize, fetchMantenimientos, getDeletedMantenimientos]);
 
-  const handleChangeStatus = (mantenimiento) => {
-    if (!canChangeStatus) return;
-
-    // Lógica para cambiar estado: pendiente -> en_proceso -> completado
-    let nuevoEstado = '';
-    switch (mantenimiento.estado) {
-      case 'pendiente':
-        nuevoEstado = 'en_proceso';
-        break;
-      case 'en_proceso':
-        nuevoEstado = 'completado';
-        break;
-      case 'completado':
-        // No permitir cambiar de completado
-        return;
-      default:
-        nuevoEstado = 'pendiente';
-    }
-
-    // Aquí podrías abrir un modal de confirmación o directamente cambiar el estado
-    // Por simplicidad, cambiamos directamente
-    handleUpdateMantenimiento(mantenimiento.id, { estado: nuevoEstado });
-  };
+  // Efecto para cargar las motos disponibles al inicio
+  useEffect(() => {
+    const loadMotos = async () => {
+      try {
+        const response = await fetchMotos({ activo: true });
+        // La respuesta puede venir en diferentes formatos, adaptarse
+        const motoData = response?.data?.results || response?.data || response || [];
+        setMotosDisponibles(Array.isArray(motoData) ? motoData : []);
+      } catch (err) {
+        console.error('Error al cargar motos disponibles:', err);
+        setMotosDisponibles([]);
+      }
+    };
+    loadMotos();
+  }, [fetchMotos]);
 
   // Función para obtener estadísticas locales
   const getEstadisticasLocales = () => {
-    const filteredMantenimientos = getFilteredMantenimientos();
-    const total = filteredMantenimientos.length;
-    const pendientes = filteredMantenimientos.filter(m => m.estado === 'pendiente' && !m.eliminado).length;
-    const enProgreso = filteredMantenimientos.filter(m => m.estado === 'en_progreso' && !m.eliminado).length;
-    const completados = filteredMantenimientos.filter(m => m.estado === 'completado' && !m.eliminado).length;
-    const cancelados = filteredMantenimientos.filter(m => m.estado === 'cancelado' && !m.eliminado).length;
-    const eliminados = filteredMantenimientos.filter(m => m.eliminado).length;
+    const total = pagination.totalItems || 0;
+    const pendientes = mantenimientos.filter(m => m.estado === 'pendiente' && !m.eliminado).length;
+    const enProgreso = mantenimientos.filter(m => m.estado === 'en_progreso' && !m.eliminado).length;
+    const completados = mantenimientos.filter(m => m.estado === 'completado' && !m.eliminado).length;
+    const cancelados = mantenimientos.filter(m => m.estado === 'cancelado' && !m.eliminado).length;
+    const eliminados = mantenimientos.filter(m => m.eliminado).length;
 
     return { total, pendientes, enProgreso, completados, cancelados, eliminados };
   };
 
-  const estadisticasLocales = getEstadisticasLocales();
+  const estadisticas = getEstadisticasLocales();
 
-  // Renderizar la página
   return (
     <div className="container mx-auto p-4 dark:bg-gray-900 min-h-screen">
       {/* HEADER CON ESTADÍSTICAS */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-          <FontAwesomeIcon icon={faWrench} className="mr-3 text-yellow-600" />
+          <FontAwesomeIcon icon={faTools} className="mr-3 text-yellow-600" />
           Gestión de Mantenimientos
         </h1>
 
@@ -261,7 +262,7 @@ const MantenimientoPage = () => {
         <div className="hidden md:flex items-center space-x-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {estadisticasLocales.total}
+              {estadisticas.total}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Total
@@ -272,7 +273,7 @@ const MantenimientoPage = () => {
 
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {estadisticasLocales.completados}
+              {estadisticas.completados}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Completados
@@ -283,20 +284,31 @@ const MantenimientoPage = () => {
 
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {estadisticasLocales.pendientes}
+              {estadisticas.pendientes}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Pendientes
             </div>
           </div>
 
-          {estadisticasLocales.eliminados > 0 && (
+          <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
+
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {estadisticas.enProgreso}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              En Progreso
+            </div>
+          </div>
+
+          {estadisticas.eliminados > 0 && (
             <>
               <div className="w-px h-8 bg-gray-200 dark:bg-gray-700"></div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center">
-                  {estadisticasLocales.eliminados}
-                  <FontAwesomeIcon icon={faArchive} className="ml-1 text-sm" />
+                  {estadisticas.eliminados}
+                  <FontAwesomeIcon icon={faBan} className="ml-1 text-sm" />
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Eliminados
@@ -313,31 +325,41 @@ const MantenimientoPage = () => {
           filters={filters}
           setFilters={setFilters}
           onSearch={handleSearch}
-          motosDisponibles={motos}
+          motosDisponibles={motosDisponibles}
         />
       </div>
 
       {/* BOTONES DE ACCIÓN */}
       <div className="flex flex-wrap gap-4 mb-6">
+        {canCreate && (
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            disabled={loading}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FontAwesomeIcon icon={faPlus} className="mr-2" />
+            Nuevo Mantenimiento
+          </button>
+        )}
 
-        {estadisticasLocales.pendientes > 0 && (
+        {estadisticas.pendientes > 0 && (
           <div className="flex items-center px-3 py-2 bg-yellow-100 text-yellow-800 rounded-md">
             <FontAwesomeIcon icon={faClock} className="mr-2" />
-            {estadisticasLocales.pendientes} pendiente{estadisticasLocales.pendientes !== 1 ? 's' : ''}
+            {estadisticas.pendientes} pendiente{estadisticas.pendientes !== 1 ? 's' : ''}
           </div>
         )}
 
-        {estadisticasLocales.enProgreso > 0 && (
+        {estadisticas.enProgreso > 0 && (
           <div className="flex items-center px-3 py-2 bg-blue-100 text-blue-800 rounded-md">
             <FontAwesomeIcon icon={faPlay} className="mr-2" />
-            {estadisticasLocales.enProgreso} en progreso
+            {estadisticas.enProgreso} en progreso
           </div>
         )}
 
-        {estadisticasLocales.completados > 0 && (
+        {estadisticas.completados > 0 && (
           <div className="flex items-center px-3 py-2 bg-green-100 text-green-800 rounded-md">
             <FontAwesomeIcon icon={faCheckCircle} className="mr-2" />
-            {estadisticasLocales.completados} completado{estadisticasLocales.completados !== 1 ? 's' : ''}
+            {estadisticas.completados} completado{estadisticas.completados !== 1 ? 's' : ''}
           </div>
         )}
       </div>
@@ -363,38 +385,35 @@ const MantenimientoPage = () => {
       {/* TABLA DE MANTENIMIENTOS */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <MantenimientoTable
-          mantenimientos={getFilteredMantenimientos()}
+          mantenimientos={filters?.eliminado === 'true' ? mantenimientosState : mantenimientos}
+          filters={filters}
           permissions={tablePermissions}
           onEdit={handleEditMantenimiento}
           onSoftDelete={(mantenimientoId) => {
-            const mantenimiento = getFilteredMantenimientos().find(m => m.id === mantenimientoId);
+            const currentList = filters?.eliminado === 'true' ? mantenimientosState : mantenimientos;
+            const mantenimiento = currentList.find(m => m.id === mantenimientoId);
             if (!mantenimiento) return;
             openActionModal(mantenimiento, 'softDelete');
           }}
-          onHardDelete={(mantenimientoId) => {
-            const mantenimiento = getFilteredMantenimientos().find(m => m.id === mantenimientoId);
-            if (!mantenimiento) return;
-            openActionModal(mantenimiento, 'hardDelete');
-          }}
           onRestore={(mantenimientoId) => {
-            const mantenimiento = getFilteredMantenimientos().find(m => m.id === mantenimientoId);
+            const currentList = filters?.eliminado === 'true' ? mantenimientosState : mantenimientos;
+            const mantenimiento = currentList.find(m => m.id === mantenimientoId);
             if (!mantenimiento) return;
             openActionModal(mantenimiento, 'restore');
           }}
           onToggleActivo={(mantenimientoId) => {
-            const mantenimiento = getFilteredMantenimientos().find(m => m.id === mantenimientoId);
+            const currentList = filters?.eliminado === 'true' ? mantenimientosState : mantenimientos;
+            const mantenimiento = currentList.find(m => m.id === mantenimientoId);
             if (!mantenimiento) return;
             openActionModal(mantenimiento, 'toggleActivo');
           }}
-          onChangeStatus={handleChangeStatus}
-          onInfo={handleInfoClick}
+          onInfo={handleInfoMantenimiento}
           loading={loading}
         />
-
       </div>
 
       {/* PAGINACIÓN */}
-      {pagination && pagination.totalPages > 1 && (
+      {pagination.totalPages > 1 && (
         <div className="mt-4 flex justify-center items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <button
             disabled={!pagination.previous}
@@ -405,7 +424,7 @@ const MantenimientoPage = () => {
           </button>
 
           <span className="px-3 py-1">
-            Página {pagination.page} de {pagination.totalPages}
+            Página {pagination.currentPage} de {pagination.totalPages}
           </span>
 
           <button
@@ -420,17 +439,21 @@ const MantenimientoPage = () => {
 
       {/* MODALES */}
 
+      {/* Modal para crear mantenimiento */}
+      <MantenimientoFormModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseModals}
+        onSubmit={handleCreateMantenimiento}
+        loading={loading}
+      />
 
       {/* Modal para editar mantenimiento */}
-      <MantenimientoEditModal
+      <MantenimientoFormModal
         isOpen={isEditModalOpen}
         onClose={handleCloseModals}
-        onUpdate={handleUpdateMantenimiento}
-        currentMantenimiento={currentMantenimiento}
-        motosDisponibles={motos}
+        onSubmit={(data) => handleUpdateMantenimiento(currentMantenimiento.id, data)}
+        mantenimiento={currentMantenimiento}
         loading={loading}
-        apiError={apiError}
-        userRoles={roles}
       />
 
       {/* Modal para confirmar acciones */}

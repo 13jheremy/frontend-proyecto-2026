@@ -23,8 +23,8 @@ export const buscarMotos = async (query) => {
  */
 export const buscarProductos = async (query) => {
   try {
-    const response = await api.get('/buscar/productos/', {
-      params: { q: query }
+    const response = await api.get('/pos/productos/buscar/', {
+      params: { q: query, solo_con_stock: 'false' }
     });
     return response.data;
   } catch (error) {

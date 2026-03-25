@@ -31,30 +31,6 @@ export const inventarioApi = {
     return response.data;
   },
 
-  // Eliminación temporal
-  softDeleteInventario: async (id) => {
-    const response = await inventoryAPI.softDelete(id);
-    return response.data;
-  },
-
-  // Eliminación permanente
-  hardDeleteInventario: async (id) => {
-    const response = await inventoryAPI.deletePermanent(id);
-    return response.data;
-  },
-
-  // Restaurar inventario
-  restoreInventario: async (id) => {
-    const response = await inventoryAPI.restore(id);
-    return response.data;
-  },
-
-  // Toggle estado activo - Usando toggleActive endpoint
-  toggleActivoInventario: async (id) => {
-    const response = await inventoryAPI.toggleActive(id);
-    return response.data;
-  },
-
   // =======================================
   // MOVIMIENTOS DE INVENTARIO - Usando inventoryMovementAPI
   // =======================================
@@ -80,18 +56,6 @@ export const inventarioApi = {
   // Actualizar movimiento
   updateMovimiento: async (id, data) => {
     const response = await inventoryMovementAPI.update(id, data);
-    return response.data;
-  },
-
-  // Eliminar movimiento
-  deleteMovimiento: async (id) => {
-    const response = await inventoryMovementAPI.delete(id);
-    return response.data;
-  },
-
-  // Restaurar movimiento
-  restoreMovimiento: async (id) => {
-    const response = await inventoryMovementAPI.restore(id);
     return response.data;
   },
 

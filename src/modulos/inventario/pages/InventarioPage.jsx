@@ -56,7 +56,6 @@ const InventarioPage = () => {
     fetchInventarios,
     createInventario,
     updateInventario,
-    handleInventarioAction,
     clearError,
     pagination,
     fetchEstadisticas,
@@ -189,13 +188,8 @@ const InventarioPage = () => {
 
   // Manejar confirmación de acción
   const handleActionConfirm = async () => {
-    try {
-      await handleInventarioAction(selectedInventario.id, actionType);
-      closeModal('action');
-      fetchInventarios(filters, page, pageSize);
-    } catch (error) {
-      console.error('Error ejecutando acción:', error);
-    }
+    // Funcionalidad de eliminación deshabilitada
+    closeModal('action');
   };
 
   // Función para obtener estadísticas locales
@@ -287,10 +281,10 @@ const InventarioPage = () => {
           <button
             onClick={openCreateModal}
             disabled={loading}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Crear Inventario"
           >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Crear Inventario
+            <FontAwesomeIcon icon={faPlus} />
           </button>
         )}
 
@@ -339,10 +333,6 @@ const InventarioPage = () => {
           inventarios={inventarios}
           permissions={tablePermissions}
           onEdit={openEditModal}
-          onSoftDelete={(inventario) => openActionModal(inventario, 'softDelete')}
-          onHardDelete={(inventario) => openActionModal(inventario, 'hardDelete')}
-          onRestore={(inventario) => openActionModal(inventario, 'restore')}
-          onToggleActivo={(inventario) => openActionModal(inventario, 'toggleActivo')}
           onInfo={openInfoModal}
           loading={loading}
         />

@@ -35,29 +35,95 @@ import debounce from 'lodash/debounce';
  */
 const MantenimientoTable = ({
   mantenimientos = [],
+  filters = {},
   permissions = {},
   onEdit,
   onSoftDelete,
-  onHardDelete,
   onRestore,
   onToggleActivo,
   onInfo,
   onChangeStatus,
+  onRefresh,
   loading = false,
   motosDisponibles = [],
   className = ''
 }) => {
   // Extraer permisos con valores por defecto
   const { canEdit = false, canDelete = false, canRestore = false, canChangeStatus = false, canAddObservations = false } = permissions || {};
+  
   // Estados locales
-  const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'fecha_ingreso', direction: 'desc' });
-  const [filters, setFilters] = useState({
+  const [filtersState, setFiltersState] = useState({
     estado: '',
     fecha_desde: '',
     fecha_hasta: '',
     eliminados: false,
   });
+
+  // Usar filtros de props (del padre) si existen, si no usar estado local
+  const activeFilters = filters || filtersState;
+  
+  // Filtrar y ordenar mantenimientos (DEBE estar antes de cualquier return)
+  const filteredMantenimientos = useMemo(() => {
+    if (!mantenimientos) return [];
+    
+    let result = [...mantenimientos];
+    
+    // Aplicar filtros
+    if (activeFilters.estado) {
+      result = result.filter(m => m.estado === activeFilters.estado);
+    }
+    
+    if (activeFilters.fecha_desde) {
+      const fechaDesde = new Date(activeFilters.fecha_desde);
+      result = result.filter(m => new Date(m.fecha_ingreso) >= fechaDesde);
+    }
+    
+    if (activeFilters.fecha_hasta) {
+      const fechaHasta = new Date(activeFilters.fecha_hasta);
+      fechaHasta.setHours(23, 59, 59, 999); // Fin del día
+      result = result.filter(m => new Date(m.fecha_ingreso) <= fechaHasta);
+    }
+    
+    // Si hay filtro de eliminado en props, usarlo; si no está definido, mostrar todos
+    const eliminadoFilter = activeFilters?.eliminado;
+    if (eliminadoFilter !== undefined && eliminadoFilter !== '') {
+      const isEliminado = eliminadoFilter === 'true';
+      result = result.filter(m => m.eliminado === isEliminado);
+    }
+    
+    // Aplicar ordenación
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+        
+        // Manejar ordenación de objetos anidados
+        if (sortConfig.key.includes('.')) {
+          const keys = sortConfig.key.split('.');
+          aValue = keys.reduce((obj, key) => obj?.[key], a);
+          bValue = keys.reduce((obj, key) => obj?.[key], b);
+        }
+        
+        // Manejar fechas
+        if (sortConfig.key.includes('fecha') || sortConfig.key.includes('created') || sortConfig.key.includes('updated')) {
+          aValue = new Date(aValue);
+          bValue = new Date(bValue);
+        }
+        
+        // Comparar valores
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    
+    return result;
+  }, [mantenimientos, filters, sortConfig]);
 
   // Mostrar loading
   if (loading) {
@@ -142,80 +208,6 @@ const MantenimientoTable = ({
     }
   };
   
-
-  // Filtrar y ordenar mantenimientos
-  const filteredMantenimientos = useMemo(() => {
-    if (!mantenimientos) return [];
-    
-    let result = [...mantenimientos];
-    
-    // Aplicar filtros
-    if (filters.estado) {
-      result = result.filter(m => m.estado === filters.estado);
-    }
-    
-    if (filters.fecha_desde) {
-      const fechaDesde = new Date(filters.fecha_desde);
-      result = result.filter(m => new Date(m.fecha_ingreso) >= fechaDesde);
-    }
-    
-    if (filters.fecha_hasta) {
-      const fechaHasta = new Date(filters.fecha_hasta);
-      fechaHasta.setHours(23, 59, 59, 999); // Fin del día
-      result = result.filter(m => new Date(m.fecha_ingreso) <= fechaHasta);
-    }
-    
-    if (filters.eliminados !== undefined) {
-      result = result.filter(m => m.eliminado === filters.eliminados);
-    }
-    
-    // Aplicar búsqueda
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(m => 
-        (m.moto?.marca?.toLowerCase().includes(term)) ||
-        (m.moto?.modelo?.toLowerCase().includes(term)) ||
-        (m.moto?.placa?.toLowerCase().includes(term)) ||
-        (m.descripcion_problema?.toLowerCase().includes(term)) ||
-        (m.diagnostico?.toLowerCase().includes(term)) ||
-        (m.moto?.propietario?.nombre?.toLowerCase().includes(term)) ||
-        (m.moto?.propietario?.apellido?.toLowerCase().includes(term))
-      );
-    }
-    
-    // Aplicar ordenación
-    if (sortConfig.key) {
-      result.sort((a, b) => {
-        let aValue = a[sortConfig.key];
-        let bValue = b[sortConfig.key];
-        
-        // Manejar ordenación de objetos anidados
-        if (sortConfig.key.includes('.')) {
-          const keys = sortConfig.key.split('.');
-          aValue = keys.reduce((obj, key) => obj?.[key], a);
-          bValue = keys.reduce((obj, key) => obj?.[key], b);
-        }
-        
-        // Manejar fechas
-        if (sortConfig.key.includes('fecha') || sortConfig.key.includes('created') || sortConfig.key.includes('updated')) {
-          aValue = new Date(aValue);
-          bValue = new Date(bValue);
-        }
-        
-        // Comparar valores
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    
-    return result;
-  }, [mantenimientos, filters, searchTerm, sortConfig]);
-  
   // Manejar cambio de ordenación
   const requestSort = (key) => {
     let direction = 'asc';
@@ -240,7 +232,7 @@ const MantenimientoTable = ({
   
   // Manejar cambio de filtros
   const handleFilterChange = (name, value) => {
-    setFilters(prev => ({
+    setFiltersState(prev => ({
       ...prev,
       [name]: value
     }));
@@ -248,18 +240,25 @@ const MantenimientoTable = ({
   
   // Limpiar filtros
   const clearFilters = () => {
-    setFilters({
+    setFiltersState({
       estado: '',
       fecha_desde: '',
       fecha_hasta: '',
       eliminados: false,
     });
-    setSearchTerm('');
   };
   // Helper functions
   const getMotoNombre = (moto) => {
     if (!moto) return 'Sin moto';
-    return `${moto.marca || ''} ${moto.modelo || ''} ${moto.placa ? `(${moto.placa})` : ''}`.trim();
+    // Support both new format (moto object with marca, modelo, placa) and legacy format (string)
+    if (typeof moto === 'string') return moto;
+    const marca = moto.marca || '';
+    const modelo = moto.modelo || '';
+    const placa = moto.placa || '';
+    if (placa) {
+      return `${marca} ${modelo} (${placa})`.trim();
+    }
+    return `${marca} ${modelo}`.trim() || 'Sin moto';
   };
 
   const getPropietarioNombre = (propietario) => {
@@ -329,19 +328,6 @@ const MantenimientoTable = ({
         </div>
         
         <div className="flex items-center space-x-2">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FontAwesomeIcon icon={faSearch} className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Buscar mantenimientos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
           <button
             onClick={onRefresh}
             className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
@@ -399,6 +385,12 @@ const MantenimientoTable = ({
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
+                Técnico
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+              >
                 Problema
               </th>
               <th
@@ -442,21 +434,33 @@ const MantenimientoTable = ({
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {mantenimiento.moto?.marca} {mantenimiento.moto?.modelo}
+                        {(mantenimiento.moto_marca || mantenimiento.moto?.marca || 'N/A')} 
+                        {(mantenimiento.moto_modelo || mantenimiento.moto?.modelo || '')}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Placa: {mantenimiento.moto?.placa || 'N/A'}
+                        Placa: {mantenimiento.moto_placa || mantenimiento.moto?.placa || 'N/A'}
                       </div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900 dark:text-white">
-                    {mantenimiento.moto?.propietario?.nombre || 'N/A'}
+                    {(mantenimiento.propietario_nombre || mantenimiento.moto?.propietario?.nombre || 'N/A')}
+                    {(mantenimiento.moto?.propietario?.apellido ? ' ' + mantenimiento.moto.propietario.apellido : '')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {mantenimiento.moto?.propietario?.telefono || ''}
+                    CI: {mantenimiento.propietario_cedula || mantenimiento.moto?.propietario?.cedula || 'N/A'}
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900 dark:text-white">
+                    {mantenimiento.tecnico_asignado_persona_nombre || mantenimiento.tecnico_asignado_nombre || 'Sin asignar'}
+                  </div>
+                  {mantenimiento.tecnico_asignado_cedula && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      CI: {mantenimiento.tecnico_asignado_cedula}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900 dark:text-white font-medium line-clamp-2">
@@ -522,16 +526,6 @@ const MantenimientoTable = ({
                         <FontAwesomeIcon icon={faTrashRestore} className="h-4 w-4" />
                       </button>
                     )}
-                    
-                    {mantenimiento.eliminado && onHardDelete && canDelete && (
-                      <button
-                        onClick={() => onHardDelete(mantenimiento.id)}
-                        className="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/50 rounded-full"
-                        title="Eliminar permanentemente"
-                      >
-                        <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>
@@ -564,6 +558,8 @@ const MantenimientoTable = ({
 };
 
 MantenimientoTable.propTypes = {
+  // Filtros del componente padre
+  filters: PropTypes.object,
   // Array de mantenimientos a mostrar en la tabla
   mantenimientos: PropTypes.arrayOf(
     PropTypes.shape({
@@ -574,30 +570,39 @@ MantenimientoTable.propTypes = {
       diagnostico: PropTypes.string,
       estado: PropTypes.string.isRequired,
       eliminado: PropTypes.bool,
-      moto: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        marca: PropTypes.string.isRequired,
-        modelo: PropTypes.string.isRequired,
-        placa: PropTypes.string,
-        propietario: PropTypes.shape({
+      moto: PropTypes.oneOfType([
+        PropTypes.number,
+        PropTypes.shape({
+          id: PropTypes.number.isRequired,
+          marca: PropTypes.string.isRequired,
+          modelo: PropTypes.string.isRequired,
+          placa: PropTypes.string,
+          propietario: PropTypes.shape({
+            id: PropTypes.number.isRequired,
+            nombre: PropTypes.string.isRequired,
+            telefono: PropTypes.string,
+            email: PropTypes.string,
+          }),
+        })
+      ]),
+      creado_por: PropTypes.oneOfType([
+        PropTypes.number,
+        PropTypes.shape({
           id: PropTypes.number.isRequired,
           nombre: PropTypes.string.isRequired,
-          telefono: PropTypes.string,
-          email: PropTypes.string,
-        }),
-      }),
-      creado_por: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        nombre: PropTypes.string.isRequired,
-        email: PropTypes.string.isRequired,
-      }),
-      actualizado_por: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        nombre: PropTypes.string.isRequired,
-        email: PropTypes.string.isRequired,
-      }),
-      created_at: PropTypes.string.isRequired,
-      updated_at: PropTypes.string.isRequired,
+          email: PropTypes.string.isRequired,
+        })
+      ]),
+      actualizado_por: PropTypes.oneOfType([
+        PropTypes.number,
+        PropTypes.shape({
+          id: PropTypes.number.isRequired,
+          nombre: PropTypes.string.isRequired,
+          email: PropTypes.string.isRequired,
+        })
+      ]),
+      created_at: PropTypes.string,
+      updated_at: PropTypes.string,
       kilometraje_ingreso: PropTypes.number,
       kilometraje_salida: PropTypes.number,
       costo_estimado: PropTypes.number,
@@ -616,35 +621,16 @@ MantenimientoTable.propTypes = {
   // Handlers de eventos
   onEdit: PropTypes.func,
   onSoftDelete: PropTypes.func,
-  onHardDelete: PropTypes.func,
   onRestore: PropTypes.func,
   onToggleActivo: PropTypes.func,
   onInfo: PropTypes.func,
   onChangeStatus: PropTypes.func,
+  onRefresh: PropTypes.func,
   
   // Estados y configuraciones
   loading: PropTypes.bool,
   motosDisponibles: PropTypes.array,
   className: PropTypes.string,
-};
-
-MantenimientoTable.defaultProps = {
-  mantenimientos: [],
-  loading: false,
-  permissions: {
-    canEdit: false,
-    canDelete: false,
-    canRestore: false,
-  },
-  motosDisponibles: [],
-  onEdit: undefined,
-  onDelete: undefined,
-  onRestore: undefined,
-  onInfo: undefined,
-  onHardDelete: undefined,
-  onCrearRecordatorio: undefined,
-  onRefresh: undefined,
-  onExport: undefined,
 };
 
 // Componente de carga para el botón de exportación diferida

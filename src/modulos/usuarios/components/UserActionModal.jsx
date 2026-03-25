@@ -19,19 +19,11 @@ const UserActionModal = ({ isOpen, onClose, user, actionType, onConfirm }) => {
     switch(actionType) {
       case 'softDelete':
         return {
-          title: 'Eliminar Usuario (Temporal)',
-          message: `¿Está seguro de eliminar temporalmente al usuario "${user.username}"? Podrá restaurarlo después.`,
-          confirmText: 'Eliminar Temporalmente',
+          title: 'Eliminar Usuario',
+          message: `¿Está seguro de eliminar al usuario "${user.username}"`,
+          confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
-          loadingText: `Eliminando temporalmente a "${user.username}"...`
-        };
-      case 'hardDelete':
-        return {
-          title: 'Eliminar Usuario (Permanente)',
-          message: `¡ADVERTENCIA! ¿Está seguro de eliminar PERMANENTEMENTE al usuario "${user.username}"? Esta acción no se puede deshacer.`,
-          confirmText: 'Eliminar Permanentemente',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
-          loadingText: `Eliminando permanentemente a "${user.username}"...`
+          loadingText: `Eliminando a "${user.username}"...`
         };
       case 'restore':
         return {
@@ -137,7 +129,7 @@ UserActionModal.propTypes = {
     username: PropTypes.string.isRequired, // 'username' debe ser un string y es requerido.
     is_active: PropTypes.bool.isRequired, // 'is_active' debe ser un booleano y es requerido.
   }), // 'user' es opcional.
-  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleStatus']), // 'actionType' es opcional.
+  actionType: PropTypes.oneOf(['softDelete', 'restore', 'toggleStatus']), // 'actionType' es opcional.
   onConfirm: PropTypes.func.isRequired, // 'onConfirm' debe ser una función y es requerido.
 };
 

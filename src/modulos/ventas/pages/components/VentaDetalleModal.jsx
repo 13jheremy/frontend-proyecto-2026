@@ -16,14 +16,26 @@ import {
   faCheckCircle,
   faClock,
   faExclamationTriangle,
-  faHistory
+  faHistory,
+  faImage,
+  faPrint,
+  faUserEdit,
+  faUserMinus
 } from '@fortawesome/free-solid-svg-icons';
 import { PAYMENT_METHODS, PAYMENT_METHOD_COLORS } from '../../../../utils/constants';
 import { pagosAPI } from '../../api/ventasAPI';
+import ProductoImageModal from '../../../productos/pages/components/ProductoImageModal';
 
 const VentaDetalleModal = ({ isOpen, onClose, venta }) => {
   const [pagos, setPagos] = useState([]);
   const [loadingPagos, setLoadingPagos] = useState(false);
+  
+  // Estado para el modal de imagen de producto
+  const [productImageModal, setProductImageModal] = useState({
+    isOpen: false,
+    imageUrl: null,
+    productName: ''
+  });
 
   // Cargar pagos cuando se abre el modal
   useEffect(() => {
@@ -119,6 +131,233 @@ const VentaDetalleModal = ({ isOpen, onClose, venta }) => {
     );
   };
 
+  // Función para abrir el modal de imagen del producto
+  const handleProductImageClick = (producto) => {
+    const imagenUrl = producto?.producto_imagen || producto?.imagen;
+    const nombre = producto?.producto_nombre || producto?.producto?.nombre || producto?.nombre || 'Producto';
+    
+    if (imagenUrl) {
+      setProductImageModal({
+        isOpen: true,
+        imageUrl: imagenUrl,
+        productName: nombre
+      });
+    }
+  };
+
+  // Función para generar e imprimir el recibo
+  const handlePrintReceipt = () => {
+    const formatPrice = (price) => {
+      return `Bs. ${parseFloat(price || 0).toLocaleString('es-CO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
+    };
+
+    const formatDate = (date) => {
+      return new Date(date).toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    // Obtener nombre del cliente
+    const clienteNombre = venta.cliente_nombre || 
+      (venta.cliente ? `${venta.cliente.nombre || ''} ${venta.cliente.apellido || ''}`.trim() : '') || 
+      'Cliente General';
+    const clienteCedula = venta.cliente_cedula || venta.cliente?.cedula || 'N/A';
+    const clienteTelefono = venta.cliente?.telefono || 'N/A';
+
+    // Obtener método de pago
+    const metodoPago = venta.metodo_pago || 
+      (pagos.length > 0 ? pagos[0].metodo : 'No especificado');
+
+    // Construir los productos
+    let productosHTML = '';
+    if (venta.detalles && venta.detalles.length > 0) {
+      venta.detalles.forEach(detalle => {
+        const nombreProd = detalle.producto_nombre || detalle.producto?.nombre || 'Producto';
+        const cantidad = detalle.cantidad || 0;
+        const precio = detalle.precio_unitario || 0;
+        const subtotal = detalle.subtotal || (cantidad * precio);
+
+        productosHTML += `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${nombreProd}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${cantidad}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatPrice(precio)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatPrice(subtotal)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Recibo de Venta #${venta.id}</title>
+        <style>
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+          body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 10px;
+            color: #333;
+          }
+          .header { text-align: center; margin-bottom: 15px; }
+          .header h1 { font-size: 18px; margin: 0; }
+          .header p { margin: 2px 0; font-size: 11px; }
+          .info-section { margin-bottom: 10px; }
+          .info-section h3 { font-size: 12px; border-bottom: 1px solid #333; margin-bottom: 5px; }
+          .info-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          th { text-align: left; padding: 5px; border-bottom: 1px solid #333; font-size: 11px; }
+          .totals { margin-top: 10px; }
+          .total-row { display: flex; justify-content: space-between; margin: 3px 0; }
+          .grand-total { font-size: 14px; font-weight: bold; border-top: 1px solid #333; padding-top: 5px; }
+          .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+          .estado { padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+          .completada { background-color: #d4edda; color: #155724; }
+          .pendiente { background-color: #fff3cd; color: #856404; }
+          .cancelada { background-color: #f8d7da; color: #721c24; }
+          .no-print { display: none; }
+          @media print {
+            .no-print { display: none !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>TALLER DE MOTOS</h1>
+          <p>Servicio Técnico y Venta de Repuestos</p>
+          <p>Tel: 123-456-7890</p>
+        </div>
+
+        <div style="text-align: center; margin: 10px 0;">
+          <strong>RECIBO DE VENTA</strong><br>
+          <span style="font-size: 14px;">#${venta.id}</span>
+        </div>
+
+        <div class="info-section">
+          <div class="info-row">
+            <span><strong>Fecha:</strong></span>
+            <span>${formatDate(venta.fecha_venta)}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Estado:</strong></span>
+            <span class="estado ${venta.estado}">${venta.estado?.toUpperCase() || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h3>CLIENTE</h3>
+          <div class="info-row">
+            <span>Nombre:</span>
+            <span>${clienteNombre}</span>
+          </div>
+          <div class="info-row">
+            <span>C.C./RUC:</span>
+            <span>${clienteCedula}</span>
+          </div>
+          <div class="info-row">
+            <span>Teléfono:</span>
+            <span>${clienteTelefono}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="text-align: center;">Cant</th>
+                <th style="text-align: right;">Precio</th>
+                <th style="text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productosHTML}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="totals">
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>${formatPrice(venta.subtotal)}</span>
+          </div>
+          <div class="total-row">
+            <span>Descuento:</span>
+            <span>${formatPrice(venta.descuento || 0)}</span>
+          </div>
+          <div class="total-row">
+            <span>IVA (19%):</span>
+            <span>${formatPrice(venta.impuesto)}</span>
+          </div>
+          <div class="total-row grand-total">
+            <span>TOTAL:</span>
+            <span>${formatPrice(venta.total)}</span>
+          </div>
+        </div>
+
+        <div class="info-section" style="margin-top: 10px;">
+          <div class="info-row">
+            <span><strong>Método de Pago:</strong></span>
+            <span>${metodoPago}</span>
+          </div>
+          <div class="info-row">
+            <span><strong>Pagado:</strong></span>
+            <span>${formatPrice(venta.pagado || 0)}</span>
+          </div>
+          ${parseFloat(venta.saldo || 0) > 0 ? `
+          <div class="info-row">
+            <span><strong>Saldo:</strong></span>
+            <span style="color: red;">${formatPrice(venta.saldo)}</span>
+          </div>
+          ` : ''}
+        </div>
+
+        ${venta.observaciones ? `
+        <div class="info-section">
+          <h3>OBSERVACIONES</h3>
+          <p>${venta.observaciones}</p>
+        </div>
+        ` : ''}
+
+        <div class="footer">
+          <p>¡Gracias por su preferencia!</p>
+          <p>Vuelva pronto a Taller de Motos</p>
+        </div>
+
+        <div class="no-print" style="text-align: center; margin-top: 20px;">
+          <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px;">Imprimir</button>
+          <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; cursor: pointer; border-radius: 4px; margin-left: 10px;">Cerrar</button>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Abrir nueva ventana e imprimir
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(receiptHTML);
+      printWindow.document.close();
+      printWindow.focus();
+      // El usuario puede hacer clic en el botón imprimir o usar Ctrl+P
+    } else {
+      alert('Por favor permita ventanas emergentes para imprimir el recibo');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -128,12 +367,22 @@ const VentaDetalleModal = ({ isOpen, onClose, venta }) => {
             <FontAwesomeIcon icon={faReceipt} className="mr-2 text-blue-600" />
             Detalle de Venta #{venta.id}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <FontAwesomeIcon icon={faTimes} />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePrintReceipt}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
+              title="Imprimir Recibo"
+            >
+              <FontAwesomeIcon icon={faPrint} className="mr-2" />
+              Imprimir Recibo
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
+            >
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -234,6 +483,9 @@ const VentaDetalleModal = ({ isOpen, onClose, venta }) => {
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Imagen
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Producto
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -249,32 +501,59 @@ const VentaDetalleModal = ({ isOpen, onClose, venta }) => {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {venta.detalles && venta.detalles.length > 0 ? (
-                    venta.detalles.map((detalle, index) => (
-                      <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {detalle.producto_nombre || detalle.producto?.nombre || 'Producto no disponible'}
-                          </div>
-                          {detalle.producto?.codigo && (
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              Código: {detalle.producto.codigo}
+                    venta.detalles.map((detalle, index) => {
+                      const productoImagen = detalle.producto_imagen || detalle.producto?.imagen;
+                      const productoNombre = detalle.producto_nombre || detalle.producto?.nombre || 'Producto no disponible';
+                      
+                      return (
+                        <tr key={index}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {productoImagen ? (
+                              <button
+                                onClick={() => handleProductImageClick(detalle)}
+                                className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:ring-2 hover:ring-blue-300 transition-all duration-200 cursor-pointer group"
+                                title="Ver imagen del producto"
+                              >
+                                <img
+                                  src={productoImagen}
+                                  alt={productoNombre}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                  <FontAwesomeIcon icon={faImage} className="text-white opacity-0 group-hover:opacity-100" />
+                                </div>
+                              </button>
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                <FontAwesomeIcon icon={faImage} className="text-gray-400" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {productoNombre}
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {detalle.cantidad}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {formatearPrecio(detalle.precio_unitario)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {formatearPrecio(detalle.subtotal)}
-                        </td>
-                      </tr>
-                    ))
+                            {detalle.producto?.codigo && (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                Código: {detalle.producto.codigo}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {detalle.cantidad}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {formatearPrecio(detalle.precio_unitario)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {formatearPrecio(detalle.subtotal)}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         No hay productos registrados para esta venta
                       </td>
                     </tr>
@@ -417,46 +696,78 @@ const VentaDetalleModal = ({ isOpen, onClose, venta }) => {
             </div>
           )}
 
-          {/* Información de Auditoría */}
+          {/* Trazabilidad - Información de auditoría */}
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 dark:text-gray-400">
-              {venta.fecha_registro && (
-                <div>
-                  <span className="font-medium">Fecha de Registro:</span>
-                  <span className="ml-2">{formatearFecha(venta.fecha_registro)}</span>
-                </div>
-              )}
-              
-              {(venta.registrado_por || venta.registrado_por_nombre) && (
-                <div>
-                  <span className="font-medium">Registrado por:</span>
-                  <span className="ml-2">
-                    {venta.registrado_por_nombre || 
-                     (venta.registrado_por?.persona_asociada ? 
-                       `${venta.registrado_por.persona_asociada.nombre} ${venta.registrado_por.persona_asociada.apellido}` : 
-                       venta.registrado_por?.username
-                     )
+            <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+              <FontAwesomeIcon icon={faUser} className="mr-2 text-blue-500" />
+              Trazabilidad
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Creado por / Vendido por */}
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border-l-4 border-green-500">
+                <p className="font-semibold flex items-center text-green-700 dark:text-green-400 text-sm mb-2">
+                  <FontAwesomeIcon icon={faUser} className="mr-2" />
+                  Vendido por:
+                </p>
+                <p className="text-gray-900 dark:text-gray-100 ml-6">
+                  {venta.registrado_por_nombre || 
+                   (venta.registrado_por?.persona_asociada ? 
+                     `${venta.registrado_por.persona_asociada.nombre} ${venta.registrado_por.persona_asociada.apellido}` : 
+                     venta.registrado_por?.username ||
+                     'No disponible')
+                  }
+                </p>
+                {venta.fecha_registro && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 ml-6 flex items-center mt-1">
+                    <FontAwesomeIcon icon={faCalendar} className="mr-1" />
+                    {formatearFecha(venta.fecha_registro)}
+                  </p>
+                )}
+              </div>
+
+              {/* Actualizado por */}
+              {(venta.actualizado_por || venta.actualizado_por_nombre) && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-l-4 border-blue-500">
+                  <p className="font-semibold flex items-center text-blue-700 dark:text-blue-400 text-sm mb-2">
+                    <FontAwesomeIcon icon={faUserEdit} className="mr-2" />
+                    Última modificación por:
+                  </p>
+                  <p className="text-gray-900 dark:text-gray-100 ml-6">
+                    {venta.actualizado_por_nombre || 
+                     (venta.actualizado_por?.persona_asociada ? 
+                       `${venta.actualizado_por.persona_asociada.nombre} ${venta.actualizado_por.persona_asociada.apellido}` : 
+                       venta.actualizado_por?.username || 'No disponible')
                     }
-                  </span>
+                  </p>
+                  {venta.fecha_actualizacion && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 ml-6 flex items-center mt-1">
+                      <FontAwesomeIcon icon={faCalendar} className="mr-1" />
+                      {formatearFecha(venta.fecha_actualizacion)}
+                    </p>
+                  )}
                 </div>
               )}
-              
-              {venta.fecha_actualizacion && (
-                <div>
-                  <span className="font-medium">Última Actualización:</span>
-                  <span className="ml-2">{formatearFecha(venta.fecha_actualizacion)}</span>
-                </div>
-              )}
-              
-              {venta.actualizado_por && (
-                <div>
-                  <span className="font-medium">Actualizado por:</span>
-                  <span className="ml-2">
-                    {venta.actualizado_por.persona_asociada ? 
-                      `${venta.actualizado_por.persona_asociada.nombre} ${venta.actualizado_por.persona_asociada.apellido}` : 
-                      venta.actualizado_por.username
+
+              {/* Eliminado por - solo mostrar si la venta está eliminada */}
+              {venta.eliminado && (
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border-l-4 border-red-500 md:col-span-2">
+                  <p className="font-semibold flex items-center text-red-700 dark:text-red-400 text-sm mb-2">
+                    <FontAwesomeIcon icon={faUserMinus} className="mr-2" />
+                    Eliminado por:
+                  </p>
+                  <p className="text-gray-900 dark:text-gray-100 ml-6">
+                    {venta.eliminado_por_nombre ||
+                     (venta.eliminado_por?.persona_asociada ? 
+                       `${venta.eliminado_por.persona_asociada.nombre} ${venta.eliminado_por.persona_asociada.apellido}` : 
+                       venta.eliminado_por?.username || 'No disponible')
                     }
-                  </span>
+                  </p>
+                  {venta.fecha_eliminacion && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 ml-6 flex items-center mt-1">
+                      <FontAwesomeIcon icon={faCalendar} className="mr-1" />
+                      {formatearFecha(venta.fecha_eliminacion)}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -473,6 +784,14 @@ const VentaDetalleModal = ({ isOpen, onClose, venta }) => {
           </button>
         </div>
       </div>
+      
+      {/* Modal para ver imagen del producto */}
+      <ProductoImageModal
+        isOpen={productImageModal.isOpen}
+        onClose={() => setProductImageModal({ isOpen: false, imageUrl: null, productName: '' })}
+        imageUrl={productImageModal.imageUrl}
+        productName={productImageModal.productName}
+      />
     </div>
   );
 };
@@ -494,8 +813,14 @@ VentaDetalleModal.propTypes = {
     observaciones: PropTypes.string,
     fecha_registro: PropTypes.string,
     registrado_por: PropTypes.object,
+    registrado_por_nombre: PropTypes.string,
     fecha_actualizacion: PropTypes.string,
-    actualizado_por: PropTypes.object
+    actualizado_por: PropTypes.object,
+    actualizado_por_nombre: PropTypes.string,
+    eliminado: PropTypes.bool,
+    eliminado_por: PropTypes.object,
+    eliminado_por_nombre: PropTypes.string,
+    fecha_eliminacion: PropTypes.string
   })
 };
 

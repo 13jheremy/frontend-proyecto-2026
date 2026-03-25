@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faEdit, faTrash, faRecycle, faTrashRestore,
+  faEdit, faRecycle, faTrashRestore,
   faToggleOn, faToggleOff, faInfoCircle, faCogs,
   faCheckCircle, faTimesCircle, faClock, faTag, faDollarSign
 } from '@fortawesome/free-solid-svg-icons';
@@ -16,7 +16,6 @@ const ServicioTable = ({
   permissions, // Recibir permisos como prop
   onEdit,
   onSoftDelete,
-  onHardDelete,
   onRestore,
   onToggleActivo,
   onInfo,
@@ -218,17 +217,6 @@ const ServicioTable = ({
                     </button>
                   )}
 
-                  {/* Botón ELIMINAR PERMANENTE (solo para eliminados) */}
-                  {canDelete && servicio.eliminado && (
-                    <button
-                      onClick={() => onHardDelete(servicio.id)}
-                      className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                      title="Eliminar permanentemente"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  )}
-
                 </div>
               </td>
             </tr>
@@ -255,7 +243,6 @@ ServicioTable.propTypes = {
   ).isRequired,
   onEdit: PropTypes.func.isRequired,
   onSoftDelete: PropTypes.func.isRequired,
-  onHardDelete: PropTypes.func.isRequired,
   onRestore: PropTypes.func.isRequired,
   onToggleActivo: PropTypes.func.isRequired,
   onInfo: PropTypes.func,

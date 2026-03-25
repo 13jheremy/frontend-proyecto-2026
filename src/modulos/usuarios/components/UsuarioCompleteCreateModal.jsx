@@ -19,9 +19,10 @@ import {
   faEye,
   faEyeSlash 
 } from '@fortawesome/free-solid-svg-icons'; // Iconos para el botón de crear/cargar y campos del formulario.
+import { showNotification } from '../../../utils/notifications'; // Importa utilidades de notificación.
 import RolesCheckboxSelect from './RolesCheckboxSelect'; // Componente para seleccionar roles.
 
-const UsuarioCompleteCreateModal = ({ isOpen, onClose, onCreateComplete, loading, apiError, rolesDisponibles }) => {
+const UsuarioCompleteCreateModal = ({ isOpen, onClose, onCreateComplete, loading, apiError, rolesDisponibles, currentUsuario = null }) => {
   // Estado para almacenar los datos del formulario.
   const [formData, setFormData] = useState({
     username: '',
@@ -50,27 +51,54 @@ const UsuarioCompleteCreateModal = ({ isOpen, onClose, onCreateComplete, loading
   // Su propósito es limpiar el formulario y los errores al abrir o cerrar el modal.
   useEffect(() => {
     if (isOpen) {
-      // Restablece el formulario a sus valores iniciales.
-      setFormData({
-        username: '',
-        correo_electronico: '',
-        password: '',
-        is_active: true,
-        is_staff: false,
-        roles: [],
-        persona: {
-          nombre: '',
-          apellido: '',
-          cedula: '',
-          telefono: '',
-          direccion: '',
-        },
-      });
+      // Determinar si es una persona existente sin usuario
+      const esPersonaSinUsuario = currentUsuario?.es_creacion_persona_existente;
+      
+      // Obtener datos de la persona si existen
+      const datosPersona = currentUsuario?.persona_asociada || null;
+      
+      // Si es para crear usuario para persona existente, precargar los datos
+      if (esPersonaSinUsuario && datosPersona) {
+        setFormData({
+          username: '',
+          correo_electronico: currentUsuario.email || '',
+          password: '',
+          is_active: true,
+          is_staff: false,
+          roles: [],
+          persona: {
+            nombre: datosPersona.nombre || '',
+            apellido: datosPersona.apellido || '',
+            cedula: datosPersona.cedula || '',
+            telefono: datosPersona.telefono || '',
+            direccion: datosPersona.direccion || '',
+          },
+          // Guardar el ID de la persona para asociarla
+          persona_id_asociar: datosPersona.id
+        });
+      } else {
+        // Restablece el formulario a sus valores iniciales.
+        setFormData({
+          username: '',
+          correo_electronico: '',
+          password: '',
+          is_active: true,
+          is_staff: false,
+          roles: [],
+          persona: {
+            nombre: '',
+            apellido: '',
+            cedula: '',
+            telefono: '',
+            direccion: '',
+          },
+        });
+      }
       setFormErrors({}); // Limpia los errores de validación del frontend.
       setBackendFieldErrors({}); // Limpia los errores de campo del backend.
       setShowPassword(false); // Resetea la visibilidad de la contraseña
     }
-  }, [isOpen]); // Dependencia: se ejecuta cuando 'isOpen' cambia.
+  }, [isOpen, currentUsuario]); // Dependencia: se ejecuta cuando 'isOpen' o 'currentUsuario' cambia.
 
   // useEffect: Observa cambios en la prop 'apiError' para mostrar errores de backend.
   useEffect(() => {
@@ -238,6 +266,12 @@ const UsuarioCompleteCreateModal = ({ isOpen, onClose, onCreateComplete, loading
     }
 
     setFormErrors(errors); // Actualiza el estado de los errores del formulario.
+    
+    // Si hay errores, mostrar notificación
+    if (Object.keys(errors).length > 0) {
+      showNotification.error('Por favor, complete todos los campos requeridos correctamente.');
+    }
+    
     return Object.keys(errors).length === 0; // Retorna true si no hay errores.
   };
 
@@ -264,12 +298,17 @@ const UsuarioCompleteCreateModal = ({ isOpen, onClose, onCreateComplete, loading
         roles: formData.roles.map(role => role.id), // Mapea los objetos de rol a solo sus IDs.
       };
 
-      // Añade los datos de persona solo si se ha ingresado alguno.
+      // Si hay un ID de persona existente para asociar, incluirlo
+      if (formData.persona_id_asociar) {
+        dataToCreate.persona_id = formData.persona_id_asociar;
+      }
+
+      // Añade los datos de persona solo si se ha ingresado alguno Y no hay persona_id_asociar
       const { nombre, apellido, cedula, telefono, direccion } = formData.persona;
       const hasAnyPersonaField = [nombre, apellido, cedula, telefono, direccion].some(field => field.trim() !== '');
 
-      if (hasAnyPersonaField) {
-        // Si hay datos de persona, los añade al objeto 'dataToCreate'.
+      if (hasAnyPersonaField && !formData.persona_id_asociar) {
+        // Si hay datos de persona y no hay persona_id_asociar, los añade al objeto 'dataToCreate'.
         dataToCreate.persona_nombre = nombre || '';
         dataToCreate.persona_apellido = apellido || '';
         dataToCreate.persona_cedula = cedula || '';
@@ -433,7 +472,7 @@ const UsuarioCompleteCreateModal = ({ isOpen, onClose, onCreateComplete, loading
             <div>
               <label htmlFor="cedula" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 <FontAwesomeIcon icon={faIdCard} className="mr-2 text-gray-500" />
-                Cédula
+                Cédula *
               </label>
               <input
                 type="text"
@@ -581,6 +620,7 @@ UsuarioCompleteCreateModal.propTypes = {
       nombre: PropTypes.string.isRequired, // 'nombre' debe ser un string y es requerido.
     })
   ).isRequired, // 'rolesDisponibles' es requerido.
+  currentUsuario: PropTypes.object, // 'currentUsuario' puede ser un objeto (para precargar datos de persona).
 };
 
 export default UsuarioCompleteCreateModal;

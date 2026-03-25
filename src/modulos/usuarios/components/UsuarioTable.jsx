@@ -1,7 +1,7 @@
 // Este componente renderiza una tabla de usuarios con sus detalles y acciones disponibles.
 // Incluye manejo de estados de carga y ausencia de datos, y muestra roles y estados.
 
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -9,13 +9,13 @@ import {
   faInfoCircle, faUser, faEnvelope, faUserTag, faIdCard, faPhone,
   faCheckCircle, faBan, faUserPlus
 } from '@fortawesome/free-solid-svg-icons';
+import UserActionModal from './UserActionModal';
 
 const UsuarioTable = ({
   users,
   allRoles,
   onEdit,
   onSoftDelete,
-  onHardDelete,
   onRestore,
   onResetPassword,
   onToggleStatus,
@@ -27,7 +27,13 @@ const UsuarioTable = ({
   canEditUser = null,
   canDeleteUser = null,
   canToggleUserStatus = null,
-  canResetUserPassword = null
+  canResetUserPassword = null,
+  // New state for UserActionModal
+  actionModalOpen = false,
+  selectedUser = null,
+  actionType = null,
+  onConfirmAction = null,
+  onCloseActionModal = null
 }) => {
   // Muestra un mensaje de carga si 'loading' es true.
   if (loading) {
@@ -247,7 +253,7 @@ const UsuarioTable = ({
                           className="p-2 rounded-full text-green-600 hover:bg-green-100 dark:hover:bg-green-900 transition-colors duration-200"
                           title="Crear usuario para esta persona"
                         >
-                          <FontAwesomeIcon icon={faToggleOn} className="h-4 w-4" />
+                          <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" />
                         </button>
                       )}
                     </>
@@ -315,17 +321,6 @@ const UsuarioTable = ({
                               <FontAwesomeIcon icon={faTrashRestore} className="h-4 w-4" />
                             </button>
                           )}
-
-                          {/* Botón ELIMINAR PERMANENTEMENTE - Solo administradores */}
-                          {permissions.canHardDelete && (
-                            <button
-                              onClick={() => onHardDelete(user.id)}
-                              className="p-2 rounded-full text-red-600 hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
-                              title="Eliminar permanentemente"
-                            >
-                              <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                            </button>
-                          )}
                         </>
                       ) : (
                         /* Botón ELIMINAR TEMPORALMENTE */
@@ -333,7 +328,7 @@ const UsuarioTable = ({
                           <button
                             onClick={() => onSoftDelete(user.id)}
                             className="p-2 rounded-full text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900 transition-colors duration-200"
-                            title="Eliminar temporalmente"
+                            title="Eliminar"
                           >
                             <FontAwesomeIcon icon={faRecycle} className="h-4 w-4" />
                           </button>
@@ -393,7 +388,6 @@ UsuarioTable.propTypes = {
   ).isRequired,
   onEdit: PropTypes.func.isRequired,
   onSoftDelete: PropTypes.func.isRequired,
-  onHardDelete: PropTypes.func.isRequired,
   onRestore: PropTypes.func.isRequired,
   onResetPassword: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,

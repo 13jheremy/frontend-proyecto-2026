@@ -86,4 +86,92 @@ export const categoriaServicioApi = {
       throw new Error(error.message || 'Error al eliminar servicio de categoría');
     }
   },
+
+  /**
+   * Verifica las relaciones de la categoría de servicio antes de eliminar/desactivar.
+   * @param {string} id - ID de la categoría de servicio.
+   * @returns {Promise<object>} - Promesa que resuelve con la información de relaciones.
+   */
+  verificarRelaciones: async (id) => {
+    try {
+      const response = await serviceCategoriesAPI.verificarRelaciones(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en verificarRelaciones:', error);
+      throw new Error(error.message || 'Error al verificar relaciones');
+    }
+  },
+
+  /**
+   * Alternar estado activo/inactivo de categoría de servicio.
+   * @param {string} id - ID de la categoría de servicio.
+   * @returns {Promise<object>} - Promesa que resuelve con los datos de la categoría actualizada.
+   */
+  toggleActive: async (id) => {
+    try {
+      const response = await serviceCategoriesAPI.toggleActive(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en toggleActive:', error);
+      if (error.response) {
+        throw error;
+      }
+      throw new Error(error.message || 'Error al cambiar estado de categoría de servicio');
+    }
+  },
+
+  /**
+   * Eliminar categoría de servicio temporalmente (soft delete).
+   * @param {string} id - ID de la categoría de servicio.
+   * @returns {Promise<object>} - Promesa que resuelve con la respuesta.
+   */
+  softDelete: async (id) => {
+    try {
+      const response = await serviceCategoriesAPI.softDelete(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en softDelete:', error);
+      if (error.response) {
+        throw error;
+      }
+      throw new Error(error.message || 'Error al eliminar categoría de servicio');
+    }
+  },
+
+  /**
+   * Restaurar categoría de servicio eliminada.
+   * @param {string} id - ID de la categoría de servicio.
+   * @returns {Promise<object>} - Promesa que resuelve con los datos de la categoría restaurada.
+   */
+  restore: async (id) => {
+    try {
+      const response = await serviceCategoriesAPI.restore(id);
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en restore:', error);
+      if (error.response) {
+        throw error;
+      }
+      throw new Error(error.message || 'Error al restaurar categoría de servicio');
+    }
+  },
+
+  /**
+   * Obtener estadísticas de servicios de categoría.
+   * @returns {Promise<object>} - Promesa que resuelve con las estadísticas.
+   */
+  getStats: async () => {
+    try {
+      const response = await serviceCategoriesAPI.getStats();
+      if (response.success) return response.data;
+      throw new Error(response.error);
+    } catch (error) {
+      console.error('Error en getStats:', error);
+      throw new Error(error.message || 'Error al obtener estadísticas');
+    }
+  },
 };
