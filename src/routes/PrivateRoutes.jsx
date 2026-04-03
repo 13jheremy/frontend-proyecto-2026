@@ -39,7 +39,7 @@ import RecordatoriosPage from '../modulos/recordatorios/pages/RecordatoriosPage.
 // Configuración de rutas con roles
 const routesConfig = [
   // Módulo de Usuario y Seguridad
-  { path: '/usuarios', component: UsuariosPage, roles: ['administrador','empleado'] },
+  { path: '/usuarios', component: UsuariosPage, roles: ['administrador','empleado'], permission: { module: 'USERS', action: 'VIEW' } },
   { path: '/roles', component: RolesPage, roles: ['administrador'] },
   
   // Módulo de Clientes y Proveedores
@@ -152,12 +152,20 @@ const PrivateRoutes = () => {
       />
 
       {/* Rutas dinámicas protegidas */}
-      {routesConfig.map(({ path, component: Component, roles, viewRoles }) => {
+      {routesConfig.map(({ path, component: Component, roles, viewRoles, permission }) => {
         // Combinar roles de escritura y solo lectura
         const allAllowedRoles = [
           ...(Array.isArray(roles) ? roles : []),
           ...(Array.isArray(viewRoles) ? viewRoles : [])
         ];
+
+        const componentWithPermission = permission ? (
+          <PermissionGuard module={permission.module} action={permission.action}>
+            <Component />
+          </PermissionGuard>
+        ) : (
+          <Component />
+        );
         
         return (
           <Route
@@ -166,7 +174,7 @@ const PrivateRoutes = () => {
             element={
               <AuthGuard>
                 <RoleGuard requiredRoles={allAllowedRoles}>
-                  <Component />
+                  {componentWithPermission}
                 </RoleGuard>
               </AuthGuard>
             }

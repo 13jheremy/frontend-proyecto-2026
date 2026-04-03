@@ -31,11 +31,15 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    // Suprimir errores de red del console para evitar "Network Error" en la consola
-    if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+    // Suprimir errores de red del console para evitar "Network Error" y timeouts en la consola
+    if (
+      error.message === 'Network Error' ||
+      error.code === 'ERR_NETWORK' ||
+      error.code === 'ECONNABORTED' ||
+      (error.message && error.message.includes('timeout of'))
+    ) {
       // No loggear estos errores al console - serán manejados por el componente
-      // Crear un error personalizado sin el mensaje de red
-      const customError = new Error('Error de conexión');
+      const customError = new Error('No se pudo conectar al servidor. Intenta nuevamente.');
       customError.config = error.config;
       customError.request = error.request;
       customError.code = error.code;

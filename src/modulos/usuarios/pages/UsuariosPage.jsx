@@ -53,18 +53,24 @@ const UsuariosPage = () => {
   const [selectedInfoUser, setSelectedInfoUser] = useState(null);
 
   // =======================================
-  // DEBUG ESPECÍFICO PARA ROLES Y PERMISOS
+  // FUNCIONES AUXILIARES DE ROLES
   // =======================================
-  useEffect(() => {
-    if (currentUser) {
-      console.log('✅ PERMISOS FINALES:', {
-        userRole: currentUser.roles?.[0],
-        expectedRestore: PERMISSIONS.USERS.RESTORE,
-        canRestore: canPerformAction('RESTORE'),
-        match: PERMISSIONS.USERS.RESTORE.includes(currentUser.roles?.[0])
-      });
+  const normalizeRole = (role) => {
+    if (!role) return '';
+    if (typeof role === 'string') return role.trim().toLowerCase();
+    if (typeof role === 'object') {
+      if (typeof role.nombre === 'string') return role.nombre.trim().toLowerCase();
+      if (typeof role.rol?.nombre === 'string') return role.rol.nombre.trim().toLowerCase();
     }
-  }, [currentUser]);
+    return '';
+  };
+
+  const getTargetUserRoles = (targetUser) => {
+    const targetRoles = Array.isArray(targetUser.roles) ? targetUser.roles : [];
+    return targetRoles
+      .map(normalizeRole)
+      .filter(Boolean);
+  };
 
   // =======================================
   // FUNCIONES DE PERMISOS
@@ -93,12 +99,8 @@ const UsuariosPage = () => {
     if (targetUser.es_persona_sin_usuario) return true;
 
     // Los empleados solo pueden ver clientes
-    const targetUserRoles = targetUser.roles || [];
-    const hasOnlyClientRole = targetUserRoles.length === 1 && 
-                             targetUserRoles.some(role => 
-                               (typeof role === 'string' && role === 'Cliente') ||
-                               (typeof role === 'object' && role.nombre === 'Cliente')
-                             );
+    const targetUserRoles = getTargetUserRoles(targetUser);
+    const hasOnlyClientRole = targetUserRoles.length > 0 && targetUserRoles.every(role => role === 'cliente');
 
     return hasOnlyClientRole;
   };

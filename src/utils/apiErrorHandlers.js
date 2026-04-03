@@ -96,15 +96,21 @@ export const handleApiError = (err) => {
     // La solicitud se hizo pero no hubo respuesta
     return {
       status: null,
-      message: 'No se recibió respuesta del servidor',
+      message: 'No se pudo conectar al servidor. Intenta nuevamente.',
       data: null,
       isThrottled: false
     };
   } else {
     // Error al preparar la solicitud
+    let message = err.message || 'Ocurrió un error inesperado.';
+
+    if (err.code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')) {
+      message = 'No se pudo conectar al servidor. Intenta nuevamente.';
+    }
+
     return {
       status: null,
-      message: err.message,
+      message,
       data: null,
       isThrottled: false
     };

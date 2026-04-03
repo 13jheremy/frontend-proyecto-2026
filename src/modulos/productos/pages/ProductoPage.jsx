@@ -11,7 +11,7 @@ import InfoProductModal from './components/InfoProductModal'; // ADDED
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faBoxes, faStar, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import { PERMISSIONS } from '../../../utils/constants';
-import { hasPermission } from '../../../utils/rolePermissions';
+import { normalizeRoles } from '../../../utils/rolePermissions';
 import { useAuth } from '../../../context/AuthContext';
 
 const ProductosPage = () => {
@@ -28,18 +28,11 @@ const ProductosPage = () => {
     );
   }
 
-  // Logs para debugging
-  console.log("Roles:", roles);
-  console.log("CREATE_PERMS:", PERMISSIONS.PRODUCTS.CREATE);
-  console.log("EDIT_PERMS:", PERMISSIONS.PRODUCTS.EDIT);
-  console.log("DELETE_PERMS:", PERMISSIONS.PRODUCTS.DELETE);
-  
   // Función para verificar permisos con normalización
   const canPerformAction = (requiredPerms) => {
-    const normalizedRoles = roles.map(r => r.toLowerCase());
+    const normalizedRoles = normalizeRoles(roles).map(r => r.toLowerCase());
     const normalizedPerms = requiredPerms.map(p => p.toLowerCase());
-    const canDo = normalizedRoles.some(r => normalizedPerms.includes(r));
-    return canDo;
+    return normalizedRoles.some(r => normalizedPerms.includes(r));
   };
   
   // Calcular permisos

@@ -306,8 +306,8 @@ export const MESSAGES = {
   },
   API: {
     ERROR: 'Error en el servidor',
-    NETWORK_ERROR: 'Error de conexión',
-    TIMEOUT: 'Tiempo de espera agotado'
+    NETWORK_ERROR: 'No se pudo conectar al servidor. Intenta nuevamente.',
+    TIMEOUT: 'No se pudo conectar al servidor. Intenta nuevamente.'
   }
 };
 

@@ -67,15 +67,21 @@ export const handleApiError = (err) => {
     // Si la solicitud fue hecha pero no se recibió respuesta (ej. problema de red).
     return {
       status: null,
-      message: 'No se recibió respuesta del servidor. Verifica tu conexión a internet.',
+      message: 'No se pudo conectar al servidor. Intenta nuevamente.',
       data: null,
       fieldErrors: {}
     };
   } else {
     // Si algo más causó el error (ej. error en la configuración de Axios o en el código).
+    let message = err.message || 'Ocurrió un error inesperado.';
+
+    if (err.code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')) {
+      message = 'No se pudo conectar al servidor. Intenta nuevamente.';
+    }
+
     return {
       status: null,
-      message: err.message || 'Ocurrió un error inesperado.',
+      message,
       data: null,
       fieldErrors: {}
     };
