@@ -8,6 +8,7 @@ import Contactos from '../pages/Contactos';
 import AuthGuard from '../guards/AuthGuard';
 import ForgotPasswordForm from '../components/auth/ForgotPasswordForm';
 import ResetPasswordForm from '../components/auth/ResetPasswordForm';
+import NotFound from '../pages/NotFound';
 
 const PublicRoutes = () => {
   const { isAuthenticated } = useAuth();
@@ -56,8 +57,8 @@ const PublicRoutes = () => {
         }
       />
 
-      {/* Fallback: cualquier ruta pública inválida va a Home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Fallback: cualquier ruta pública inválida muestra 404 (mejor trazabilidad en logs) */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

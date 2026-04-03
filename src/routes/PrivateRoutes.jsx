@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Dashboard from '../pages/Dashboard';
+import NotFound from '../pages/NotFound';
 
 import AuthGuard from '../guards/AuthGuard';
 import { RoleGuard } from '../guards/RoleGuard';
@@ -174,17 +175,7 @@ const PrivateRoutes = () => {
       })}
 
       {/* Ruta 404 */}
-      <Route
-        path="*"
-        element={
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900">404</h1>
-              <p className="text-gray-600">Página no encontrada</p>
-            </div>
-          </div>
-        }
-      />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

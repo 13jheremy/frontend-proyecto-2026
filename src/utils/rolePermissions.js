@@ -148,7 +148,7 @@ export const getModulePermissions = (module, userRoles) => {
  * Verificar si el usuario puede acceder a una ruta específica
  */
 export const canAccessRoute = (route, userRoles) => {
-  if (!userRoles || userRoles.length === 0) {
+  if (!userRoles || userRoles.length === 0 || !route) {
     return false;
   }
 
@@ -157,10 +157,16 @@ export const canAccessRoute = (route, userRoles) => {
     return false;
   }
 
+  const normalizedRoute = route.split('?')[0].replace(/\/+$/, '');
   const allowedRoutes = ROLE_ROUTES[primaryRole] || [];
-  return allowedRoutes.some(allowedRoute => 
-    allowedRoute.path === route || route.startsWith(allowedRoute.path)
-  );
+
+  return allowedRoutes.some(allowedRoute => {
+    const normalizedAllowed = allowedRoute.path.split('?')[0].replace(/\/+$/, '');
+    return (
+      normalizedAllowed === normalizedRoute ||
+      normalizedRoute.startsWith(`${normalizedAllowed}/`)
+    );
+  });
 };
 
 /**

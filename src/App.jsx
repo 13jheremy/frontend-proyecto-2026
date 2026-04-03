@@ -9,9 +9,18 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import NavbarPublic from "./components/layout/Navbarpublic";
 import MainLayout from "./components/layout/MainLayout";
+import LoadingIndicator from "./components/LoadingIndicator";
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <LoadingIndicator />
+      </div>
+    );
+  }
 
   return isAuthenticated ? (
     <MainLayout>
