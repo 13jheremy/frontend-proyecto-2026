@@ -22,17 +22,28 @@ export const useCategorias = () => {
    * Obtener lista de categorías con filtros.
    */
   const fetchCategorias = useCallback(async (params = {}) => {
-    // Procesar filtros para la API
+    // Procesar filtros para la API - CORRECCIÓN: Convertir a booleano, no string
     const processFilters = (filters) => {
-      const result = { ...filters };
+      const result = {};
 
-      if (result.activo !== undefined && result.activo !== '') {
-        result.activo = String(result.activo);
+      // Agregar search si no está vacío
+      if (filters.search) {
+        result.search = filters.search;
       }
 
-      if (result.eliminado !== undefined && result.eliminado !== '') {
-        result.eliminado = String(result.eliminado);
+      // Convertir activo a booleano, NO a string
+      if (filters.activo !== undefined && filters.activo !== '') {
+        result.activo = filters.activo === 'true' || filters.activo === true;
       }
+
+      // Convertir eliminado a booleano, NO a string
+      if (filters.eliminado !== undefined && filters.eliminado !== '') {
+        result.eliminado = filters.eliminado === 'true' || filters.eliminado === true;
+      }
+
+      // Agregar paginación si existe
+      if (filters.page) result.page = filters.page;
+      if (filters.page_size) result.page_size = filters.page_size;
 
       return result;
     };
@@ -41,21 +52,40 @@ export const useCategorias = () => {
     setError(null);
     try {
       const processedFilters = processFilters(params);
+      
+      // LOG PARA DEBUGGING: Ver qué parámetros se envían
+      console.log('📡 Enviando filtros al backend:', processedFilters);
+      
       const response = await categoriaApi.getCategorias(processedFilters);
+      
+      // LOG PARA DEBUGGING: Ver qué retorna el backend
+      console.log('📥 Respuesta del backend:', response);
 
-      if (response.results) {
+      if (response && response.results) {
         setCategorias(response.results);
         setPagination({
-          count: response.count,
-          next: response.next,
-          previous: response.previous,
+          count: response.count || 0,
+          next: response.next || null,
+          previous: response.previous || null,
           current_page: params.page || 1,
-          total_pages: Math.ceil(response.count / (params.page_size || 10))
+          total_pages: Math.ceil((response.count || 0) / (params.page_size || 10))
+        });
+      } else if (Array.isArray(response)) {
+        // Si la respuesta es directamente un array (sin paginación)
+        setCategorias(response);
+        setPagination({
+          count: response.length,
+          next: null,
+          previous: null,
+          current_page: 1,
+          total_pages: 1
         });
       } else {
-        setCategorias(Array.isArray(response) ? response : []);
+        // Fallback si no es ni paginado ni array
+        console.warn('⚠️ Respuesta inesperada del backend:', response);
+        setCategorias([]);
         setPagination({
-          count: Array.isArray(response) ? response.length : 0,
+          count: 0,
           next: null,
           previous: null,
           current_page: 1,
@@ -65,7 +95,13 @@ export const useCategorias = () => {
     } catch (err) {
       const errorInfo = handleApiError(err);
       setError(errorInfo.message);
-      console.error('Error fetching categorias:', err);
+      console.error('❌ Error fetching categorias:', err);
+      console.error('📦 Detalles del error:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data
+      });
       setCategorias([]);
     } finally {
       setLoading(false);

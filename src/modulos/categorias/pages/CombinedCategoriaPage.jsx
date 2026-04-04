@@ -412,9 +412,47 @@ const CombinedCategoriaPage = () => {
     );
   };
 
+  // DEBUG: Logging de estado de categorías
+  useEffect(() => {
+    console.group('🔍 DEBUG: Estado de Categorías');
+    console.log('📊 Total categorías:', categorias.length);
+    console.log('📥 Categorías:', categorias);
+    console.log('⏳ Loading:', loadingCategorias);
+    console.log('❌ Error:', errorCategorias);
+    console.log('🔗 Filtros actuales:', filters);
+    console.log('📄 Paginación:', categoriaPagination);
+    console.groupEnd();
+  }, [categorias, loadingCategorias, errorCategorias, filters, categoriaPagination]);
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        {/* ALERTA: Si no hay categorías y no está cargando */}
+        {!loadingCategorias && categorias.length === 0 && !errorCategorias && (
+          <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  ⚠️ No hay categorías para mostrar
+                </h3>
+                <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                  <p>Verifica:</p>
+                  <ul className="list-disc list-inside mt-1">
+                    <li>Que el servidor esté corriendo</li>
+                    <li>Tu sesión está activa</li>
+                    <li>Tienes permisos para ver categorías</li>
+                    <li>Abre la consola del navegador (F12) para ver logs de debugging</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header Principal con Estadísticas */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
