@@ -83,7 +83,14 @@ export const handleApiError = (err) => {
           const errorMessages = [];
           Object.keys(data).forEach(key => {
             if (Array.isArray(data[key])) {
-              errorMessages.push(`${key}: ${data[key].join(', ')}`);
+              // Format array messages nicely
+              const formattedMsg = data[key].join(', ');
+              // Translate common Django validation messages
+              let translatedMsg = formattedMsg;
+              if (formattedMsg.toLowerCase().includes('already exists') || formattedMsg.toLowerCase().includes('ya existe')) {
+                translatedMsg = `Ya existe un registro con este ${key.replace('_', ' ')}`;
+              }
+              errorMessages.push(translatedMsg);
             } else if (typeof data[key] === 'string') {
               errorMessages.push(`${key}: ${data[key]}`);
             }
@@ -99,6 +106,29 @@ export const handleApiError = (err) => {
         fieldErrors = data;
       } else {
         message = data.toString();
+      }
+    }
+
+    // For 400 errors, don't show "Error 400" prefix - show the actual error message
+    if (status === 400 && message.startsWith('Error 400')) {
+      // Try to get a better message from fieldErrors
+      const firstErrorKey = Object.keys(fieldErrors)[0];
+      if (firstErrorKey && fieldErrors[firstErrorKey]) {
+        const firstError = Array.isArray(fieldErrors[firstErrorKey]) 
+          ? fieldErrors[firstErrorKey][0] 
+          : fieldErrors[firstErrorKey];
+        
+        // Check for "ya existe" patterns and translate
+        if (typeof firstError === 'string') {
+          if (firstError.toLowerCase().includes('ya existe')) {
+            message = firstError;
+          } else if (firstError.toLowerCase().includes('already exists')) {
+            const fieldName = firstErrorKey.replace(/_/g, ' ').replace('persona ', 'persona: ');
+            message = `Ya existe un registro con este ${fieldName}`;
+          } else {
+            message = firstError;
+          }
+        }
       }
     }
 
