@@ -122,13 +122,18 @@ const UsuarioEditModal = ({ isOpen, onClose, onUpdate, currentUsuario = null, lo
         [name]: null
       }));
     }
-    // Limpia el error de backend para el campo actual si existe, cuando el usuario lo modifica.
-    if (backendFieldErrors[name]) {
-      setBackendFieldErrors(prev => ({
-        ...prev,
-        [name]: null
-      }));
+    // Limpia el error de backend para el campo actual y sus variantes.
+    const fieldVariants = [name];
+    // Si el campo tiene formato persona_*, añadir variantes
+    if (name.startsWith('persona_')) {
+      fieldVariants.push(name.replace('persona_', 'persona.'));
+      fieldVariants.push(name.replace('persona_', ''));
     }
+    const newBackendErrors = { ...backendFieldErrors };
+    fieldVariants.forEach(field => {
+      delete newBackendErrors[field];
+    });
+    setBackendFieldErrors(newBackendErrors);
   };
 
   // handlePersonaChange: Maneja los cambios en los campos de entrada de los datos personales.
@@ -157,13 +162,17 @@ const UsuarioEditModal = ({ isOpen, onClose, onUpdate, currentUsuario = null, lo
         [personaField]: null
       }));
     }
-    // Limpia el error de backend para el campo de persona actual.
-    if (backendFieldErrors[personaField]) {
-      setBackendFieldErrors(prev => ({
-        ...prev,
-        [personaField]: null
-      }));
-    }
+    // Limpia el error de backend para el campo de persona actual y sus variantes.
+    const fieldVariants = [
+      personaField,
+      `persona_${name}`,        // persona_cedula
+      name                      // cedula
+    ];
+    const newBackendErrors = { ...backendFieldErrors };
+    fieldVariants.forEach(field => {
+      delete newBackendErrors[field];
+    });
+    setBackendFieldErrors(newBackendErrors);
   };
 
   // handleRolesChange: Maneja los cambios en la selección de roles.
@@ -294,17 +303,24 @@ const UsuarioEditModal = ({ isOpen, onClose, onUpdate, currentUsuario = null, lo
 
   // getErrorMessage: Función auxiliar para obtener el mensaje de error de un campo.
   // Prioriza los errores de frontend, luego los de backend.
-  // Maneja tanto formatos de nombre de campo (frontend: persona.cedula, backend: persona_cedula)
+  // Maneja múltiples formatos de nombres de campo (frontend: persona.cedula, backend: persona_cedula, cedula)
   const getErrorMessage = (fieldName) => {
     // Try direct match first
     if (formErrors[fieldName]) return formErrors[fieldName];
     if (backendFieldErrors[fieldName]) return backendFieldErrors[fieldName];
     
-    // Try alternative field name format
-    const altFieldName = fieldName.replace('.', '_');
-    if (altFieldName !== fieldName) {
-      if (formErrors[altFieldName]) return formErrors[altFieldName];
-      if (backendFieldErrors[altFieldName]) return backendFieldErrors[altFieldName];
+    // Try alternative field name formats
+    const variations = [
+      fieldName.replace('.', '_'),           // persona.cedula -> persona_cedula
+      fieldName.replace('persona.', ''),     // persona.cedula -> cedula
+      fieldName.replace('persona_', ''),    // persona_cedula -> cedula
+    ];
+    
+    for (const variant of variations) {
+      if (variant !== fieldName) {
+        if (formErrors[variant]) return formErrors[variant];
+        if (backendFieldErrors[variant]) return backendFieldErrors[variant];
+      }
     }
     
     return null;
