@@ -133,6 +133,16 @@ const apiRequest = async (method, endpoint, data = null, config = {}) => {
     };
     
   } catch (error) {
+    // Loggear errores para debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`❌ [API] Error ${method} ${endpoint}:`, error.response?.data || error.message);
+    }
+    // CAMBIO CRÍTICO: Lanzar el error original de Axios para preservar error.response
+    throw error;
+  }
+};
+    
+  } catch (error) {
     
     // CAMBIO CRÍTICO: Lanzar el error original de Axios para preservar error.response
     throw error;

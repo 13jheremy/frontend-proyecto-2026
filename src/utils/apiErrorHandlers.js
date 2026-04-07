@@ -79,7 +79,21 @@ export const handleApiError = (err) => {
       if (typeof data === 'object') {
         // Don't show raw JSON for throttling errors
         if (status !== 429) {
-          message = JSON.stringify(data, null, 2);
+          // Try to extract a readable message from Django errors
+          const errorMessages = [];
+          Object.keys(data).forEach(key => {
+            if (Array.isArray(data[key])) {
+              errorMessages.push(`${key}: ${data[key].join(', ')}`);
+            } else if (typeof data[key] === 'string') {
+              errorMessages.push(`${key}: ${data[key]}`);
+            }
+          });
+          
+          if (errorMessages.length > 0) {
+            message = errorMessages.join(' | ');
+          } else {
+            message = JSON.stringify(data, null, 2);
+          }
         }
         // Extract field errors from the response data
         fieldErrors = data;
