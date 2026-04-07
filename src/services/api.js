@@ -141,13 +141,6 @@ const apiRequest = async (method, endpoint, data = null, config = {}) => {
     throw error;
   }
 };
-    
-  } catch (error) {
-    
-    // CAMBIO CRÍTICO: Lanzar el error original de Axios para preservar error.response
-    throw error;
-  }
-};
 
 // =======================================
 // NUEVA FUNCIÓN WRAPPER PARA MANTENER COMPATIBILIDAD
