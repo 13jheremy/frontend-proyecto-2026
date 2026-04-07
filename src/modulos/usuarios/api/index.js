@@ -84,26 +84,31 @@ export const usuarioApi = {
        
        // Retorna la propiedad 'data' de la respuesta.
        return response.data;
-     } catch (error) {
-       // Procesar el error para obtener el mensaje correcto del backend
-       let errorMessage = 'Error al actualizar usuario';
-       
-       if (error.response && error.response.data) {
-         const data = error.response.data;
-         // Buscar el primer mensaje de error en los datos
-         const firstKey = Object.keys(data)[0];
-         if (firstKey) {
-           const firstError = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
-           if (typeof firstError === 'string') {
-             errorMessage = firstError;
-           }
-         }
-       } else if (error.message) {
-         errorMessage = error.message;
-       }
-       
-       throw new Error(errorMessage);
-     }
+      } catch (error) {
+        // Procesar el error para obtener el mensaje correcto del backend
+        let errorMessage = 'Error al actualizar usuario';
+        
+        if (error.response && error.response.data) {
+          const data = error.response.data;
+          // Buscar el primer mensaje de error en los datos
+          const firstKey = Object.keys(data)[0];
+          if (firstKey) {
+            const firstError = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
+            if (typeof firstError === 'string') {
+              errorMessage = firstError;
+            }
+          }
+        } else if (error.message) {
+          // Limpiar el mensaje de error de axios
+          if (error.message.includes('Request failed with status code')) {
+            errorMessage = 'Error al actualizar usuario. Verifica los datos.';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
    },
 
   // resetPassword: Función asíncrona para restablecer la contraseña de un usuario.

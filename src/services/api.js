@@ -234,11 +234,7 @@ export const usersAPI = {
   getComplete: (id) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.GETCOMPLETE}${id}/`),
   updateComplete: (id, data) => {
     console.log('🔍 [FRONTEND] Enviando update_complete:', { id, data });
-    return apiRequest('PUT', `${API_CONFIG.ENDPOINTS.USERS}${id}/update_complete/`, data)
-      .then(response => {
-        console.log('🔍 [FRONTEND] Respuesta update_complete:', response);
-        return response;
-      });
+    return apiRequest('PUT', `${API_CONFIG.ENDPOINTS.USERS}${id}/update_complete/`, data);
   },
   softDelete: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.USERS}${id}/soft_delete/`),
   restoreUser: (id) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.USERS}${id}/restore/`),
