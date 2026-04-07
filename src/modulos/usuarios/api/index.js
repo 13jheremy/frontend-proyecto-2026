@@ -101,7 +101,19 @@ export const usuarioApi = {
         } else if (error.message) {
           // Limpiar el mensaje de error de axios
           if (error.message.includes('Request failed with status code')) {
-            errorMessage = 'Error al actualizar usuario. Verifica los datos.';
+            // Intentar obtener más información del error
+            if (error.response && error.response.data) {
+              const data = error.response.data;
+              const firstKey = Object.keys(data)[0];
+              if (firstKey) {
+                const firstError = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey];
+                errorMessage = firstError || 'Error al actualizar usuario. Verifica los datos.';
+              } else {
+                errorMessage = 'Error al actualizar usuario. Verifica los datos.';
+              }
+            } else {
+              errorMessage = 'Error al actualizar usuario. Verifica los datos.';
+            }
           } else {
             errorMessage = error.message;
           }
