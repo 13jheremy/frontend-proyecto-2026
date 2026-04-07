@@ -247,6 +247,16 @@ export const handleUserCreationError = (error) => {
         message = data.detail;
       } else if (Object.keys(fieldErrors).length > 0) {
         message = Object.values(fieldErrors)[0];
+      } else if (typeof data === 'object') {
+        // Include all field errors from the response
+        Object.keys(data).forEach(key => {
+          if (!fieldErrors[key]) {
+            fieldErrors[key] = Array.isArray(data[key]) ? data[key][0] : data[key];
+          }
+        });
+        if (Object.keys(fieldErrors).length > 0) {
+          message = Object.values(fieldErrors)[0];
+        }
       }
     }
   } else if (error.request) {

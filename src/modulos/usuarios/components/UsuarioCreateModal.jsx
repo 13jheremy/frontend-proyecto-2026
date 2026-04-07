@@ -227,7 +227,7 @@ const UsuarioCreateModal = ({ isOpen, onClose, onCreate, loading, apiError, role
     <Modal isOpen={isOpen} onClose={onClose} title="Crear Nuevo Usuario">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Muestra un error general de la API si existe y no está asociado a un campo específico. */}
-        {apiError && apiError.message && !Object.keys(apiError.fieldErrors).length && (
+        {apiError && apiError.message && !(apiError.fieldErrors && Object.keys(apiError.fieldErrors).length > 0) && (
           <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
             <span className="block sm:inline ml-1">{apiError.message}</span>

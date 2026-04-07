@@ -60,6 +60,7 @@ export const handleApiError = (err) => {
   if (err.response) {
     const { status, data } = err.response;
     let message = `Error ${status}`;
+    let fieldErrors = {};
 
     // Handle throttling errors more gracefully
     if (status === 429) {
@@ -80,6 +81,8 @@ export const handleApiError = (err) => {
         if (status !== 429) {
           message = JSON.stringify(data, null, 2);
         }
+        // Extract field errors from the response data
+        fieldErrors = data;
       } else {
         message = data.toString();
       }
@@ -88,6 +91,7 @@ export const handleApiError = (err) => {
     return {
       status,
       message,
+      fieldErrors,
       data,
       isThrottled: status === 429,
       retryDelay: getRetryDelay(err)
@@ -97,6 +101,7 @@ export const handleApiError = (err) => {
     return {
       status: null,
       message: 'No se pudo conectar al servidor. Intenta nuevamente.',
+      fieldErrors: {},
       data: null,
       isThrottled: false
     };
@@ -111,6 +116,7 @@ export const handleApiError = (err) => {
     return {
       status: null,
       message,
+      fieldErrors: {},
       data: null,
       isThrottled: false
     };
