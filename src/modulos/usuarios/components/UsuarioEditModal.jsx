@@ -294,8 +294,20 @@ const UsuarioEditModal = ({ isOpen, onClose, onUpdate, currentUsuario = null, lo
 
   // getErrorMessage: Función auxiliar para obtener el mensaje de error de un campo.
   // Prioriza los errores de frontend, luego los de backend.
+  // Maneja tanto formatos de nombre de campo (frontend: persona.cedula, backend: persona_cedula)
   const getErrorMessage = (fieldName) => {
-    return formErrors[fieldName] || backendFieldErrors[fieldName];
+    // Try direct match first
+    if (formErrors[fieldName]) return formErrors[fieldName];
+    if (backendFieldErrors[fieldName]) return backendFieldErrors[fieldName];
+    
+    // Try alternative field name format
+    const altFieldName = fieldName.replace('.', '_');
+    if (altFieldName !== fieldName) {
+      if (formErrors[altFieldName]) return formErrors[altFieldName];
+      if (backendFieldErrors[altFieldName]) return backendFieldErrors[altFieldName];
+    }
+    
+    return null;
   };
 
   return (
