@@ -133,6 +133,13 @@ export const userMessages = {
   error: 'Error al procesar usuario',
   duplicate: 'El usuario ya existe',
   notFound: 'Usuario no encontrado',
+  userCreated: 'Usuario creado exitosamente',
+  userCreatedComplete: 'Usuario completo creado exitosamente',
+  userUpdated: 'Usuario actualizado exitosamente',
+  userSoftDeleted: 'Usuario eliminado exitosamente',
+  userRestored: 'Usuario restaurado exitosamente',
+  statusChanged: (isActive) => isActive ? 'Usuario activado exitosamente' : 'Usuario desactivado exitosamente',
+  passwordReset: 'Contraseña actualizada exitosamente',
 };
 
 export const productMessages = {

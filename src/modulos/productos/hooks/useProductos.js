@@ -199,6 +199,7 @@ export const useProductos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
@@ -216,6 +217,7 @@ export const useProductos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
@@ -233,6 +235,7 @@ export const useProductos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
@@ -250,6 +253,7 @@ export const useProductos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
@@ -268,6 +272,7 @@ export const useProductos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
@@ -283,11 +288,11 @@ export const useProductos = () => {
       const productosData = data.results || [];
       const doc = generarPDFProductos(productosData);
       descargarPDF(doc, `productos_${new Date().toISOString().split('T')[0]}.pdf`);
-      showNotification('Reporte PDF generado exitosamente', 'success');
+      showNotification.success('Reporte PDF generado exitosamente');
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
-      showNotification('Error al generar reporte PDF', 'error');
+      showNotification.error('Error al generar reporte PDF');
     } finally {
       setLoading(false);
     }
@@ -301,11 +306,11 @@ export const useProductos = () => {
       const data = await productsAPI.getAll({ page_size: 1000 });
       const productosData = data.results || [];
       exportarCSVProductos(productosData, `productos_${new Date().toISOString().split('T')[0]}.csv`);
-      showNotification('Reporte CSV generado exitosamente', 'success');
+      showNotification.success('Reporte CSV generado exitosamente');
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
-      showNotification('Error al generar reporte CSV', 'error');
+      showNotification.error('Error al generar reporte CSV');
     } finally {
       setLoading(false);
     }
@@ -321,6 +326,7 @@ export const useProductos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error('Error al obtener reporte de productos');
       throw err;
     } finally {
       setLoading(false);

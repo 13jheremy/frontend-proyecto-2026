@@ -265,6 +265,7 @@ export const useUsuarios = () => {
       // Captura y maneja los errores.
       const apiError = handleApiError(err); // Procesa el error.
       setError(apiError); // Establece el error.
+      showNotification.error(apiError.message); // Muestra notificación de error.
       throw apiError; // Relanza el error.
     } finally {
       setLoading(false); // Desactiva el estado de carga.
@@ -283,6 +284,7 @@ export const useUsuarios = () => {
       // Captura y maneja los errores.
       const apiError = handleApiError(err); // Procesa el error.
       setError(apiError); // Establece el error.
+      showNotification.error(apiError.message); // Muestra notificación de error.
       throw apiError; // Relanza el error.
     } finally {
       setLoading(false); // Desactiva el estado de carga.
@@ -302,6 +304,7 @@ export const useUsuarios = () => {
       // Captura y maneja los errores.
       const apiError = handleApiError(err); // Procesa el error.
       setError(apiError); // Establece el error.
+      showNotification.error(apiError.message); // Muestra notificación de error.
       throw apiError; // Relanza el error.
     } finally {
       setLoading(false); // Desactiva el estado de carga.
@@ -320,6 +323,7 @@ export const useUsuarios = () => {
       // Captura y maneja los errores.
       const apiError = handleApiError(err); // Procesa el error.
       setError(apiError); // Establece el error.
+      showNotification.error(apiError.message); // Muestra notificación de error.
       throw apiError; // Relanza el error.
     } finally {
       setLoading(false); // Desactiva el estado de carga.
