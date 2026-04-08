@@ -128,6 +128,8 @@ export const showNotification = {
 // Messages para cada módulo
 export const userMessages = {
   created: 'Usuario creado exitosamente',
+  userCreated: 'Usuario creado exitosamente',
+  userCreatedComplete: 'Usuario creado exitosamente',
   updated: 'Usuario actualizado exitosamente',
   deleted: 'Usuario eliminado exitosamente',
   error: 'Error al procesar usuario',
@@ -223,24 +225,38 @@ export const motoMessages = {
 
 // Función para manejar errores de creación de usuario
 export const handleUserCreationError = (error) => {
+  let message = 'Error al crear usuario';
+  const fieldErrors = {};
+
   if (error.response) {
     const { data } = error.response;
-    if (data.email) {
-      return 'Ya existe un usuario con este correo electrónico';
+
+    if (data) {
+      if (data.email) {
+        fieldErrors.correo_electronico = Array.isArray(data.email) ? data.email[0] : data.email;
+      }
+      if (data.username) {
+        fieldErrors.username = Array.isArray(data.username) ? data.username[0] : data.username;
+      }
+      if (data.persona) {
+        fieldErrors.persona = Array.isArray(data.persona) ? data.persona[0] : data.persona;
+      }
+      if (typeof data === 'string') {
+        message = data;
+      } else if (data.detail) {
+        message = data.detail;
+      } else if (Object.keys(fieldErrors).length > 0) {
+        message = Object.values(fieldErrors)[0];
+      }
     }
-    if (data.username) {
-      return 'Ya existe un usuario con este nombre de usuario';
-    }
-    if (data.persona) {
-      return 'Ya existe un usuario asociado a esta persona';
-    }
-    if (typeof data === 'string') {
-      return data;
-    }
-    return data.detail || 'Error al crear usuario';
+  } else if (error.request) {
+    message = 'Error de conexión. Verifique su conexión a internet';
+  } else {
+    message = 'Error inesperado al crear usuario';
   }
-  if (error.request) {
-    return 'Error de conexión. Verifique su conexión a internet';
-  }
-  return 'Error inesperado al crear usuario';
+
+  return {
+    message,
+    fieldErrors,
+  };
 };
