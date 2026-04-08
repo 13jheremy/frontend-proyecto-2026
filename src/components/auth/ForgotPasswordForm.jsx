@@ -39,8 +39,16 @@ const ForgotPasswordForm = () => {
       setEmailSent(true);
       
     } catch (err) {
+      console.error('Password reset error:', err);
+      console.error('Response:', err.response);
+      
       if (err.response?.data?.error) {
         setError(err.response.data.error);
+      } else if (err.response?.data?.message) {
+        // Si hay un mensaje en lugar de error, mostrar igual
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
       } else {
         setError('Error al procesar la solicitud. Intenta nuevamente.');
       }
