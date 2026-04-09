@@ -1,12 +1,12 @@
-// src/modulos/categorias-servicios/hooks/useCategorias.js
+// src/modulos/categorias-productos/hooks/useCategoriaServicios.js
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { categoriaApi } from '../api/categoria';
+import { categoriaProductoApi } from '../api/categoriaServicio';
 import { handleApiError } from '../utils/apiErrorHandlers';
 
 /**
- * Hook personalizado para la gestión de categorías de servicios.
+ * Hook personalizado para la gestión de categorías de productos.
  */
-export const useCategorias = () => {
+export const useCategoriaServicios = () => {
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -51,9 +51,9 @@ export const useCategorias = () => {
     try {
       const processedFilters = processFilters(params);
       
-      console.log('📡 Enviando filtros al backend (servicios):', processedFilters);
+      console.log('📡 Enviando filtros al backend (productos):', processedFilters);
       
-      const response = await categoriaApi.getCategorias(processedFilters);
+      const response = await categoriaProductoApi.getCategorias(processedFilters);
       
       if (currentRequestId !== requestIdRef.current) {
         console.log('⚠️ Petición cancelada: respuesta de request anterior');
@@ -104,7 +104,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const categoria = await categoriaApi.getCategoriaById(id);
+      const categoria = await categoriaProductoApi.getCategoriaById(id);
       return categoria;
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -119,7 +119,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const newCategoria = await categoriaApi.createCategoria(categoriaData);
+      const newCategoria = await categoriaProductoApi.createCategoria(categoriaData);
       setCategorias((prev) => [newCategoria, ...prev]);
       setPagination(prev => ({
         ...prev,
@@ -139,7 +139,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const updatedCategoria = await categoriaApi.updateCategoria(id, categoriaData);
+      const updatedCategoria = await categoriaProductoApi.updateCategoria(id, categoriaData);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? updatedCategoria : c))
       );
@@ -157,7 +157,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaApi.deleteCategoria(id);
+      await categoriaProductoApi.deleteCategoria(id);
       setCategorias((prev) => prev.filter((c) => c.id !== id));
       setPagination(prev => ({
         ...prev,
@@ -176,7 +176,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const updatedCategoria = await categoriaApi.toggleActive(id, activo);
+      const updatedCategoria = await categoriaProductoApi.toggleActive(id, activo);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? updatedCategoria : c))
       );
@@ -192,7 +192,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaApi.softDelete(id);
+      await categoriaProductoApi.softDelete(id);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? { ...c, eliminado: true } : c))
       );
@@ -207,7 +207,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaApi.restore(id);
+      await categoriaProductoApi.restore(id);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? { ...c, eliminado: false } : c))
       );
@@ -222,7 +222,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaApi.deletePermanent(id);
+      await categoriaProductoApi.deletePermanent(id);
       setCategorias((prev) => prev.filter((c) => c.id !== id));
       setPagination(prev => ({
         ...prev,
@@ -241,7 +241,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const stats = await categoriaApi.getStats();
+      const stats = await categoriaProductoApi.getStats();
       return stats;
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -256,7 +256,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const relaciones = await categoriaApi.verificarRelaciones(id);
+      const relaciones = await categoriaProductoApi.verificarRelaciones(id);
       return relaciones;
     } catch (err) {
       const errorInfo = handleApiError(err);
