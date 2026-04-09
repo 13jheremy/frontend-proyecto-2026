@@ -1,5 +1,5 @@
 // src/modulos/servicios/hooks/useCategorias.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { categoriaApi } from '../api/categoria';
 import { handleApiError } from '../utils/apiErrorHandlers'; // Ajusta la ruta
 
@@ -17,12 +17,15 @@ export const useCategorias = () => {
     current_page: 1,
     total_pages: 1
   });
+  
+  // Request ID para prevenir race conditions
+  const requestIdRef = useRef(0);
 
   /**
    * Obtener lista de categorías con filtros.
    */
-  const fetchCategorias = useCallback(async (params = {}) => {
-    // Procesar filtros para la API - CORRECCIÓN: Convertir a booleano, no string
+  const fetchCategorias = useCallback(async (params = {}, retryCount = 0) => {
+    const MAX_RETRIES = 2;
     const processFilters = (filters) => {
       const result = {};
 
@@ -50,6 +53,10 @@ export const useCategorias = () => {
 
     setLoading(true);
     setError(null);
+    
+    // Generar nuevo request ID y verificar que sea la petición más reciente
+    const currentRequestId = ++requestIdRef.current;
+    
     try {
       const processedFilters = processFilters(params);
       
@@ -57,6 +64,12 @@ export const useCategorias = () => {
       console.log('📡 Enviando filtros al backend:', processedFilters);
       
       const response = await categoriaApi.getCategorias(processedFilters);
+      
+      // Verificar que esta respuesta corresponda a la última petición
+      if (currentRequestId !== requestIdRef.current) {
+        console.log('⚠️ Petición cancelada: respuesta de request anterior');
+        return;
+      }
       
       // LOG PARA DEBUGGING: Ver qué retorna el backend
       console.log('📥 Respuesta del backend:', response);

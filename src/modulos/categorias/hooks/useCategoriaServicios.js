@@ -1,5 +1,5 @@
 // src/modulos/servicios/hooks/useCategoriaServicios.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { categoriaServicioApi } from '../api/categoriaServicio';
 import { handleApiError } from '../utils/apiErrorHandlers'; // Ajusta la ruta
 
@@ -17,6 +17,9 @@ export const useCategoriaServicios = () => {
     current_page: 1,
     total_pages: 1
   });
+  
+  // Request ID para prevenir race conditions
+  const requestIdRef = useRef(0);
 
   /**
    * Obtener lista de servicios de categoría con filtros.
@@ -24,8 +27,18 @@ export const useCategoriaServicios = () => {
   const fetchCategoriaServicios = useCallback(async (params = {}) => {
     setLoading(true);
     setError(null);
+    
+    // Generar nuevo request ID
+    const currentRequestId = ++requestIdRef.current;
+    
     try {
       const response = await categoriaServicioApi.getCategoriaServicios(params);
+      
+      // Verificar que esta respuesta corresponda a la última petición
+      if (currentRequestId !== requestIdRef.current) {
+        console.log('⚠️ Petición cancelada: respuesta de request anterior');
+        return;
+      }
 
       if (response.results) {
         setCategoriaServicios(response.results);
