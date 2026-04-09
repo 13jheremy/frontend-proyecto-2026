@@ -106,6 +106,7 @@ export const useCategorias = () => {
         });
       }
     } catch (err) {
+      // Solo actualizar error, NO borrar datos existentes
       const errorInfo = handleApiError(err);
       setError(errorInfo.message);
       console.error('❌ Error fetching categorias:', err);
@@ -115,7 +116,7 @@ export const useCategorias = () => {
         statusText: err.response?.statusText,
         data: err.response?.data
       });
-      setCategorias([]);
+      // NO llamar setCategorias([]) - mantener datos existentes en caso de error
     } finally {
       setLoading(false);
     }
