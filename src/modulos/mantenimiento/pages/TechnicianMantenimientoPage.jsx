@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { mantenimientoApi } from '../api/mantenimiento';
+import { useMantenimientos } from '../hooks/useMantenimientos';
 import { PERMISSIONS } from '../../../utils/constants';
-import { hasPermission } from '../../../utils/rolePermissions';
 import LoadingIndicator from '../../../components/LoadingIndicator';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -11,12 +11,14 @@ import {
   faSpinner,
   faExclamationTriangle,
   faSync,
-  faChartBar
+  faChartBar,
+  faPlus
 } from '@fortawesome/free-solid-svg-icons';
 import TechnicianMantenimientoTable from './components/TechnicianMantenimientoTable';
 import TechnicianObservationsModal from './components/TechnicianObservationsModal';
 import TechnicianStatusModal from './components/TechnicianStatusModal';
 import MantenimientoInfoModal from './components/MantenimientoInfoModal';
+import MantenimientoFormModal from './components/MantenimientoFormModal';
 
 /**
  * Página especializada para técnicos - gestión de mantenimientos asignados
@@ -47,11 +49,35 @@ const TechnicianMantenimientoPage = () => {
     mantenimiento: null
   });
 
-  // Verificar permisos
-  const permissions = {
-    canChangeStatus: hasPermission(roles, PERMISSIONS.MAINTENANCE.CHANGE_STATUS),
-    canAddObservations: hasPermission(roles, PERMISSIONS.MAINTENANCE.ADD_OBSERVATIONS)
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  // Hook para crear mantenimientos
+  const {
+    createMantenimiento,
+    loading: creating
+  } = useMantenimientos();
+
+  // Verificar permisos con normalización (igual que en MantenimientoPage)
+  const canPerformAction = (requiredPerms) => {
+    if (!roles || !Array.isArray(roles)) return false;
+    const normalizedRoles = roles.map(r => r.toLowerCase());
+    const normalizedPerms = requiredPerms.map(p => p.toLowerCase());
+    return normalizedRoles.some(r => normalizedPerms.includes(r));
   };
+  
+  const canCreate = canPerformAction(PERMISSIONS.MAINTENANCE?.CREATE || ['administrador']);
+  const canEdit = canPerformAction(PERMISSIONS.MAINTENANCE?.EDIT || ['administrador']);
+  const canChangeStatus = canPerformAction(PERMISSIONS.MAINTENANCE?.CHANGE_STATUS || ['tecnico']);
+  const canAddObservations = canPerformAction(PERMISSIONS.MAINTENANCE?.ADD_OBSERVATIONS || ['tecnico']);
+
+  const permissions = {
+    canCreate,
+    canEdit,
+    canChangeStatus,
+    canAddObservations
+  };
+
+  console.log('canCreate:', canCreate, 'roles:', roles);
 
   // Cargar mantenimientos asignados al técnico
   const loadMantenimientos = async () => {
@@ -61,12 +87,36 @@ const TechnicianMantenimientoPage = () => {
       
       const response = await mantenimientoApi.getAssignedMaintenances();
       
-      if (response.success) {
-        // Los mantenimientos ya vienen filtrados por el backend para técnicos
-        setMantenimientos(response.data || []);
-        
-        // Calcular estadísticas
-        const mantenimientosActivos = response.data?.filter(m => !m.eliminado) || [];
+      console.log('Response mantenimientos:', response);
+      
+      // Normalizar la respuesta - puede venir en diferentes formatos
+      let mantenimientosData = [];
+      if (response && typeof response === 'object') {
+        if (response.success && Array.isArray(response.data)) {
+          mantenimientosData = response.data;
+        } else if (response.success && response.data && Array.isArray(response.data.results)) {
+          mantenimientosData = response.data.results;
+        } else if (Array.isArray(response)) {
+          mantenimientosData = response;
+        } else if (response.results && Array.isArray(response.results)) {
+          mantenimientosData = response.results;
+        } else if (response.data && Array.isArray(response.data)) {
+          mantenimientosData = response.data;
+        }
+      }
+      
+      // Verificar que sea un array antes de continuar
+      if (!Array.isArray(mantenimientosData)) {
+        console.error('Formato de respuesta inesperado:', response);
+        mantenimientosData = [];
+      }
+      
+      // Los mantenimientos ya vienen filtrados por el backend para técnicos
+      setMantenimientos(mantenimientosData);
+      
+      // Calcular estadísticas solo si es un array
+      if (Array.isArray(mantenimientosData)) {
+        const mantenimientosActivos = mantenimientosData.filter(m => !m.eliminado);
         const statsData = {
           mantenimientos_asignados: mantenimientosActivos.length,
           mantenimientos_pendientes: mantenimientosActivos.filter(m => m.estado === 'pendiente').length,
@@ -78,8 +128,6 @@ const TechnicianMantenimientoPage = () => {
           }).length
         };
         setStats(statsData);
-      } else {
-        setError(response.error || 'Error al cargar mantenimientos');
       }
     } catch (err) {
       console.error('Error al cargar mantenimientos:', err);
@@ -222,6 +270,13 @@ const TechnicianMantenimientoPage = () => {
               />
               Actualizar
             </button>
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors ml-2"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2 h-4 w-4" />
+              Nuevo Mantenimiento
+            </button>
           </div>
         </div>
 
@@ -330,6 +385,21 @@ const TechnicianMantenimientoPage = () => {
           isOpen={infoModal.isOpen}
           onClose={() => setInfoModal({ isOpen: false, mantenimiento: null })}
           mantenimiento={infoModal.mantenimiento}
+        />
+
+        <MantenimientoFormModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onSubmit={async (mantenimientoData) => {
+            try {
+              await createMantenimiento(mantenimientoData);
+              setCreateModalOpen(false);
+              loadMantenimientos();
+            } catch (err) {
+              console.error('Error al crear mantenimiento:', err);
+            }
+          }}
+          loading={creating}
         />
       </div>
     </div>

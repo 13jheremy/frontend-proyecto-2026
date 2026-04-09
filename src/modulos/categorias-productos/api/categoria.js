@@ -5,7 +5,7 @@ import { categoriesAPI } from '../../../services/api';
  * @module CategoriaProductoAPI
  * @description Módulo para interactuar con la API de gestión de categorías de productos.
  */
-export const categoriaProductoApi = {
+export const categoriaApi = {
   /**
    * Obtiene la lista de todas las categorías.
    * @param {object} params - Parámetros de consulta para filtrar y buscar categorías.

@@ -1,106 +1,107 @@
 // src/modulos/categorias-productos/hooks/useCategorias.js
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { categoriaProductoApi } from '../api/categoria';
+import { useState, useCallback, useRef } from 'react';
+import { categoriaApi } from '../api/categoria';
 import { handleApiError } from '../utils/apiErrorHandlers';
 
-/**
- * Hook personalizado para la gestión de categorías de productos.
- */
 export const useCategorias = () => {
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
-    count: 0,
-    next: null,
-    previous: null,
-    current_page: 1,
-    total_pages: 1
+    page: 1,
+    pageSize: 10,
+    totalItems: 0,
+    totalPages: 0,
   });
-  
-  // Request ID para prevenir race conditions
-  const requestIdRef = useRef(0);
 
-  /**
-   * Obtener lista de categorías con filtros.
-   */
-  const fetchCategorias = useCallback(async (params = {}, retryCount = 0) => {
-    const MAX_RETRIES = 2;
-    const processFilters = (filters) => {
-      const result = {};
+  const isMountedRef = useRef(true);
 
-      if (filters.search) {
-        result.search = filters.search;
-      }
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
-      if (filters.activo !== undefined && filters.activo !== '') {
-        result.activo = filters.activo === 'true' || filters.activo === true;
-      }
+  const processFilters = (filters) => {
+    const params = { ...filters };
 
-      if (filters.eliminado !== undefined && filters.eliminado !== '') {
-        result.eliminado = filters.eliminado === 'true' || filters.eliminado === true;
-      }
+    if (params.activo !== undefined && params.activo !== '') {
+      params.activo = String(params.activo);
+    }
 
-      if (filters.page) result.page = filters.page;
-      if (filters.page_size) result.page_size = filters.page_size;
+    if (params.eliminado !== undefined && params.eliminado !== '') {
+      params.eliminado = String(params.eliminado);
+    }
 
-      return result;
-    };
+    return params;
+  };
 
+  const fetchCategorias = useCallback(async (filters = {}, page = 1, pageSize = 10) => {
+    if (!isMountedRef.current) return;
+    
     setLoading(true);
     setError(null);
-    
-    const currentRequestId = ++requestIdRef.current;
-    
-    try {
-      const processedFilters = processFilters(params);
-      
-      console.log('📡 Enviando filtros al backend (productos):', processedFilters);
-      
-      const response = await categoriaProductoApi.getCategorias(processedFilters);
-      
-      if (currentRequestId !== requestIdRef.current) {
-        console.log('⚠️ Petición cancelada: respuesta de request anterior');
-        return;
-      }
-      
-      console.log('📥 Respuesta del backend:', response);
 
-      if (response && response.results) {
-        setCategorias(response.results);
+    try {
+      const processedFilters = processFilters(filters);
+      const params = {
+        ...processedFilters,
+        page,
+        page_size: pageSize,
+      };
+
+      const data = await categoriaApi.getCategorias(params);
+
+      if (!isMountedRef.current) return;
+
+      if (data && data.results) {
+        const totalItems = data.count || 0;
+        const totalPages = Math.ceil(totalItems / pageSize);
+
+        setCategorias(data.results);
         setPagination({
-          count: response.count || 0,
-          next: response.next || null,
-          previous: response.previous || null,
-          current_page: params.page || 1,
-          total_pages: Math.ceil((response.count || 0) / (params.page_size || 10))
+          page,
+          pageSize,
+          totalItems,
+          totalPages,
+          next: data.next,
+          previous: data.previous,
         });
-      } else if (Array.isArray(response)) {
-        setCategorias(response);
+      } else if (Array.isArray(data)) {
+        setCategorias(data);
         setPagination({
-          count: response.length,
+          page: 1,
+          pageSize: data.length,
+          totalItems: data.length,
+          totalPages: 1,
           next: null,
           previous: null,
-          current_page: 1,
-          total_pages: 1
         });
       } else {
-        console.warn('⚠️ Respuesta inesperada del backend:', response);
         setCategorias([]);
         setPagination({
-          count: 0,
+          page: 1,
+          pageSize: 10,
+          totalItems: 0,
+          totalPages: 0,
           next: null,
           previous: null,
-          current_page: 1,
-          total_pages: 1
         });
       }
     } catch (err) {
+      if (!isMountedRef.current) return;
+      
       const errorInfo = handleApiError(err);
       setError(errorInfo.message);
-      console.error('❌ Error fetching categorias:', err);
+      setCategorias([]);
+      setPagination({
+        page: 1,
+        pageSize: 10,
+        totalItems: 0,
+        totalPages: 0,
+      });
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -108,7 +109,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const categoria = await categoriaProductoApi.getCategoriaById(id);
+      const categoria = await categoriaApi.getCategoriaById(id);
       return categoria;
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -123,11 +124,11 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const newCategoria = await categoriaProductoApi.createCategoria(categoriaData);
+      const newCategoria = await categoriaApi.createCategoria(categoriaData);
       setCategorias((prev) => [newCategoria, ...prev]);
       setPagination(prev => ({
         ...prev,
-        count: prev.count + 1
+        totalItems: prev.totalItems + 1
       }));
       return newCategoria;
     } catch (err) {
@@ -143,7 +144,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const updatedCategoria = await categoriaProductoApi.updateCategoria(id, categoriaData);
+      const updatedCategoria = await categoriaApi.updateCategoria(id, categoriaData);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? updatedCategoria : c))
       );
@@ -161,11 +162,11 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaProductoApi.deleteCategoria(id);
+      await categoriaApi.deleteCategoria(id);
       setCategorias((prev) => prev.filter((c) => c.id !== id));
       setPagination(prev => ({
         ...prev,
-        count: prev.count - 1
+        totalItems: prev.totalItems - 1
       }));
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -176,11 +177,11 @@ export const useCategorias = () => {
     }
   }, []);
 
-  const toggleActiveCategoria = useCallback(async (id, activo) => {
+  const toggleActiveCategoria = useCallback(async (id) => {
     setLoading(true);
     setError(null);
     try {
-      const updatedCategoria = await categoriaProductoApi.toggleActive(id, activo);
+      const updatedCategoria = await categoriaApi.toggleActive(id);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? updatedCategoria : c))
       );
@@ -196,7 +197,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaProductoApi.softDelete(id);
+      await categoriaApi.softDelete(id);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? { ...c, eliminado: true } : c))
       );
@@ -211,7 +212,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaProductoApi.restore(id);
+      await categoriaApi.restore(id);
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? { ...c, eliminado: false } : c))
       );
@@ -226,11 +227,11 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      await categoriaProductoApi.deletePermanent(id);
+      await categoriaApi.deletePermanent(id);
       setCategorias((prev) => prev.filter((c) => c.id !== id));
       setPagination(prev => ({
         ...prev,
-        count: prev.count - 1
+        totalItems: prev.totalItems - 1
       }));
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -245,7 +246,7 @@ export const useCategorias = () => {
     setLoading(true);
     setError(null);
     try {
-      const stats = await categoriaProductoApi.getStats();
+      const stats = await categoriaApi.getStats();
       return stats;
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -256,24 +257,24 @@ export const useCategorias = () => {
     }
   }, []);
 
-  const verificarRelacionesCategoria = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const relaciones = await categoriaProductoApi.verificarRelaciones(id);
-      return relaciones;
-    } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      throw err;
-    } finally {
-      setLoading(false);
+  const handleCategoriaAction = useCallback(async (id, type) => {
+    switch (type) {
+      case 'softDelete':
+        await softDeleteCategoria(id);
+        break;
+      case 'hardDelete':
+        await hardDeleteCategoria(id);
+        break;
+      case 'restore':
+        await restoreCategoria(id);
+        break;
+      case 'toggleActivo':
+        await toggleActiveCategoria(id);
+        break;
+      default:
+        throw new Error(`Acción desconocida: ${type}`);
     }
-  }, []);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  }, [softDeleteCategoria, hardDeleteCategoria, restoreCategoria, toggleActiveCategoria]);
 
   return {
     categorias,
@@ -290,7 +291,7 @@ export const useCategorias = () => {
     restoreCategoria,
     hardDeleteCategoria,
     getCategoriaStats,
-    verificarRelacionesCategoria,
+    handleCategoriaAction,
     clearError,
   };
 };

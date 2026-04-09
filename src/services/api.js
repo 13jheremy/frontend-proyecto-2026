@@ -6,7 +6,7 @@ import { API_CONFIG, MESSAGES } from '../utils/constants';
 // Crear instancia de axios
 const api = axios.create({
   baseURL: API_CONFIG.BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // 60 segundos para permitir que el servidor despierte (Render free tier)
   headers: {
   },
 });
@@ -119,7 +119,7 @@ const apiRequest = async (method, endpoint, data = null, config = {}) => {
       url: endpoint,
       data,
       headers, // Usa los headers modificados
-      timeout: 10000, // 10 second timeout
+      timeout: 60000, // 60 segundos para permitir que el servidor despierte
       ...config // Otros configs pueden sobrescribir headers si es necesario
     });
     
@@ -136,6 +136,8 @@ const apiRequest = async (method, endpoint, data = null, config = {}) => {
     // Loggear errores para debugging
     if (process.env.NODE_ENV === 'development') {
       console.log(`❌ [API] Error ${method} ${endpoint}:`, error.response?.data || error.message);
+      console.log(`❌ [API] Error config:`, error.config);
+      console.log(`❌ [API] Error code:`, error.code);
     }
     // CAMBIO CRÍTICO: Lanzar el error original de Axios para preservar error.response
     throw error;

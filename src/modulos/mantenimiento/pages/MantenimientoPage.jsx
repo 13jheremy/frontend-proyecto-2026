@@ -36,9 +36,9 @@ const MantenimientoPage = () => {
   };
   
   // Calcular permisos
-  const canCreate = canPerformAction(PERMISSIONS.MANTENIMIENTOS?.CREATE || ['administrador']);
-  const canEdit = canPerformAction(PERMISSIONS.MANTENIMIENTOS?.EDIT || ['administrador']);
-  const canDelete = canPerformAction(PERMISSIONS.MANTENIMIENTOS?.DELETE || ['administrador']);
+  const canCreate = canPerformAction(PERMISSIONS.MAINTENANCE?.CREATE || ['administrador']);
+  const canEdit = canPerformAction(PERMISSIONS.MAINTENANCE?.EDIT || ['administrador']);
+  const canDelete = canPerformAction(PERMISSIONS.MAINTENANCE?.DELETE || ['administrador']);
   
   // Objeto de permisos para pasar a la tabla
   const tablePermissions = {

@@ -38,33 +38,32 @@ const CategoriaProductoPage = () => {
   const [selectedActionCategoria, setSelectedActionCategoria] = useState(null);
   const [actionType, setActionType] = useState(null);
   
-  const [filters, setFilters] = useState({ search: '', activo: '' });
-  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const memoizedFetchCategorias = useCallback(() => {
-    const searchParams = { ...filters, page: currentPage, page_size: 10 };
-    fetchCategorias(searchParams);
-  }, [filters, currentPage, fetchCategorias]);
-
+  // Carga inicial y cambios de página - solo primitivos estables
   useEffect(() => {
-    memoizedFetchCategorias();
-  }, [memoizedFetchCategorias]);
+    fetchCategorias(filters, page, pageSize);
+  }, [page, pageSize]);
 
+  // Cuando cambian filtros, resetear a página 1 y buscar
+  // ✅ useCallback para estabilizar la función
+  const handleSearch = useCallback((newFilters) => {
+    setFilters(newFilters);
+    setPage(1);
+    fetchCategorias(newFilters, 1, pageSize);
+  }, [pageSize, fetchCategorias]);
+
+  // Error toast
   useEffect(() => {
     if (error) {
       toast.error(`Error: ${error}`);
-      const timeout = setTimeout(() => clearError(), 5000);
-      return () => clearTimeout(timeout);
     }
-  }, [error, clearError]);
-
-  const handleSearch = (newFilters) => {
-    setFilters(newFilters);
-    setCurrentPage(1);
-  };
+  }, [error]);
 
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
+    setPage(newPage);
   };
 
   const handleCreate = async (categoriaData) => {
@@ -130,7 +129,7 @@ const CategoriaProductoPage = () => {
           toast.success('Estado actualizado!');
           break;
       }
-      memoizedFetchCategorias();
+      fetchCategorias(filters, page, pageSize);
     } catch (err) {
       toast.error(err.response?.data?.detail || err.message || 'Error en la acción');
     }
@@ -141,7 +140,7 @@ const CategoriaProductoPage = () => {
     setIsInfoModalOpen(true);
   };
 
-  const totalPages = pagination.total_pages || 1;
+  const totalPages = pagination.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -192,19 +191,19 @@ const CategoriaProductoPage = () => {
           </div>
         </div>
 
-        {totalPages > 1 && (
+        {pagination.totalItems > pageSize && (
           <div className="mt-4 flex justify-center items-center gap-2 text-sm text-gray-500">
             <button
-              disabled={!pagination.previous}
-              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={page <= 1}
+              onClick={() => handlePageChange(page - 1)}
               className="px-3 py-1 rounded-md border bg-white disabled:opacity-50"
             >
               Anterior
             </button>
-            <span>Página {currentPage} de {totalPages}</span>
+            <span>Página {page} de {totalPages}</span>
             <button
-              disabled={!pagination.next}
-              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={page >= totalPages}
+              onClick={() => handlePageChange(page + 1)}
               className="px-3 py-1 rounded-md border bg-white disabled:opacity-50"
             >
               Siguiente

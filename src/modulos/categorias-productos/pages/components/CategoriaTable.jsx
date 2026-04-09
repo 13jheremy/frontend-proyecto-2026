@@ -7,7 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 /**
- * Componente tabla para mostrar categorías de servicios.
+ * Componente tabla para mostrar categorías de productos.
  */
 const CategoriaTable = ({
   categorias,
@@ -19,7 +19,9 @@ const CategoriaTable = ({
   onRestore,
   loading
 }) => {
-  if (loading && categorias.length === 0) {
+  const items = categorias || [];
+  
+  if (loading && items.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -28,7 +30,7 @@ const CategoriaTable = ({
     );
   }
 
-  if (categorias.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="text-center py-12">
         <FontAwesomeIcon icon={faListAlt} className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -65,7 +67,7 @@ const CategoriaTable = ({
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          {categorias.map((categoria) => (
+          {items.map((categoria) => (
             <tr
               key={categoria.id}
               className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150"

@@ -1,5 +1,5 @@
 // src/modules/productos/hooks/useProductos.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { productoApi } from '../api/producto';
 import { productsAPI } from '../../../services/api';
 import { showNotification, productMessages } from '../../../utils/notifications';
@@ -374,6 +374,9 @@ export const useProductos = () => {
   useEffect(() => {
     fetchProductos();
   }, [fetchProductos]);
+
+  // Las categorías y proveedores ya se cargan desde sus hooks con cache incorporado
+  // No es necesario volver a cargarlos aquí
 
   return {
     // Estados

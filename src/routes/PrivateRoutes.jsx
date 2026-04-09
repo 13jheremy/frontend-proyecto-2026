@@ -19,7 +19,6 @@ import VentasPage from '../modulos/ventas/pages/VentasPage.jsx';
 import ReportesPage from '../modulos/reportes/pages/ReportesPage.jsx';
 import MotoPage from '../modulos/motos/pages/MotoPage.jsx'
 import ServicioPage from '../modulos/servicios/pages/ServicioPage.jsx';
-import CombinedCategoriaPage from '../modulos/categorias/pages/CombinedCategoriaPage.jsx';
 import CategoriaProductoPage from '../modulos/categorias-productos/pages/CategoriaProductoPage.jsx';
 import CategoriaServicioPage from '../modulos/categorias-servicios/pages/CategoriaServicioPage.jsx';
 import MantenimientoPage from '../modulos/mantenimiento/pages/MantenimientoPage.jsx';

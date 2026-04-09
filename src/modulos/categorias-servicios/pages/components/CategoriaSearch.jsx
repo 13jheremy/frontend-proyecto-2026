@@ -1,40 +1,49 @@
 // src/modulos/servicios/pages/components/CategoriaServicioSearch.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faFilter, faTimes, faCheckCircle, faBan, faTrash } from '@fortawesome/free-solid-svg-icons';
+
+// ✅ Debounce fuera del componente - se crea una sola vez
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 
 /**
  * Componente de búsqueda y filtros para servicios de categoría.
  */
 const CategoriaServicioSearch = ({ onSearch, initialFilters = {} }) => {
   const [filters, setFilters] = useState({
-    search: '', // Búsqueda por nombre_servicio, descripcion_servicio
-    activo: '', // 'true', 'false', '' (todos)
-    eliminado: '', // 'true', 'false', '' (todos)
+    search: '',
+    activo: '',
+    eliminado: '',
     ...initialFilters
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const debouncedSearch = useCallback(
+  // ✅ useRef para mantener la función debounce estable entre renders
+  const debouncedSearchRef = useRef(
     debounce((searchFilters) => {
       onSearch(searchFilters);
-    }, 300),
-    [onSearch]
+    }, 300)
   );
 
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
+  // Actualizar el callback onSearch cuando cambie
+  useEffect(() => {
+    debouncedSearchRef.current = debounce((searchFilters) => {
+      onSearch(searchFilters);
+    }, 300);
+  }, [onSearch]);
 
+  // ✅ Solo dispara cuando filters cambia, no cuando debouncedSearch cambia
   useEffect(() => {
     const searchFilters = Object.keys(filters).reduce((acc, key) => {
       const value = filters[key];
@@ -43,8 +52,8 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {} }) => {
       }
       return acc;
     }, {});
-    debouncedSearch(searchFilters);
-  }, [filters, debouncedSearch]);
+    debouncedSearchRef.current(searchFilters);
+  }, [filters]);
 
   const handleInputChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -66,7 +75,7 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {} }) => {
           </div>
           <input
             type="text"
-            placeholder="Buscar por nombre o descripción del servicio..."
+            placeholder="Buscar por nombre o descripción..."
             value={filters.search}
             onChange={(e) => handleInputChange('search', e.target.value)}
             className="block w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
@@ -93,7 +102,7 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {} }) => {
 
       {showAdvanced && (
         <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Estado
@@ -114,12 +123,12 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {} }) => {
                 Eliminación
               </label>
               <select
-                value={filters.eliminado}
+                value={filters.eliminado !== undefined ? String(filters.eliminado) : ''}
                 onChange={(e) => handleInputChange('eliminado', e.target.value)}
                 className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
                 <option value="">Todos</option>
-                <option value="false">No Eliminados</option>
+                <option value="false">No eliminados</option>
                 <option value="true">Eliminados</option>
               </select>
             </div>
@@ -148,18 +157,6 @@ const CategoriaServicioSearch = ({ onSearch, initialFilters = {} }) => {
               <button
                 onClick={() => handleInputChange('search', '')}
                 className="ml-2 h-4 w-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
-              >
-                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-
-          {filters.categoria_id && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200">
-              Categoría: {categoriasDisponibles.find(cat => cat.id === parseInt(filters.categoria_id))?.nombre || 'N/A'}
-              <button
-                onClick={() => handleInputChange('categoria_id', '')}
-                className="ml-2 h-4 w-4 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200"
               >
                 <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
               </button>

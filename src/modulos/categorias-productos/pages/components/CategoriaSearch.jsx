@@ -1,40 +1,49 @@
 // src/modulos/servicios/pages/components/CategoriaSearch.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faFilter, faTimes, faCheckCircle, faBan, faArchive } from '@fortawesome/free-solid-svg-icons';
 
+// ✅ Debounce fuera del componente - se crea una sola vez
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 /**
- * Componente de búsqueda y filtros para categorías de servicios.
+ * Componente de búsqueda y filtros para categorías.
  */
 const CategoriaSearch = ({ onSearch, initialFilters = {} }) => {
   const [filters, setFilters] = useState({
-    search: '', // Búsqueda por nombre, descripción
-    activo: '', // 'true', 'false', '' (todos)
-    eliminado: '', // 'true', 'false', '' (todos)
+    search: '',
+    activo: '',
+    eliminado: '',
     ...initialFilters
   });
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const debouncedSearch = useCallback(
+  // ✅ useRef para mantener la función debounce estable entre renders
+  const debouncedSearchRef = useRef(
     debounce((searchFilters) => {
       onSearch(searchFilters);
-    }, 300),
-    [onSearch]
+    }, 300)
   );
 
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
+  // Actualizar el callback onSearch cuando cambie
+  useEffect(() => {
+    debouncedSearchRef.current = debounce((searchFilters) => {
+      onSearch(searchFilters);
+    }, 300);
+  }, [onSearch]);
 
+  // ✅ Solo dispara cuando filters cambia, no cuando debouncedSearch cambia
   useEffect(() => {
     const searchFilters = Object.keys(filters).reduce((acc, key) => {
       const value = filters[key];
@@ -43,8 +52,8 @@ const CategoriaSearch = ({ onSearch, initialFilters = {} }) => {
       }
       return acc;
     }, {});
-    debouncedSearch(searchFilters);
-  }, [filters, debouncedSearch]);
+    debouncedSearchRef.current(searchFilters);
+  }, [filters]);
 
   const handleInputChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));

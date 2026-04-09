@@ -1,5 +1,5 @@
 // src/modulos/categorias-servicios/api/categoria.js
-import { categoriesAPI } from '../../../services/api';
+import { serviceCategoriesAPI } from '../../../services/api';
 
 /**
  * @module CategoriaAPI
@@ -13,7 +13,7 @@ export const categoriaApi = {
    */
   getCategorias: async (params = {}) => {
     try {
-      const response = await categoriesAPI.getAll(params);
+      const response = await serviceCategoriesAPI.getAll(params);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -29,7 +29,7 @@ export const categoriaApi = {
    */
   getCategoriaById: async (id) => {
     try {
-      const response = await categoriesAPI.getById(id);
+      const response = await serviceCategoriesAPI.getById(id);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -45,7 +45,7 @@ export const categoriaApi = {
    */
   createCategoria: async (categoriaData) => {
     try {
-      const response = await categoriesAPI.create(categoriaData);
+      const response = await serviceCategoriesAPI.create(categoriaData);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -62,7 +62,7 @@ export const categoriaApi = {
    */
   updateCategoria: async (id, categoriaData) => {
     try {
-      const response = await categoriesAPI.update(id, categoriaData);
+      const response = await serviceCategoriesAPI.update(id, categoriaData);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -78,7 +78,7 @@ export const categoriaApi = {
    */
   deleteCategoria: async (id) => {
     try {
-      const response = await categoriesAPI.delete(id);
+      const response = await serviceCategoriesAPI.delete(id);
       if (response.success) return response.status;
       throw new Error(response.error);
     } catch (error) {
@@ -95,7 +95,7 @@ export const categoriaApi = {
    */
   toggleActive: async (id, activo) => {
     try {
-      const response = await categoriesAPI.toggleActive(id);
+      const response = await serviceCategoriesAPI.toggleActive(id);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -114,7 +114,7 @@ export const categoriaApi = {
    */
   softDelete: async (id) => {
     try {
-      const response = await categoriesAPI.softDelete(id);
+      const response = await serviceCategoriesAPI.softDelete(id);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -133,7 +133,7 @@ export const categoriaApi = {
    */
   restore: async (id) => {
     try {
-      const response = await categoriesAPI.restore(id);
+      const response = await serviceCategoriesAPI.restore(id);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -152,7 +152,7 @@ export const categoriaApi = {
    */
   deletePermanent: async (id) => {
     try {
-      const response = await categoriesAPI.deletePermanent(id);
+      const response = await serviceCategoriesAPI.deletePermanent(id);
       if (response.success) return response.status;
       throw new Error(response.error);
     } catch (error) {
@@ -167,7 +167,7 @@ export const categoriaApi = {
    */
   getStats: async () => {
     try {
-      const response = await categoriesAPI.getStats();
+      const response = await serviceCategoriesAPI.getStats();
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {
@@ -183,7 +183,7 @@ export const categoriaApi = {
    */
   verificarRelaciones: async (id) => {
     try {
-      const response = await categoriesAPI.verificarRelaciones(id);
+      const response = await serviceCategoriesAPI.verificarRelaciones(id);
       if (response.success) return response.data;
       throw new Error(response.error);
     } catch (error) {

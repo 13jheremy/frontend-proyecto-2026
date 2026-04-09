@@ -1,5 +1,5 @@
 // src/modules/servicios/hooks/useServicios.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { servicioApi } from '../api/servicio';
 import { showNotification, serviceMessages } from '../../../utils/notifications';
 import { handleApiError } from '../../../utils/apiErrorHandlers';
@@ -56,6 +56,8 @@ export const useServicios = () => {
       };
 
       const data = await servicioApi.getServicios(params);
+      
+      console.log("📥 fetchServicios - Respuesta completa:", data);
 
       if (data && data.results) {
         const totalItems = data.count || 0;
@@ -217,6 +219,9 @@ export const useServicios = () => {
   useEffect(() => {
     fetchServicios();
   }, [fetchServicios]);
+
+  // Las categorías ya se cargan desde useServicioCategoria con cache incorporado
+  // No es necesario volver a cargarlas aquí
 
   return {
     // Estados

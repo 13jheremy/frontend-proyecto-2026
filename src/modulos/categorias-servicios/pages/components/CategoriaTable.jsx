@@ -7,10 +7,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 /**
- * Componente tabla para mostrar servicios de categoría.
+ * Componente tabla para mostrar categorías de servicios.
  */
 const CategoriaServicioTable = ({
   categoriaServicios,
+  categorias,
   onEdit,
   onDelete,
   onToggleActive,
@@ -19,7 +20,9 @@ const CategoriaServicioTable = ({
   onRestore,
   loading
 }) => {
-  if (loading && categoriaServicios.length === 0) {
+  const items = categoriaServicios || categorias || [];
+  
+  if (loading && items.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -28,7 +31,7 @@ const CategoriaServicioTable = ({
     );
   }
 
-  if (categoriaServicios.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="text-center py-12">
         <FontAwesomeIcon icon={faTools} className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -65,7 +68,7 @@ const CategoriaServicioTable = ({
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          {categoriaServicios.map((categoria) => (
+          {items.map((categoria) => (
             <tr
               key={categoria.id}
               className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150"
@@ -168,7 +171,7 @@ const CategoriaServicioTable = ({
         </tbody>
       </table>
 
-      {loading && categoriaServicios.length > 0 && (
+      {loading && items.length > 0 && (
         <div className="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-50 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>

@@ -51,7 +51,7 @@ function App() {
             pauseOnFocusLoss
             draggable
             pauseOnHover
-            theme="light" // Cambiar a "dark" si quieres modo oscuro
+            theme="light"
           />
         </div>
       </Router>

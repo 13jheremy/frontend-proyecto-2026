@@ -41,7 +41,7 @@ const TechnicianMantenimientoTable = ({
   const [filterEstado, setFilterEstado] = useState('');
 
   // Extraer permisos específicos para técnicos
-  const { canChangeStatus = false, canAddObservations = false } = permissions || {};
+  const { canEdit = false, canChangeStatus = false, canAddObservations = false } = permissions || {};
 
   // Filtrar mantenimientos según búsqueda y filtros
   const filteredMantenimientos = mantenimientos.filter(mantenimiento => {
