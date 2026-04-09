@@ -20,6 +20,8 @@ import ReportesPage from '../modulos/reportes/pages/ReportesPage.jsx';
 import MotoPage from '../modulos/motos/pages/MotoPage.jsx'
 import ServicioPage from '../modulos/servicios/pages/ServicioPage.jsx';
 import CombinedCategoriaPage from '../modulos/categorias/pages/CombinedCategoriaPage.jsx';
+import CategoriaProductoPage from '../modulos/categorias-productos/pages/CategoriaProductoPage.jsx';
+import CategoriaServicioPage from '../modulos/categorias-servicios/pages/CategoriaServicioPage.jsx';
 import MantenimientoPage from '../modulos/mantenimiento/pages/MantenimientoPage.jsx';
 import TechnicianMantenimientoPage from '../modulos/mantenimiento/pages/TechnicianMantenimientoPage.jsx';
 import InventarioPage from '../modulos/inventario/pages/InventarioPage';
@@ -51,7 +53,8 @@ const routesConfig = [
   // Módulo de Productos y Servicios
   { path: '/productos', component: ProductoPage, roles: ['administrador', 'empleado'] },
   { path: '/servicios', component: ServicioPage, roles: ['administrador', 'empleado'], viewRoles: ['tecnico'] },
-  { path: '/categorias', component: CombinedCategoriaPage, roles: ['administrador', 'empleado'] },
+  { path: '/categorias-productos', component: CategoriaProductoPage, roles: ['administrador', 'empleado'] },
+  { path: '/categorias-servicios', component: CategoriaServicioPage, roles: ['administrador', 'empleado'] },
   
   // Módulo de Mantenimientos y Vehículos
   { path: '/motos', component: MotoPage, roles: ['administrador', 'empleado', 'tecnico'], viewRoles: ['cliente'] },
