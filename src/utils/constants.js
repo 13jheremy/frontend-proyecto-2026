@@ -163,6 +163,8 @@ export const ROLE_ROUTES = {
     { path: '/proveedores', name: 'Proveedores' },
     { path: '/ventas', name: 'Ventas' },
     { path: '/motos', name: 'Motos' },
+    { path: '/categorias-productos', name: 'Cat. Productos' },
+    { path: '/categorias-servicios', name: 'Cat. Servicios' },
     { path: '/mantenimiento', name: 'Mantenimientos' },
     { path: '/recordatorios', name: 'Recordatorios' },
     { path: '/inventario', name: 'Inventario' },
