@@ -25,6 +25,7 @@ import MantenimientoPage from '../modulos/mantenimiento/pages/MantenimientoPage.
 import TechnicianMantenimientoPage from '../modulos/mantenimiento/pages/TechnicianMantenimientoPage.jsx';
 import InventarioPage from '../modulos/inventario/pages/InventarioPage';
 import MovimientosPage from '../modulos/inventario/pages/MovimientosPage';
+import LotesPage from '../modulos/inventario/pages/LotesPage';
 import POSRoutes from '../modulos/pos/routes/POSRoutes';
 import NuevaVentaPage from '../modulos/pos/pages/NuevaVentaPage';
 import LoginPage from '../pages/Login';
@@ -62,6 +63,7 @@ const routesConfig = [
   // Módulo de Ventas e Inventario
   { path: '/ventas', component: VentasPage, roles: ['administrador','empleado'], viewRoles: ['cliente'] },
   { path: '/inventario', component: InventarioPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
+  { path: '/lotes', component: LotesPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
   { path: '/movimientos', component: MovimientosPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
   { path: '/reportes', component: ReportesPage, roles: ['administrador','empleado'] },
   

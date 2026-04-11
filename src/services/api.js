@@ -614,6 +614,22 @@ export const inventoryAPI = {
 };
 
 // =======================================
+// LOTES (FIFO INVENTORY)
+// =======================================
+export const lotesAPI = {
+  getAll: (params = {}) => apiRequest('GET', API_CONFIG.ENDPOINTS.LOTES, null, { params }),
+  getById: (id) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.LOTES}${id}/`),
+  create: (data) => apiRequest('POST', API_CONFIG.ENDPOINTS.LOTES, data),
+  update: (id, data) => apiRequest('PUT', `${API_CONFIG.ENDPOINTS.LOTES}${id}/`, data),
+  patch: (id, data) => apiRequest('PATCH', `${API_CONFIG.ENDPOINTS.LOTES}${id}/`, data),
+  delete: (id) => apiRequest('DELETE', `${API_CONFIG.ENDPOINTS.LOTES}${id}/`),
+
+  // Consultas específicas
+  getByProduct: (productoId) => apiRequest('GET', `${API_CONFIG.ENDPOINTS.LOTES}por_producto/`, null, { params: { producto_id: productoId } }),
+  getStats: () => apiRequest('GET', `${API_CONFIG.ENDPOINTS.LOTES}stats/`),
+};
+
+// =======================================
 // MOVIMIENTOS DE INVENTARIO - AGREGAR FUNCIONALIDADES FALTANTES
 // =======================================
 export const inventoryMovementAPI = {

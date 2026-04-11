@@ -152,6 +152,7 @@ export const ROLE_ROUTES = {
     { path: '/mantenimiento', name: 'Mantenimientos' },
     { path: '/recordatorios', name: 'Recordatorios' },
     { path: '/inventario', name: 'Inventario' },
+    { path: '/lotes', name: 'Lotes' },
     { path: '/movimientos', name: 'Movimientos' },
     { path: '/reportes', name: 'Reportes' },
   ],
@@ -167,6 +168,9 @@ export const ROLE_ROUTES = {
     { path: '/categorias-servicios', name: 'Categorías Servicios' },
     { path: '/mantenimiento', name: 'Mantenimientos' },
     { path: '/recordatorios', name: 'Recordatorios' },
+    { path: '/inventario', name: 'Inventario' },
+    { path: '/lotes', name: 'Lotes' },
+    { path: '/movimientos', name: 'Movimientos' },
     { path: '/inventario', name: 'Inventario' },
     { path: '/movimientos', name: 'Movimientos' },
   ],
@@ -220,6 +224,7 @@ export const API_CONFIG = {
     INVENTORY: '/inventario/',
     INVENTORYMOVEMENT: '/inventario-movimientos/',
     MAINTENANCEREMINDER: '/recordatorios-mantenimiento/',
+    LOTES: '/lotes/',
     
     //endpoints usuarios
     CREATECOMPLETE: '/usuarios/crear_completo/',
