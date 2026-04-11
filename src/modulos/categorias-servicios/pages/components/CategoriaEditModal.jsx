@@ -8,7 +8,7 @@ import { faSave, faSpinner } from '@fortawesome/free-solid-svg-icons';
 /**
  * Modal para editar una categoría de servicios existente.
  */
-const CategoriaServicioEditModal = ({ isOpen, onClose, onUpdate, currentCategoriaServicio, loading, error }) => {
+const CategoriaServicioEditModal = ({ isOpen, onClose, onUpdate, currentCategoriaServicio, loading }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -16,6 +16,7 @@ const CategoriaServicioEditModal = ({ isOpen, onClose, onUpdate, currentCategori
   });
 
   const [formErrors, setFormErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
 
   useEffect(() => {
     if (isOpen && currentCategoriaServicio) {
@@ -25,6 +26,7 @@ const CategoriaServicioEditModal = ({ isOpen, onClose, onUpdate, currentCategori
         activo: Boolean(currentCategoriaServicio.activo),
       });
       setFormErrors({});
+      setApiError(null);
     }
   }, [isOpen, currentCategoriaServicio]);
 
@@ -37,6 +39,7 @@ const CategoriaServicioEditModal = ({ isOpen, onClose, onUpdate, currentCategori
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: null }));
     }
+    setApiError(null);
   };
 
   const validateForm = () => {
@@ -53,10 +56,21 @@ const CategoriaServicioEditModal = ({ isOpen, onClose, onUpdate, currentCategori
     if (!validateForm()) {
       return;
     }
+    setApiError(null);
     try {
-      await onUpdate(currentCategoriaServicio.id, formData);
+      const dataToSubmit = {
+        ...formData,
+        nombre: formData.nombre.trim().toUpperCase()
+      };
+      await onUpdate(currentCategoriaServicio.id, dataToSubmit);
     } catch (err) {
       console.error('Error al actualizar servicio de categoría:', err);
+      if (err && err.fieldErrors) {
+        setFormErrors(prev => ({ ...prev, ...err.fieldErrors }));
+      }
+      if (err && err.message && (!err.fieldErrors || Object.keys(err.fieldErrors).length === 0)) {
+        setApiError(err.message);
+      }
     }
   };
 
@@ -67,10 +81,10 @@ const CategoriaServicioEditModal = ({ isOpen, onClose, onUpdate, currentCategori
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Editar Categoría: ${currentCategoriaServicio.nombre}`}>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
+        {apiError && (
           <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline ml-1">{error}</span>
+            <span className="block sm:inline ml-1">{apiError}</span>
           </div>
         )}
 

@@ -72,7 +72,6 @@ const MotoActionModal = ({ isOpen, onClose, moto, actionType, onConfirm }) => {
 
     try {
       await onConfirm(moto.id, actionType);
-      onClose();
     } catch (err) {
       console.error(`Error en acción ${actionType}:`, err);
     } finally {

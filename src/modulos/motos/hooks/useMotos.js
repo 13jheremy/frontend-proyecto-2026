@@ -1,5 +1,5 @@
 // src/modules/motos/hooks/useMotos.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motoApi } from '../api/moto';
 import { showNotification, motoMessages } from '../../../utils/notifications';
 import { handleApiError } from '../../../utils/apiErrorHandlers';
@@ -14,6 +14,8 @@ export const useMotos = () => {
     totalItems: 0,
     totalPages: 0,
   });
+
+  const operationInProgress = useRef(false);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -47,19 +49,11 @@ export const useMotos = () => {
         page_size: pageSize,
       };
 
-      console.log(`🔄 fetchMotos - Filtros procesados:`, processedFilters);
-      console.log(`📋 Parámetros de consulta:`, params);
-
       const data = await motoApi.getMotos(params);
-
-      console.log(`📥 Respuesta de getMotos:`, data);
 
       if (data && data.results) {
         const totalItems = data.count || 0;
         const totalPages = Math.ceil(totalItems / pageSize);
-
-        console.log(`📊 Total de motos encontradas: ${totalItems}, Página actual: ${page}/${totalPages}`);
-        console.log(`🏍️ Motos en la página actual:`, data.results);
 
         setMotos(data.results);
         setPagination({
@@ -84,6 +78,9 @@ export const useMotos = () => {
 
   // Crear moto
   const createMoto = useCallback(async (motoData) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
+    
     setLoading(true);
     setError(null);
 
@@ -95,47 +92,49 @@ export const useMotos = () => {
       const apiError = handleApiError(err);
       setError(apiError);
 
-      if (Object.keys(apiError.fieldErrors).length === 0) {
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
         showNotification.error(apiError.message);
       }
 
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Actualizar moto
   const updateMoto = useCallback(async (id, motoData) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
+    
     setLoading(true);
     setError(null);
 
     try {
-      console.log(`🔄 Iniciando actualización de moto ${id}`);
-      console.log(`📦 Datos a enviar:`, motoData);
-      
       const data = await motoApi.updateMoto(id, motoData);
-      
-      console.log(`✅ Moto ${id} actualizada exitosamente:`, data);
       showNotification.success(motoMessages.motoUpdated);
       return data;
     } catch (err) {
-      console.error(`❌ Error actualizando moto ${id}:`, err);
       const apiError = handleApiError(err);
       setError(apiError);
 
-      if (Object.keys(apiError.fieldErrors).length === 0) {
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
         showNotification.error(apiError.message);
       }
 
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Eliminación temporal
   const softDeleteMoto = useCallback(async (id) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
+    
     setLoading(true);
     setError(null);
 
@@ -145,14 +144,19 @@ export const useMotos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Restaurar moto
   const restoreMoto = useCallback(async (id) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
+    
     setLoading(true);
     setError(null);
 
@@ -162,14 +166,19 @@ export const useMotos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Toggle estado activo
   const toggleMotoActivo = useCallback(async (id, activo) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
+    
     setLoading(true);
     setError(null);
 
@@ -180,9 +189,11 @@ export const useMotos = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message);
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 

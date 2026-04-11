@@ -16,6 +16,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { showNotification } from '../../../utils/notifications';
 import { toCSV, downloadCSV, exportXLSX } from '../../reportes/utils/exportUtils';
 import pdfService from '../../../services/pdfService';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 
 const VentasPage = () => {
   const { user, roles } = useAuth();
@@ -177,11 +178,9 @@ const VentasPage = () => {
       setSelectedPagoVenta(null);
     } catch (error) {
       console.error('Error registrando pago:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.error || 
-                          'Error al registrar pago';
-      showNotification.error(errorMessage);
-      throw error;
+      const apiError = handleApiError(error);
+      showNotification.error(apiError.message || 'Error al registrar pago');
+      // No lanzamos el error para que el modal quede abierto y el usuario pueda corregir
     } finally {
       setPagoLoading(false);
     }
@@ -200,7 +199,7 @@ const VentasPage = () => {
       const estadoAnterior = selectedEditVenta?.estado;
       
       await updateVenta(ventaId, updateData);
-      showNotification.success('Estado y método de pago actualizados exitosamente');
+      // El toast de éxito lo maneja useVentas
       
       // Si el nuevo estado es PAGADA, generar comprobante PDF
       if (updateData.estado === 'PAGADA') {
@@ -247,12 +246,8 @@ const VentasPage = () => {
       setIsEditEstadoModalOpen(false);
       setSelectedEditVenta(null);
     } catch (error) {
+      // El toast de error ya lo maneja useVentas
       console.error('Error actualizando estado:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.error || 
-                          'Error al actualizar estado';
-      showNotification.error(errorMessage);
-      throw error;
     } finally {
       setEditEstadoLoading(false);
     }

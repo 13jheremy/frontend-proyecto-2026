@@ -1,5 +1,5 @@
 // src/modules/proveedores/hooks/useProveedores.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { proveedorApi } from '../api/proveedores';
 import { showNotification, supplierMessages } from '../../../utils/notifications';
 import { handleApiError } from '../../../utils/apiErrorHandlers';
@@ -14,6 +14,9 @@ export const useProveedores = () => {
     totalItems: 0,
     totalPages: 0,
   });
+
+  // Ref para evitar operaciones concurrentes
+  const operationInProgress = useRef(false);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -62,12 +65,21 @@ export const useProveedores = () => {
           next: data.next,
           previous: data.previous,
         });
+      } else if (Array.isArray(data)) {
+        setProveedores(data);
+        setPagination({
+          page: 1,
+          pageSize: data.length,
+          totalItems: data.length,
+          totalPages: 1,
+        });
       }
     } catch (err) {
       const apiError = handleApiError(err);
-      setError(apiError); // Almacenar el objeto de error completo
+      setError(apiError);
       setProveedores([]);
       setPagination({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 });
+      showNotification.error(apiError.message || 'Error al cargar proveedores');
     } finally {
       setLoading(false);
     }
@@ -75,6 +87,12 @@ export const useProveedores = () => {
 
   // Crear proveedor
   const createProveedor = useCallback(async (proveedorData) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -84,20 +102,30 @@ export const useProveedores = () => {
       return data;
     } catch (err) {
       const apiError = handleApiError(err);
-      setError(apiError); // Almacenar el objeto de error completo
+      setError(apiError);
 
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        showNotification.error(apiError.message);
+      // Solo mostrar toast de error si NO hay errores de campo específicos
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
+        showNotification.error(apiError.message || supplierMessages.error);
+      } else {
+        showNotification.error('Por favor, corrige los errores en el formulario.');
       }
 
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Actualizar proveedor
   const updateProveedor = useCallback(async (id, proveedorData) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -107,20 +135,29 @@ export const useProveedores = () => {
       return data;
     } catch (err) {
       const apiError = handleApiError(err);
-      setError(apiError); // Almacenar el objeto de error completo
+      setError(apiError);
 
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        showNotification.error(apiError.message);
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
+        showNotification.error(apiError.message || supplierMessages.error);
+      } else {
+        showNotification.error('Por favor, corrige los errores en el formulario.');
       }
 
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Eliminación temporal
   const softDeleteProveedor = useCallback(async (id) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -130,14 +167,22 @@ export const useProveedores = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message || 'Error al eliminar el proveedor');
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Restaurar proveedor
   const restoreProveedor = useCallback(async (id) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -147,14 +192,22 @@ export const useProveedores = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message || 'Error al restaurar el proveedor');
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Toggle estado activo
   const toggleProveedorActivo = useCallback(async (id, activo) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -165,13 +218,16 @@ export const useProveedores = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message || 'Error al cambiar el estado del proveedor');
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Función unificada para manejar acciones de proveedor
+  // NO muestra toasts propios — los delega a las funciones individuales
   const handleProveedorAction = useCallback(async (proveedorId, actionType) => {
     try {
       switch (actionType) {
@@ -185,13 +241,16 @@ export const useProveedores = () => {
           const proveedor = proveedores.find(p => p.id === proveedorId);
           if (proveedor) {
             await toggleProveedorActivo(proveedorId, !proveedor.activo);
+          } else {
+            showNotification.error('No se encontró el proveedor para realizar la acción.');
           }
           break;
         default:
+          showNotification.error(`Acción no reconocida: ${actionType}`);
           throw new Error(`Acción no reconocida: ${actionType}`);
       }
     } catch (err) {
-      console.error(`Error en acción ${actionType}:`, err);
+      // No mostrar toast aquí — ya se mostró en la función individual
       throw err;
     }
   }, [proveedores, softDeleteProveedor, restoreProveedor, toggleProveedorActivo]);
@@ -208,7 +267,7 @@ export const useProveedores = () => {
     }
   }, []);
 
-  // Efecto para cargar proveedores al inicio - similar a useMotos
+  // Efecto para cargar proveedores al inicio
   useEffect(() => {
     fetchProveedores({ activo: 'true' }, 1, 10);
   }, []);

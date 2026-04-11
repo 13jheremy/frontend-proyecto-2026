@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { categoriaApi } from '../api/categoria';
 import { handleApiError } from '../utils/apiErrorHandlers';
+import { showNotification, categoriaMessages } from '../../../utils/notifications';
 
 export const useCategorias = () => {
   const [categorias, setCategorias] = useState([]);
@@ -15,6 +16,7 @@ export const useCategorias = () => {
   });
 
   const isMountedRef = useRef(true);
+  const operationInProgress = useRef(false);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -90,7 +92,7 @@ export const useCategorias = () => {
       if (!isMountedRef.current) return;
       
       const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
+      setError(errorInfo);
       setCategorias([]);
       setPagination({
         page: 1,
@@ -113,14 +115,16 @@ export const useCategorias = () => {
       return categoria;
     } catch (err) {
       const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      throw err;
+      setError(errorInfo);
+      throw errorInfo;
     } finally {
       setLoading(false);
     }
   }, []);
 
   const createCategoria = useCallback(async (categoriaData) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -130,17 +134,24 @@ export const useCategorias = () => {
         ...prev,
         totalItems: prev.totalItems + 1
       }));
+      showNotification.success(categoriaMessages.created);
       return newCategoria;
     } catch (err) {
       const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      throw err;
+      setError(errorInfo);
+      if (!errorInfo.fieldErrors || Object.keys(errorInfo.fieldErrors).length === 0) {
+        showNotification.error(errorInfo.message);
+      }
+      throw errorInfo;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   const updateCategoria = useCallback(async (id, categoriaData) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -148,36 +159,24 @@ export const useCategorias = () => {
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? updatedCategoria : c))
       );
+      showNotification.success(categoriaMessages.updated);
       return updatedCategoria;
     } catch (err) {
       const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      throw err;
+      setError(errorInfo);
+      if (!errorInfo.fieldErrors || Object.keys(errorInfo.fieldErrors).length === 0) {
+        showNotification.error(errorInfo.message);
+      }
+      throw errorInfo;
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  const deleteCategoria = useCallback(async (id) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await categoriaApi.deleteCategoria(id);
-      setCategorias((prev) => prev.filter((c) => c.id !== id));
-      setPagination(prev => ({
-        ...prev,
-        totalItems: prev.totalItems - 1
-      }));
-    } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      throw err;
-    } finally {
-      setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   const toggleActiveCategoria = useCallback(async (id) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -185,15 +184,22 @@ export const useCategorias = () => {
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? updatedCategoria : c))
       );
+      showNotification.success(categoriaMessages.statusChanged(updatedCategoria.activo));
       return updatedCategoria;
     } catch (err) {
-      throw err;
+      const errorInfo = handleApiError(err);
+      setError(errorInfo);
+      showNotification.error(errorInfo.message);
+      throw errorInfo;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   const softDeleteCategoria = useCallback(async (id) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -201,14 +207,21 @@ export const useCategorias = () => {
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? { ...c, eliminado: true } : c))
       );
+      showNotification.success(categoriaMessages.deleted);
     } catch (err) {
-      throw err;
+      const errorInfo = handleApiError(err);
+      setError(errorInfo);
+      showNotification.error(errorInfo.message);
+      throw errorInfo;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   const restoreCategoria = useCallback(async (id) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -216,14 +229,21 @@ export const useCategorias = () => {
       setCategorias((prev) =>
         prev.map((c) => (c.id === id ? { ...c, eliminado: false } : c))
       );
+      showNotification.success(categoriaMessages.restored);
     } catch (err) {
-      throw err;
+      const errorInfo = handleApiError(err);
+      setError(errorInfo);
+      showNotification.error(errorInfo.message);
+      throw errorInfo;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   const hardDeleteCategoria = useCallback(async (id) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -233,12 +253,40 @@ export const useCategorias = () => {
         ...prev,
         totalItems: prev.totalItems - 1
       }));
+      showNotification.success(categoriaMessages.deleted);
     } catch (err) {
       const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      throw err;
+      setError(errorInfo);
+      showNotification.error(errorInfo.message);
+      throw errorInfo;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
+    }
+  }, []);
+
+  const deleteCategoria = useCallback(async (id) => {
+    // Some pages might call deleteCategoria instead of hardDeleteCategoria
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
+    setLoading(true);
+    setError(null);
+    try {
+      await categoriaApi.deleteCategoria(id);
+      setCategorias((prev) => prev.filter((c) => c.id !== id));
+      setPagination(prev => ({
+        ...prev,
+        totalItems: prev.totalItems - 1
+      }));
+      showNotification.success(categoriaMessages.deleted);
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      setError(errorInfo);
+      showNotification.error(errorInfo.message);
+      throw errorInfo;
+    } finally {
+      setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
@@ -250,8 +298,8 @@ export const useCategorias = () => {
       return stats;
     } catch (err) {
       const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-      throw err;
+      setError(errorInfo);
+      throw errorInfo;
     } finally {
       setLoading(false);
     }

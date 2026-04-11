@@ -27,12 +27,6 @@ const ServiciosPage = () => {
     );
   }
 
-  // Logs para debugging
-  console.log("Roles:", roles);
-  console.log("CREATE_PERMS:", PERMISSIONS.SERVICES.CREATE);
-  console.log("EDIT_PERMS:", PERMISSIONS.SERVICES.EDIT);
-  console.log("DELETE_PERMS:", PERMISSIONS.SERVICES.DELETE);
-  
   // Función para verificar permisos con normalización
   const canPerformAction = (requiredPerms) => {
     const normalizedRoles = roles.map(r => r.toLowerCase());
@@ -45,9 +39,6 @@ const ServiciosPage = () => {
   const canCreate = canPerformAction(PERMISSIONS.SERVICES.CREATE);
   const canEdit = canPerformAction(PERMISSIONS.SERVICES.EDIT);
   const canDelete = canPerformAction(PERMISSIONS.SERVICES.DELETE);
-  
-  // Logs después de calcular
-  console.log("canCreate:", canCreate, "canEdit:", canEdit, "canDelete:", canDelete);
   
   // Objeto de permisos para pasar a la tabla
   const tablePermissions = {
@@ -98,14 +89,19 @@ const ServiciosPage = () => {
   };
 
   // Función para confirmar acciones
+  // Los toasts de éxito/error ya se manejan en el hook useServicios
   const handleConfirmAction = async (servicioId, type) => {
     try {
       await handleServicioAction(servicioId, type);
-      fetchServicios(filters, page, pageSize); // Refrescar la lista después de la acción
+      // Cerrar modal y limpiar estado SOLO en éxito
       setActionModalOpen(false);
       setSelectedActionServicio(null);
       setActionType(null);
+      // Refrescar la lista después de la acción exitosa
+      fetchServicios(filters, page, pageSize);
     } catch (err) {
+      // Los toasts de error ya se mostraron en el hook
+      // El modal permanece abierto para que el usuario pueda reintentar o cancelar
       console.error(`Error en acción ${type}:`, err);
     }
   };
@@ -136,15 +132,19 @@ const ServiciosPage = () => {
   }, [servicios]);
 
   // Handlers para creación y edición
+  // Los toasts ya se manejan en el hook useServicios — no duplicar
   const handleCreateServicio = useCallback(async (servicioData) => {
     try {
       await createServicio(servicioData);
+      // Solo cerrar modal en éxito
       setIsCreateModalOpen(false);
+      clearError();
       fetchServicios(filters, page, pageSize);
     } catch (err) {
+      // Toast ya mostrado en el hook — el modal permanece abierto para corrección
       console.error("Error en handleCreateServicio en página:", err);
     }
-  }, [createServicio, fetchServicios, filters, page, pageSize]);
+  }, [createServicio, fetchServicios, filters, page, pageSize, clearError]);
 
   const handleEditServicio = (servicio) => {
     setCurrentServicio(servicio);
@@ -154,13 +154,16 @@ const ServiciosPage = () => {
   const handleUpdateServicio = useCallback(async (id, servicioData) => {
     try {
       await updateServicio(id, servicioData);
+      // Solo cerrar modal en éxito
       setIsEditModalOpen(false);
       setCurrentServicio(null);
+      clearError();
       fetchServicios(filters, page, pageSize);
     } catch (err) {
+      // Toast ya mostrado en el hook — el modal permanece abierto para corrección
       console.error("Error en handleUpdateServicio en página:", err);
     }
-  }, [updateServicio, fetchServicios, filters, page, pageSize]);
+  }, [updateServicio, fetchServicios, filters, page, pageSize, clearError]);
 
   // Handler para búsqueda
   const handleSearch = (newFilters) => {
@@ -169,8 +172,12 @@ const ServiciosPage = () => {
   };
 
   // Handler para cerrar modales y limpiar errores
-  const handleCloseModals = () => {
+  const handleCloseCreateModal = () => {
     setIsCreateModalOpen(false);
+    clearError();
+  };
+
+  const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setCurrentServicio(null);
     clearError();
@@ -349,7 +356,7 @@ const ServiciosPage = () => {
       {/* Modal para crear servicio */}
       <ServicioCreateModal
         isOpen={isCreateModalOpen}
-        onClose={handleCloseModals}
+        onClose={handleCloseCreateModal}
         onCreate={handleCreateServicio}
         loading={loading}
         apiError={apiError}
@@ -359,7 +366,7 @@ const ServiciosPage = () => {
       {/* Modal para editar servicio */}
       <ServicioEditModal
         isOpen={isEditModalOpen}
-        onClose={handleCloseModals}
+        onClose={handleCloseEditModal}
         onUpdate={handleUpdateServicio}
         currentServicio={currentServicio}
         loading={loading}

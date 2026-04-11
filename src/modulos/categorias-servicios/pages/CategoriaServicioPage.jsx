@@ -69,10 +69,9 @@ const CategoriaServicioPage = () => {
   const handleCreate = async (categoriaData) => {
     try {
       await createCategoria(categoriaData);
-      toast.success('Categoría de servicio registrada exitosamente!');
       setIsCreateModalOpen(false);
     } catch (err) {
-      toast.error(err.message || 'Error al registrar categoría');
+      throw err;
     }
   };
 
@@ -84,21 +83,19 @@ const CategoriaServicioPage = () => {
   const handleUpdate = async (id, categoriaData) => {
     try {
       await updateCategoria(id, categoriaData);
-      toast.success('Categoría de servicio actualizada exitosamente!');
       setIsEditModalOpen(false);
       setCurrentCategoria(null);
     } catch (err) {
-      toast.error(err.message || 'Error al actualizar categoría');
+      throw err;
     }
   };
 
   const handleDelete = async (categoria) => {
     if (window.confirm(`¿Eliminar categoría "${categoria.nombre}"?`)) {
       try {
-        await deleteCategoria(categoria);
-        toast.success(`Categoría "${categoria.nombre}" eliminada!`);
+        await deleteCategoria(categoria.id);
       } catch (err) {
-        toast.error(err.message || 'Error al eliminar categoría');
+        // error already handled by hook
       }
     }
   };
@@ -114,24 +111,20 @@ const CategoriaServicioPage = () => {
       switch (type) {
         case 'softDelete':
           await softDeleteCategoria(categoriaId);
-          toast.success('Categoría eliminada temporalmente!');
           break;
         case 'hardDelete':
           await hardDeleteCategoria(categoriaId);
-          toast.success('Categoría eliminada permanentemente!');
           break;
         case 'restore':
           await restoreCategoria(categoriaId);
-          toast.success('Categoría restaurada!');
           break;
         case 'toggleActivo':
           await toggleActiveCategoria(categoriaId);
-          toast.success('Estado actualizado!');
           break;
       }
       fetchCategorias(filters, page, pageSize);
     } catch (err) {
-      toast.error(err.response?.data?.detail || err.message || 'Error en la acción');
+      // errors logged in hook
     }
   };
 

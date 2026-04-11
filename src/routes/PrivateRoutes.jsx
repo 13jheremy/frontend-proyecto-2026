@@ -63,7 +63,7 @@ const routesConfig = [
   // Módulo de Ventas e Inventario
   { path: '/ventas', component: VentasPage, roles: ['administrador','empleado'], viewRoles: ['cliente'] },
   { path: '/inventario', component: InventarioPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
-  { path: '/lotes', component: LotesPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
+  { path: '/lotes', component: LotesPage, roles: ['administrador'] },
   { path: '/movimientos', component: MovimientosPage, roles: ['administrador','empleado'], viewRoles: ['tecnico'] },
   { path: '/reportes', component: ReportesPage, roles: ['administrador','empleado'] },
   

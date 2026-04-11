@@ -8,7 +8,7 @@ import { faPlus, faSpinner } from '@fortawesome/free-solid-svg-icons';
 /**
  * Modal para crear una nueva categoría de servicio.
  */
-const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading, error }) => {
+const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -16,6 +16,7 @@ const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading, error }) => 
   });
 
   const [formErrors, setFormErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -25,6 +26,7 @@ const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading, error }) => 
         activo: true,
       });
       setFormErrors({});
+      setApiError(null);
     }
   }, [isOpen]);
 
@@ -37,6 +39,7 @@ const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading, error }) => 
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: null }));
     }
+    setApiError(null);
   };
 
   const validateForm = () => {
@@ -53,21 +56,31 @@ const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading, error }) => 
     if (!validateForm()) {
       return;
     }
+    setApiError(null);
     try {
-      await onCreate(formData);
-      // onClose se llama en el componente padre después de un onCreate exitoso
+      const dataToSubmit = {
+        ...formData,
+        nombre: formData.nombre.trim().toUpperCase()
+      };
+      await onCreate(dataToSubmit);
     } catch (err) {
       console.error('Error al crear categoría:', err);
+      if (err && err.fieldErrors) {
+        setFormErrors(prev => ({ ...prev, ...err.fieldErrors }));
+      }
+      if (err && err.message && (!err.fieldErrors || Object.keys(err.fieldErrors).length === 0)) {
+        setApiError(err.message);
+      }
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Registrar Nueva Categoría">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
+        {apiError && (
           <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline ml-1">{error}</span>
+            <span className="block sm:inline ml-1">{apiError}</span>
           </div>
         )}
 

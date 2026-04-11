@@ -183,6 +183,8 @@ export const supplierMessages = {
   deleted: 'Proveedor eliminado exitosamente',
   error: 'Error al procesar proveedor',
   notFound: 'Proveedor no encontrado',
+  supplierCreated: 'Proveedor creado exitosamente',
+  supplierUpdated: 'Proveedor actualizado exitosamente',
   statusChanged: (estado) => estado ? 'Proveedor activado exitosamente' : 'Proveedor desactivado exitosamente',
   supplierRestored: 'Proveedor restaurado exitosamente',
   supplierSoftDeleted: 'Proveedor eliminado exitosamente',
@@ -194,6 +196,11 @@ export const serviceMessages = {
   deleted: 'Servicio eliminado exitosamente',
   error: 'Error al procesar servicio',
   notFound: 'Servicio no encontrado',
+  serviceCreated: 'Servicio creado exitosamente',
+  serviceUpdated: 'Servicio actualizado exitosamente',
+  serviceSoftDeleted: 'Servicio eliminado exitosamente',
+  serviceRestored: 'Servicio restaurado exitosamente',
+  statusChanged: (isActive) => isActive ? 'Servicio activado exitosamente' : 'Servicio desactivado exitosamente',
 };
 
 export const recordatorioMessages = {
@@ -221,6 +228,15 @@ export const motoMessages = {
   error: 'Error al procesar motorcycle',
   notFound: 'Motocicleta no encontrada',
   ownerNotFound: 'Propietario no encontrado',
+};
+
+export const categoriaMessages = {
+  created: 'Categoría creada exitosamente',
+  updated: 'Categoría actualizada exitosamente',
+  deleted: 'Categoría eliminada exitosamente',
+  restored: 'Categoría restaurada exitosamente',
+  error: 'Error al procesar categoría',
+  statusChanged: (isActive) => isActive ? 'Categoría activada exitosamente' : 'Categoría desactivada exitosamente',
 };
 
 // Función para manejar errores de creación de usuario

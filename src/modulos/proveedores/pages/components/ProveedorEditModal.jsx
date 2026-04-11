@@ -1,9 +1,22 @@
 // src/modules/proveedores/components/ProveedorEditModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Modal from '../../../../components/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faSpinner, faBuilding, faIdCard, faPhone, faEnvelope, faMapMarkerAlt, faUser } from '@fortawesome/free-solid-svg-icons';
+
+// Constantes de validación (mismas que en ProveedorCreateModal)
+const VALIDATION = {
+  NOMBRE_MIN: 2,
+  NOMBRE_MAX: 200,
+  NIT_MIN: 3,
+  NIT_MAX: 20,
+  CONTACTO_MIN: 2,
+  CONTACTO_MAX: 100,
+  TELEFONO_MAX: 20,
+  CORREO_MAX: 100,
+  DIRECCION_MAX: 300,
+};
 
 /**
  * Modal para editar un proveedor existente.
@@ -20,6 +33,8 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
   });
   
   const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const nombreInputRef = useRef(null);
 
   // Cargar datos del proveedor cuando se abre el modal
   useEffect(() => {
@@ -34,17 +49,30 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
         activo: Boolean(currentProveedor.activo),
       });
       setFormErrors({});
+      setIsSubmitting(false);
+      // Enfocar el campo nombre al abrir
+      setTimeout(() => {
+        if (nombreInputRef.current) {
+          nombreInputRef.current.focus();
+        }
+      }, 100);
     }
   }, [isOpen, currentProveedor]);
 
   // Actualizar errores de formulario si apiError cambia
   useEffect(() => {
     if (apiError && apiError.fieldErrors) {
-      setFormErrors(apiError.fieldErrors);
-    } else if (apiError === null) {
-      setFormErrors({}); // Limpiar errores si apiError es null
+      setFormErrors(prev => ({
+        ...prev,
+        ...apiError.fieldErrors,
+      }));
     }
   }, [apiError]);
+
+  // Sanitizar texto
+  const sanitizeText = (text) => {
+    return text.replace(/\s+/g, ' ').trim();
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -54,7 +82,6 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
       [name]: type === 'checkbox' ? checked : value
     }));
 
-    // Limpiar error del campo cuando el usuario empieza a escribir
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -63,25 +90,73 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
     }
   };
 
+  // Validar un campo individual
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'nombre': {
+        const trimmed = sanitizeText(value);
+        if (!trimmed) return 'El nombre del proveedor es requerido';
+        if (trimmed.length < VALIDATION.NOMBRE_MIN) return `El nombre debe tener al menos ${VALIDATION.NOMBRE_MIN} caracteres`;
+        if (trimmed.length > VALIDATION.NOMBRE_MAX) return `El nombre no puede exceder ${VALIDATION.NOMBRE_MAX} caracteres`;
+        if (/[<>{}[\]\\]/.test(trimmed)) return 'El nombre contiene caracteres no permitidos';
+        return null;
+      }
+      case 'nit': {
+        const trimmed = sanitizeText(value);
+        if (!trimmed) return 'El NIT es requerido';
+        if (trimmed.length < VALIDATION.NIT_MIN) return `El NIT debe tener al menos ${VALIDATION.NIT_MIN} caracteres`;
+        if (trimmed.length > VALIDATION.NIT_MAX) return `El NIT no puede exceder ${VALIDATION.NIT_MAX} caracteres`;
+        if (!/^[a-zA-Z0-9\-]+$/.test(trimmed)) return 'El NIT solo puede contener letras, números y guiones';
+        return null;
+      }
+      case 'contacto_principal': {
+        const trimmed = sanitizeText(value);
+        if (!trimmed) return 'El contacto principal es requerido';
+        if (trimmed.length < VALIDATION.CONTACTO_MIN) return `El contacto debe tener al menos ${VALIDATION.CONTACTO_MIN} caracteres`;
+        if (trimmed.length > VALIDATION.CONTACTO_MAX) return `El contacto no puede exceder ${VALIDATION.CONTACTO_MAX} caracteres`;
+        return null;
+      }
+      case 'telefono': {
+        const trimmed = sanitizeText(value);
+        if (trimmed && trimmed.length > VALIDATION.TELEFONO_MAX) return `El teléfono no puede exceder ${VALIDATION.TELEFONO_MAX} caracteres`;
+        if (trimmed && !/^[+\d\s\-()]+$/.test(trimmed)) return 'El teléfono solo puede contener números, +, -, (), y espacios';
+        return null;
+      }
+      case 'correo': {
+        const trimmed = sanitizeText(value);
+        if (trimmed && trimmed.length > VALIDATION.CORREO_MAX) return `El correo no puede exceder ${VALIDATION.CORREO_MAX} caracteres`;
+        if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'El correo electrónico no es válido';
+        return null;
+      }
+      case 'direccion': {
+        const trimmed = sanitizeText(value);
+        if (trimmed && trimmed.length > VALIDATION.DIRECCION_MAX) return `La dirección no puede exceder ${VALIDATION.DIRECCION_MAX} caracteres`;
+        return null;
+      }
+      default:
+        return null;
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    if (error) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
+  };
+
   const validateForm = () => {
     const errors = {};
     
-    if (!formData.nombre.trim()) {
-      errors.nombre = 'El nombre del proveedor es requerido';
-    }
-    
-    if (!formData.nit.trim()) {
-      errors.nit = 'El NIT es requerido';
-    }
-    
-    if (!formData.contacto_principal.trim()) {
-      errors.contacto_principal = 'El contacto principal es requerido';
-    }
-
-    // Validación básica de correo electrónico
-    if (formData.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
-      errors.correo = 'El correo electrónico no es válido';
-    }
+    const fields = ['nombre', 'nit', 'contacto_principal', 'telefono', 'correo', 'direccion'];
+    fields.forEach(field => {
+      const error = validateField(field, formData[field]);
+      if (error) errors[field] = error;
+    });
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -90,16 +165,33 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (isSubmitting || loading) {
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
 
+    setIsSubmitting(true);
+
+    // Sanitizar datos antes de enviar
+    const dataToSubmit = {
+      nombre: sanitizeText(formData.nombre),
+      nit: sanitizeText(formData.nit),
+      telefono: sanitizeText(formData.telefono),
+      correo: sanitizeText(formData.correo).toLowerCase(),
+      direccion: sanitizeText(formData.direccion),
+      contacto_principal: sanitizeText(formData.contacto_principal),
+      activo: formData.activo,
+    };
+
     try {
-      await onUpdate(currentProveedor.id, formData);
-      // onClose() se llama en el padre si onUpdate es exitoso
+      await onUpdate(currentProveedor.id, dataToSubmit);
     } catch (err) {
-      // Los errores ya se manejan en el useEffect de apiError
       console.error('Error al actualizar proveedor en modal:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -107,11 +199,15 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
     return null;
   }
 
+  // Contadores de caracteres
+  const nombreLength = formData.nombre.length;
+  const direccionLength = formData.direccion.length;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Editar Proveedor: ${currentProveedor.nombre}`}>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Error general (si no hay errores de campo específicos) */}
-        {apiError && !Object.keys(formErrors).length && (
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        {/* Error general de API */}
+        {apiError && apiError.message && (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) && (
           <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
             <span className="block sm:inline ml-1">{apiError.message}</span>
@@ -126,18 +222,28 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
               Nombre del Proveedor *
             </label>
             <input
+              ref={nombreInputRef}
               type="text"
               name="nombre"
               id="nombre-edit"
               value={formData.nombre}
               onChange={handleChange}
-              disabled={loading}
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.NOMBRE_MAX}
               className={`mt-1 block w-full border ${formErrors.nombre ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Ej. Distribuidora ABC S.R.L."
             />
-            {formErrors.nombre && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.nombre}</p>
-            )}
+            <div className="flex justify-between mt-1">
+              {formErrors.nombre ? (
+                <p className="text-sm text-red-600 dark:text-red-400">{formErrors.nombre}</p>
+              ) : (
+                <span />
+              )}
+              <span className={`text-xs ${nombreLength > VALIDATION.NOMBRE_MAX * 0.9 ? 'text-orange-500' : 'text-gray-400'}`}>
+                {nombreLength}/{VALIDATION.NOMBRE_MAX}
+              </span>
+            </div>
           </div>
 
           {/* NIT */}
@@ -152,7 +258,9 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
               id="nit-edit"
               value={formData.nit}
               onChange={handleChange}
-              disabled={loading}
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.NIT_MAX}
               className={`mt-1 block w-full border ${formErrors.nit ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Ej. 1234567890"
             />
@@ -173,7 +281,9 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
               id="contacto_principal-edit"
               value={formData.contacto_principal}
               onChange={handleChange}
-              disabled={loading}
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.CONTACTO_MAX}
               className={`mt-1 block w-full border ${formErrors.contacto_principal ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Ej. Juan Pérez"
             />
@@ -194,8 +304,10 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
               id="telefono-edit"
               value={formData.telefono}
               onChange={handleChange}
-              disabled={loading}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed"
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.TELEFONO_MAX}
+              className={`mt-1 block w-full border ${formErrors.telefono ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Ej. +591 70123456"
             />
             {formErrors.telefono && (
@@ -215,7 +327,9 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
               id="correo-edit"
               value={formData.correo}
               onChange={handleChange}
-              disabled={loading}
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.CORREO_MAX}
               className={`mt-1 block w-full border ${formErrors.correo ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Ej. contacto@proveedor.com"
             />
@@ -236,27 +350,38 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
               rows="3"
               value={formData.direccion}
               onChange={handleChange}
-              disabled={loading}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed"
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.DIRECCION_MAX}
+              className={`mt-1 block w-full border ${formErrors.direccion ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Ej. Av. 6 de Agosto #1234, La Paz, Bolivia"
             />
-            {formErrors.direccion && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.direccion}</p>
-            )}
+            <div className="flex justify-between mt-1">
+              {formErrors.direccion ? (
+                <p className="text-sm text-red-600 dark:text-red-400">{formErrors.direccion}</p>
+              ) : (
+                <span />
+              )}
+              <span className={`text-xs ${direccionLength > VALIDATION.DIRECCION_MAX * 0.9 ? 'text-orange-500' : 'text-gray-400'}`}>
+                {direccionLength}/{VALIDATION.DIRECCION_MAX}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Checkbox Activo */}
         <div className="flex items-center">
-          <input
-            type="checkbox"
-            name="activo"
-            checked={formData.activo}
-            onChange={handleChange}
-            disabled={loading}
-            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
-          />
-          <span className="ml-2 text-gray-700 dark:text-gray-300">Proveedor Activo</span>
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              name="activo"
+              checked={formData.activo}
+              onChange={handleChange}
+              disabled={loading || isSubmitting}
+              className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
+            />
+            <span className="ml-2 text-gray-700 dark:text-gray-300">Proveedor Activo</span>
+          </label>
         </div>
 
         {/* Botones */}
@@ -264,17 +389,17 @@ const ProveedorEditModal = ({ isOpen, onClose, onUpdate, currentProveedor = null
           <button
             type="button"
             onClick={onClose}
-            disabled={loading}
+            disabled={loading || isSubmitting}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
+            {loading || isSubmitting ? (
               <>
                 <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
                 Actualizando...

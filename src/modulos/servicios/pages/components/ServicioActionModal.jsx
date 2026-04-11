@@ -4,7 +4,6 @@ import PropTypes from 'prop-types';
 import Modal from '../../../../components/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faRecycle, faTrashRestore, faToggleOff, faToggleOn, faCog } from '@fortawesome/free-solid-svg-icons';
-
 const ServicioActionModal = ({ isOpen, onClose, servicio, actionType, onConfirm }) => {
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +14,7 @@ const ServicioActionModal = ({ isOpen, onClose, servicio, actionType, onConfirm 
       case 'softDelete':
         return {
           title: 'Eliminar Servicio',
-          message: `¿Está seguro de eliminar el servicio "${servicio.nombre}"`,
+          message: `¿Está seguro de eliminar el servicio "${servicio.nombre}"?`,
           confirmText: 'Eliminar',
           confirmClass: 'bg-orange-600 hover:bg-orange-700',
           loadingText: `Eliminando "${servicio.nombre}"...`,
@@ -60,12 +59,18 @@ const ServicioActionModal = ({ isOpen, onClose, servicio, actionType, onConfirm 
   const config = getModalConfig();
 
   const handleConfirm = async () => {
+    // Prevenir doble click
+    if (loading) return;
+
     setLoading(true);
 
     try {
       await onConfirm(servicio.id, actionType);
-      onClose();
+      // NO llamar onClose() aquí — el padre (handleConfirmAction) ya lo maneja
+      // Esto evita el cierre doble y posibles toasts duplicados
     } catch (err) {
+      // Los toasts de error ya se manejan en el hook useServicios
+      // Solo log para debugging
       console.error(`Error en acción ${actionType}:`, err);
     } finally {
       setLoading(false);
@@ -92,7 +97,7 @@ const ServicioActionModal = ({ isOpen, onClose, servicio, actionType, onConfirm 
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={config.title}>
+    <Modal isOpen={isOpen} onClose={loading ? () => {} : onClose} title={config.title}>
       <div className="flex flex-col space-y-4">
         {/* Información del servicio */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
@@ -151,7 +156,7 @@ const ServicioActionModal = ({ isOpen, onClose, servicio, actionType, onConfirm 
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>

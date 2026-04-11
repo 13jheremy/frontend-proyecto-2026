@@ -87,7 +87,6 @@ const CategoriaServicioActionModal = ({ isOpen, onClose, servicio, actionType, o
 
     try {
       await onConfirm(servicio.id, actionType);
-      onClose();
     } catch (err) {
       console.error(`Error en acción ${actionType}:`, err);
     } finally {

@@ -28,12 +28,6 @@ const ProveedoresPage = () => {
     );
   }
 
-  // Logs para debugging
-  console.log("Roles:", roles);
-  console.log("CREATE_PERMS:", PERMISSIONS.SUPPLIERS.CREATE);
-  console.log("EDIT_PERMS:", PERMISSIONS.SUPPLIERS.EDIT);
-  console.log("DELETE_PERMS:", PERMISSIONS.SUPPLIERS.DELETE);
-  
   // Función para verificar permisos con normalización
   const canPerformAction = (requiredPerms) => {
     const normalizedRoles = roles.map(r => r.toLowerCase());
@@ -46,9 +40,6 @@ const ProveedoresPage = () => {
   const canCreate = canPerformAction(PERMISSIONS.SUPPLIERS.CREATE);
   const canEdit = canPerformAction(PERMISSIONS.SUPPLIERS.EDIT);
   const canDelete = canPerformAction(PERMISSIONS.SUPPLIERS.DELETE);
-  
-  // Logs después de calcular
-  console.log("canCreate:", canCreate, "canEdit:", canEdit, "canDelete:", canDelete);
   
   // Objeto de permisos para pasar a la tabla
   const tablePermissions = {
@@ -108,14 +99,19 @@ const ProveedoresPage = () => {
   };
 
   // Función para confirmar acciones
+  // Los toasts de éxito/error ya se manejan en el hook useProveedores
   const handleConfirmAction = async (proveedorId, type) => {
     try {
       await handleProveedorAction(proveedorId, type);
-      fetchProveedores(filters, page, pageSize);
+      // Cerrar modal y limpiar estado SOLO en éxito
       setActionModalOpen(false);
       setSelectedActionProveedor(null);
       setActionType(null);
+      // Refrescar la lista después de la acción exitosa
+      fetchProveedores(filters, page, pageSize);
     } catch (err) {
+      // Los toasts de error ya se mostraron en el hook
+      // El modal permanece abierto para que el usuario pueda reintentar o cancelar
       console.error(`Error en acción ${type}:`, err);
     }
   };
@@ -146,15 +142,19 @@ const ProveedoresPage = () => {
   }, [proveedores]);
 
   // Handlers para creación y edición
+  // Los toasts ya se manejan en el hook useProveedores — no duplicar
   const handleCreateProveedor = useCallback(async (proveedorData) => {
     try {
       await createProveedor(proveedorData);
+      // Solo cerrar modal en éxito
       setIsCreateModalOpen(false);
+      clearError();
       fetchProveedores(filters, page, pageSize);
     } catch (err) {
+      // Toast ya mostrado en el hook — el modal permanece abierto para corrección
       console.error("Error en handleCreateProveedor:", err);
     }
-  }, [createProveedor, fetchProveedores, filters, page, pageSize]);
+  }, [createProveedor, fetchProveedores, filters, page, pageSize, clearError]);
 
   const handleEditProveedor = (proveedor) => {
     setCurrentProveedor(proveedor);
@@ -164,13 +164,16 @@ const ProveedoresPage = () => {
   const handleUpdateProveedor = useCallback(async (id, proveedorData) => {
     try {
       await updateProveedor(id, proveedorData);
+      // Solo cerrar modal en éxito
       setIsEditModalOpen(false);
       setCurrentProveedor(null);
+      clearError();
       fetchProveedores(filters, page, pageSize);
     } catch (err) {
+      // Toast ya mostrado en el hook — el modal permanece abierto para corrección
       console.error("Error en handleUpdateProveedor:", err);
     }
-  }, [updateProveedor, fetchProveedores, filters, page, pageSize]);
+  }, [updateProveedor, fetchProveedores, filters, page, pageSize, clearError]);
 
   // Handler para búsqueda
   const handleSearch = (newFilters) => {
@@ -183,15 +186,18 @@ const ProveedoresPage = () => {
       // Si no hay búsqueda y no hay selección de estado → solo activos por defecto
       filtrosFinales.activo = 'true';
     }
-    // Si el usuario explícitamente seleccionó activo='' (Todos) o activo='true'/'false', respetar esa selección
 
     setFilters(filtrosFinales);
     setPage(1);
   };
 
-  // Handler para cerrar modales y limpiar errores
-  const handleCloseModals = () => {
+  // Handlers separados para cerrar modales
+  const handleCloseCreateModal = () => {
     setIsCreateModalOpen(false);
+    clearError();
+  };
+
+  const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setCurrentProveedor(null);
     clearError();
@@ -399,7 +405,7 @@ const ProveedoresPage = () => {
       {/* Modal para crear proveedor */}
       <ProveedorCreateModal
         isOpen={isCreateModalOpen}
-        onClose={handleCloseModals}
+        onClose={handleCloseCreateModal}
         onCreate={handleCreateProveedor}
         loading={loading}
         apiError={apiError}
@@ -408,7 +414,7 @@ const ProveedoresPage = () => {
       {/* Modal para editar proveedor */}
       <ProveedorEditModal
         isOpen={isEditModalOpen}
-        onClose={handleCloseModals}
+        onClose={handleCloseEditModal}
         onUpdate={handleUpdateProveedor}
         currentProveedor={currentProveedor}
         loading={loading}

@@ -30,6 +30,7 @@ import ClientSearchInput from '../components/ClientSearchInput';
 import ProductImage from '../components/ProductImage';
 import CreateClientModal from '../components/CreateClientModal';
 import pdfService from '../../../services/pdfService';
+import { printReceipt } from '../../../utils/printReceipt';
 
 const NuevaVentaPage = () => {
   console.log('🔄 NuevaVentaPage - RENDERIZANDO COMPONENTE');
@@ -155,7 +156,11 @@ const NuevaVentaPage = () => {
               };
               
               const doc = pdfService.generarComprobanteVenta(pdfData);
+              // Opcional: descargar el PDF silenciosamente como respaldo o quitarlo. Por ahora lo dejamos:
               pdfService.descargarPDF(doc, `recibo_venta_${ventaData.id}_${new Date().toISOString().split('T')[0]}.pdf`);
+              
+              // Imprimir recibo ticket! (Requerimiento del usuario)
+              printReceipt(pdfData);
             }
           } catch (pdfError) {
             console.error('Error generando PDF:', pdfError);

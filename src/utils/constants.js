@@ -169,9 +169,6 @@ export const ROLE_ROUTES = {
     { path: '/mantenimiento', name: 'Mantenimientos' },
     { path: '/recordatorios', name: 'Recordatorios' },
     { path: '/inventario', name: 'Inventario' },
-    { path: '/lotes', name: 'Lotes' },
-    { path: '/movimientos', name: 'Movimientos' },
-    { path: '/inventario', name: 'Inventario' },
     { path: '/movimientos', name: 'Movimientos' },
   ],
   [ROLES.TECNICO]: [

@@ -1,5 +1,5 @@
 // src/modules/servicios/components/ServicioEditModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Modal from '../../../../components/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,6 +12,17 @@ import {
   faClock, 
   faAlignLeft 
 } from '@fortawesome/free-solid-svg-icons';
+
+// Constantes de validación (mismas que en ServicioCreateModal)
+const VALIDATION = {
+  NOMBRE_MIN: 2,
+  NOMBRE_MAX: 150,
+  DESCRIPCION_MAX: 500,
+  PRECIO_MIN: 0.01,
+  PRECIO_MAX: 999999.99,
+  DURACION_MIN: 1,
+  DURACION_MAX: 1440, // 24 horas en minutos
+};
 
 /**
  * Modal para editar un servicio existente.
@@ -31,6 +42,8 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
   const [duracionMinutos, setDuracionMinutos] = useState('');
   
   const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const nombreInputRef = useRef(null);
 
   // Cargar datos del servicio cuando se abre el modal
   useEffect(() => {
@@ -63,17 +76,33 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
       }
       
       setFormErrors({});
+      setIsSubmitting(false);
+
+      // Enfocar el campo nombre al abrir
+      setTimeout(() => {
+        if (nombreInputRef.current) {
+          nombreInputRef.current.focus();
+        }
+      }, 100);
     }
   }, [isOpen, currentServicio]);
 
   // Actualizar errores de formulario si apiError cambia
   useEffect(() => {
     if (apiError && apiError.fieldErrors) {
-      setFormErrors(apiError.fieldErrors);
+      setFormErrors(prev => ({
+        ...prev,
+        ...apiError.fieldErrors,
+      }));
     } else if (apiError === null) {
-      setFormErrors({}); // Limpiar errores si apiError es null
+      // Solo limpiar errores de API, no los de validación local
     }
   }, [apiError]);
+
+  // Sanitizar texto: eliminar espacios múltiples, trim
+  const sanitizeText = (text) => {
+    return text.replace(/\s+/g, ' ').trim();
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -99,24 +128,83 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
     }
   };
 
+  // Validar un campo individual (para validación en tiempo real)
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'nombre': {
+        const trimmed = sanitizeText(value);
+        if (!trimmed) return 'El nombre es requerido';
+        if (trimmed.length < VALIDATION.NOMBRE_MIN) return `El nombre debe tener al menos ${VALIDATION.NOMBRE_MIN} caracteres`;
+        if (trimmed.length > VALIDATION.NOMBRE_MAX) return `El nombre no puede exceder ${VALIDATION.NOMBRE_MAX} caracteres`;
+        if (/[<>{}[\]\\\/]/.test(trimmed)) return 'El nombre contiene caracteres no permitidos';
+        return null;
+      }
+      case 'descripcion': {
+        const trimmed = sanitizeText(value);
+        if (trimmed.length > VALIDATION.DESCRIPCION_MAX) return `La descripción no puede exceder ${VALIDATION.DESCRIPCION_MAX} caracteres`;
+        return null;
+      }
+      case 'precio': {
+        if (value === '' || value === null || value === undefined) return 'El precio es requerido';
+        const precio = parseFloat(value);
+        if (isNaN(precio)) return 'El precio debe ser un número válido';
+        if (precio < VALIDATION.PRECIO_MIN) return `El precio debe ser al menos ${VALIDATION.PRECIO_MIN}`;
+        if (precio > VALIDATION.PRECIO_MAX) return `El precio no puede exceder ${VALIDATION.PRECIO_MAX.toLocaleString()}`;
+        const decimalPart = value.toString().split('.')[1];
+        if (decimalPart && decimalPart.length > 2) return 'El precio puede tener máximo 2 decimales';
+        return null;
+      }
+      case 'categoria_servicio': {
+        if (!value) return 'La categoría es requerida';
+        return null;
+      }
+      default:
+        return null;
+    }
+  };
+
+  // Validar al salir del campo (onBlur)
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    if (error) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
+  };
+
   const validateForm = () => {
     const errors = {};
     
-    if (!formData.nombre.trim()) {
-      errors.nombre = 'El nombre es requerido';
-    }
+    // Validar nombre
+    const nombreError = validateField('nombre', formData.nombre);
+    if (nombreError) errors.nombre = nombreError;
     
-    if (!formData.categoria_servicio) {
-      errors.categoria_servicio = 'La categoría es requerida';
-    }
+    // Validar categoría
+    const categoriaError = validateField('categoria_servicio', formData.categoria_servicio);
+    if (categoriaError) errors.categoria_servicio = categoriaError;
     
-    const precio = parseFloat(formData.precio);
+    // Validar precio
+    const precioError = validateField('precio', formData.precio);
+    if (precioError) errors.precio = precioError;
+
+    // Validar duración
     let duracionTotal = 0;
     
     if (duracionTipo === 'minutos') {
-      duracionTotal = parseInt(duracionMinutos);
-      if (isNaN(duracionTotal) || duracionTotal <= 0) {
-        errors.duracion_estimada = 'Los minutos deben ser un número mayor a 0';
+      const mins = parseInt(duracionMinutos);
+      if (!duracionMinutos || duracionMinutos === '') {
+        errors.duracion_estimada = 'La duración es requerida';
+      } else if (isNaN(mins)) {
+        errors.duracion_estimada = 'La duración debe ser un número válido';
+      } else if (mins < VALIDATION.DURACION_MIN) {
+        errors.duracion_estimada = `La duración debe ser al menos ${VALIDATION.DURACION_MIN} minuto(s)`;
+      } else if (mins > VALIDATION.DURACION_MAX) {
+        errors.duracion_estimada = `La duración no puede exceder ${VALIDATION.DURACION_MAX} minutos (24 horas)`;
+      } else {
+        duracionTotal = mins;
       }
     } else {
       const horas = parseInt(duracionHoras) || 0;
@@ -124,16 +212,21 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
       
       if (horas === 0 && minutos === 0) {
         errors.duracion_estimada = 'Debe especificar al menos 1 hora o 1 minuto';
-      } else if (horas < 0 || minutos < 0 || minutos >= 60) {
-        errors.duracion_estimada = 'Formato inválido: horas >= 0, minutos entre 0-59';
+      } else if (horas < 0) {
+        errors.duracion_estimada = 'Las horas no pueden ser negativas';
+      } else if (minutos < 0 || minutos >= 60) {
+        errors.duracion_estimada = 'Los minutos deben estar entre 0 y 59';
       } else {
         duracionTotal = (horas * 60) + minutos;
+        if (duracionTotal > VALIDATION.DURACION_MAX) {
+          errors.duracion_estimada = `La duración total no puede exceder ${VALIDATION.DURACION_MAX} minutos (24 horas)`;
+        }
       }
     }
 
-    if (isNaN(precio) || precio <= 0) {
-      errors.precio = 'El precio debe ser un número mayor a 0';
-    }
+    // Validar descripción
+    const descripcionError = validateField('descripcion', formData.descripcion);
+    if (descripcionError) errors.descripcion = descripcionError;
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -142,9 +235,16 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Prevenir envío doble
+    if (isSubmitting || loading) {
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
+
+    setIsSubmitting(true);
 
     // Calcular duración total en minutos
     let duracionTotal = 0;
@@ -156,17 +256,25 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
       duracionTotal = (horas * 60) + minutos;
     }
 
+    // Sanitizar datos antes de enviar
     const dataToSubmit = {
-      ...formData,
-      duracion_estimada: duracionTotal
+      nombre: sanitizeText(formData.nombre),
+      descripcion: sanitizeText(formData.descripcion),
+      precio: parseFloat(formData.precio),
+      duracion_estimada: duracionTotal,
+      categoria_servicio: formData.categoria_servicio,
+      activo: formData.activo,
     };
 
     try {
       await onUpdate(currentServicio.id, dataToSubmit);
       // onClose() se llama en el padre si onUpdate es exitoso
     } catch (err) {
-      // Los errores ya se manejan en el useEffect de apiError
+      // Los errores de API se manejan en el useEffect de apiError
+      // y los toasts se manejan en el hook useServicios
       console.error('Error al actualizar servicio en modal:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -174,11 +282,15 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
     return null;
   }
 
+  // Contadores de caracteres
+  const nombreLength = formData.nombre.length;
+  const descripcionLength = formData.descripcion.length;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Editar Servicio: ${currentServicio.nombre}`}>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Error general (si no hay errores de campo específicos) */}
-        {apiError && !Object.keys(formErrors).length && (
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        {/* Error general de API (si no hay errores de campo específicos) */}
+        {apiError && apiError.message && (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) && (
           <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
             <span className="block sm:inline ml-1">{apiError.message}</span>
@@ -188,28 +300,38 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Nombre */}
           <div>
-            <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="nombre-edit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               <FontAwesomeIcon icon={faCogs} className="mr-2 text-blue-500" />
               Nombre *
             </label>
             <input
+              ref={nombreInputRef}
               type="text"
               name="nombre"
               id="nombre-edit"
               value={formData.nombre}
               onChange={handleChange}
-              disabled={loading}
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.NOMBRE_MAX}
               className={`mt-1 block w-full border ${formErrors.nombre ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Nombre del servicio"
             />
-            {formErrors.nombre && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.nombre}</p>
-            )}
+            <div className="flex justify-between mt-1">
+              {formErrors.nombre ? (
+                <p className="text-sm text-red-600 dark:text-red-400">{formErrors.nombre}</p>
+              ) : (
+                <span />
+              )}
+              <span className={`text-xs ${nombreLength > VALIDATION.NOMBRE_MAX * 0.9 ? 'text-orange-500' : 'text-gray-400'}`}>
+                {nombreLength}/{VALIDATION.NOMBRE_MAX}
+              </span>
+            </div>
           </div>
 
           {/* Categoría */}
           <div>
-            <label htmlFor="categoria_servicio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="categoria_servicio-edit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               <FontAwesomeIcon icon={faTag} className="mr-2 text-green-500" />
               Categoría *
             </label>
@@ -218,7 +340,8 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
               id="categoria_servicio-edit"
               value={formData.categoria_servicio}
               onChange={handleChange}
-              disabled={loading}
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
               className={`mt-1 block w-full border ${formErrors.categoria_servicio ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
             >
               <option value="">Seleccionar categoría</option>
@@ -235,7 +358,7 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
 
           {/* Precio */}
           <div>
-            <label htmlFor="precio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="precio-edit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               <FontAwesomeIcon icon={faDollarSign} className="mr-2 text-green-600" />
               Precio (Bs) *
             </label>
@@ -245,9 +368,11 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
               id="precio-edit"
               value={formData.precio}
               onChange={handleChange}
-              min="0"
+              onBlur={handleBlur}
+              min={VALIDATION.PRECIO_MIN}
+              max={VALIDATION.PRECIO_MAX}
               step="0.01"
-              disabled={loading}
+              disabled={loading || isSubmitting}
               className={`mt-1 block w-full border ${formErrors.precio ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="0.00"
             />
@@ -288,7 +413,7 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
                     setFormErrors(prev => ({ ...prev, duracion_estimada: null }));
                   }
                 }}
-                disabled={loading}
+                disabled={loading || isSubmitting}
                 className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 text-sm"
               >
                 <option value="minutos">Solo Minutos</option>
@@ -308,7 +433,8 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
                   }
                 }}
                 min="1"
-                disabled={loading}
+                max={VALIDATION.DURACION_MAX}
+                disabled={loading || isSubmitting}
                 className={`block w-full border ${formErrors.duracion_estimada ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
                 placeholder="Duración en minutos"
               />
@@ -325,7 +451,8 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
                       }
                     }}
                     min="0"
-                    disabled={loading}
+                    max="24"
+                    disabled={loading || isSubmitting}
                     className={`block w-full border ${formErrors.duracion_estimada ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
                     placeholder="Horas"
                   />
@@ -343,7 +470,7 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
                     }}
                     min="0"
                     max="59"
-                    disabled={loading}
+                    disabled={loading || isSubmitting}
                     className={`block w-full border ${formErrors.duracion_estimada ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
                     placeholder="Minutos"
                   />
@@ -359,7 +486,7 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
 
           {/* Descripción */}
           <div className="md:col-span-2">
-            <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="descripcion-edit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               <FontAwesomeIcon icon={faAlignLeft} className="mr-2 text-purple-500" />
               Descripción
             </label>
@@ -369,10 +496,22 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
               rows="3"
               value={formData.descripcion}
               onChange={handleChange}
-              disabled={loading}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed"
+              onBlur={handleBlur}
+              disabled={loading || isSubmitting}
+              maxLength={VALIDATION.DESCRIPCION_MAX}
+              className={`mt-1 block w-full border ${formErrors.descripcion ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
               placeholder="Descripción detallada del servicio"
             />
+            <div className="flex justify-between mt-1">
+              {formErrors.descripcion ? (
+                <p className="text-sm text-red-600 dark:text-red-400">{formErrors.descripcion}</p>
+              ) : (
+                <span />
+              )}
+              <span className={`text-xs ${descripcionLength > VALIDATION.DESCRIPCION_MAX * 0.9 ? 'text-orange-500' : 'text-gray-400'}`}>
+                {descripcionLength}/{VALIDATION.DESCRIPCION_MAX}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -384,7 +523,7 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
               name="activo"
               checked={formData.activo}
               onChange={handleChange}
-              disabled={loading}
+              disabled={loading || isSubmitting}
               className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed"
             />
             <span className="ml-2 text-gray-700 dark:text-gray-300">Servicio Activo</span>
@@ -396,17 +535,17 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
           <button
             type="button"
             onClick={onClose}
-            disabled={loading}
+            disabled={loading || isSubmitting}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
+            {loading || isSubmitting ? (
               <>
                 <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
                 Actualizando...
@@ -430,7 +569,7 @@ ServicioEditModal.propTypes = {
   onUpdate: PropTypes.func.isRequired,
   currentServicio: PropTypes.object,
   loading: PropTypes.bool,
-  apiError: PropTypes.object, // Cambiado a object para recibir el objeto completo
+  apiError: PropTypes.object,
   categorias: PropTypes.array,
 };
 

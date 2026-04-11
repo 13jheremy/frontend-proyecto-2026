@@ -73,7 +73,6 @@ const CategoriaActionModal = ({ isOpen, onClose, categoria, actionType, onConfir
 
     try {
       await onConfirm(categoria.id, actionType);
-      onClose();
     } catch (err) {
       console.error(`Error en acción ${actionType}:`, err);
     } finally {

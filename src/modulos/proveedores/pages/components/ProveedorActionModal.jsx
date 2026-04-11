@@ -67,12 +67,16 @@ const ProveedorActionModal = ({ isOpen, onClose, proveedor, actionType, onConfir
   const config = getModalConfig();
 
   const handleConfirm = async () => {
+    // Prevenir doble click
+    if (loading) return;
+
     setLoading(true);
 
     try {
       await onConfirm(proveedor.id, actionType);
-      onClose();
+      // NO llamar onClose() aquí — el padre (handleConfirmAction) ya lo maneja
     } catch (err) {
+      // Los toasts de error ya se manejan en el hook useProveedores
       console.error(`Error en acción ${actionType}:`, err);
     } finally {
       setLoading(false);
@@ -80,7 +84,7 @@ const ProveedorActionModal = ({ isOpen, onClose, proveedor, actionType, onConfir
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={config.title}>
+    <Modal isOpen={isOpen} onClose={loading ? () => {} : onClose} title={config.title}>
       <div className="flex flex-col space-y-4">
         {/* Información del proveedor */}
         <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-3 mb-3">
@@ -145,7 +149,7 @@ const ProveedorActionModal = ({ isOpen, onClose, proveedor, actionType, onConfir
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>

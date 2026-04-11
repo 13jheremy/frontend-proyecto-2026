@@ -101,10 +101,11 @@ const VentaActionModal = ({
   const config = getModalConfig();
 
   const handleConfirm = async () => {
+    if (loading) return;
     setLoading(true);
     try {
       await onConfirm(venta.id, actionType);
-      onClose();
+      // NO llamar onClose() aquí — el padre (handleConfirmAction) ya lo maneja
     } catch (err) {
       console.error(`Error en acción ${actionType}:`, err);
     } finally {

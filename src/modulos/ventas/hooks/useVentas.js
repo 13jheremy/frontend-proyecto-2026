@@ -1,12 +1,13 @@
 // src/modulos/ventas/hooks/useVentas.js
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { ventasAPI } from '../api/ventasAPI';
 import { showNotification } from '../../../utils/notifications';
+import { handleApiError } from '../../../utils/apiErrorHandlers';
 
 export const useVentas = () => {
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Almacena el objeto de error completo
   const [pagination, setPagination] = useState({
     page: 1,
     totalPages: 1,
@@ -14,6 +15,9 @@ export const useVentas = () => {
     hasNext: false,
     hasPrevious: false
   });
+
+  // Ref para evitar operaciones concurrentes
+  const operationInProgress = useRef(false);
 
   // Limpiar errores
   const clearError = useCallback(() => {
@@ -41,12 +45,11 @@ export const useVentas = () => {
       
       return response;
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Error al cargar ventas';
-      setError(errorMessage);
-      showNotification.error(errorMessage);
-      throw err;
+      const apiError = handleApiError(err);
+      setError(apiError);
+      setVentas([]);
+      setPagination({ page: 1, totalPages: 1, totalItems: 0, hasNext: false, hasPrevious: false });
+      showNotification.error(apiError.message || 'Error al cargar ventas');
     } finally {
       setLoading(false);
     }
@@ -54,6 +57,12 @@ export const useVentas = () => {
 
   // Crear nueva venta
   const createVenta = useCallback(async (ventaData) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     
@@ -62,40 +71,62 @@ export const useVentas = () => {
       showNotification.success('Venta creada exitosamente');
       return response;
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Error al crear venta';
-      setError(errorMessage);
-      showNotification.error(errorMessage);
-      throw err;
+      const apiError = handleApiError(err);
+      setError(apiError);
+      
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
+        showNotification.error(apiError.message || 'Error al crear venta');
+      } else {
+        showNotification.error('Por favor, corrige los errores en el formulario.');
+      }
+      
+      throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Actualizar venta
   const updateVenta = useCallback(async (id, ventaData) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     
     try {
       const response = await ventasAPI.actualizar(id, ventaData);
-      // No mostrar notificación aquí - se maneja en el componente
+      showNotification.success('Venta actualizada exitosamente');
       return response;
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Error al actualizar venta';
-      setError(errorMessage);
-      showNotification.error(errorMessage);
-      throw err;
+      const apiError = handleApiError(err);
+      setError(apiError);
+      
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
+        showNotification.error(apiError.message || 'Error al actualizar venta');
+      } else {
+        showNotification.error('Por favor, corrige los errores en el formulario.');
+      }
+      
+      throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Manejar acciones de venta (eliminar, restaurar, etc.)
   const handleVentaAction = useCallback(async (ventaId, actionType) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     
@@ -126,35 +157,39 @@ export const useVentas = () => {
       
       return response;
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          `Error al ${actionType} venta`;
-      setError(errorMessage);
-      showNotification.error(errorMessage);
-      throw err;
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification.error(apiError.message || `Error al ${actionType} venta`);
+      throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
-  // Cambiar estado de venta
+  // Cambiar estado de venta (delegada desde updateVenta o acción separada)
   const cambiarEstadoVenta = useCallback(async (ventaId, nuevoEstado) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     
     try {
       const response = await ventasAPI.cambiarEstado(ventaId, nuevoEstado);
-      showNotification.success(`Estado cambiado a ${nuevoEstado}`);
+      showNotification.success(`Estado de venta cambiado exitosamente`);
       return response;
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Error al cambiar estado de venta';
-      setError(errorMessage);
-      showNotification.error(errorMessage);
-      throw err;
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification.error(apiError.message || 'Error al cambiar estado de venta');
+      throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
@@ -177,6 +212,12 @@ export const useVentas = () => {
 
   // Generar reporte
   const generarReporte = useCallback(async (fechaInicio, fechaFin, formato = 'json') => {
+    if (operationInProgress.current) {
+      showNotification.warning('Generando reporte, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     
@@ -185,14 +226,13 @@ export const useVentas = () => {
       showNotification.success('Reporte generado exitosamente');
       return response;
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 
-                          err.response?.data?.error || 
-                          'Error al generar reporte';
-      setError(errorMessage);
-      showNotification.error(errorMessage);
-      throw err;
+      const apiError = handleApiError(err);
+      setError(apiError);
+      showNotification.error(apiError.message || 'Error al generar reporte');
+      throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 

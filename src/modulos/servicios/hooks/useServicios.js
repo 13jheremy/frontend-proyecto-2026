@@ -17,6 +17,9 @@ export const useServicios = () => {
     totalPages: 0,
   });
 
+  // Ref para evitar operaciones concurrentes
+  const operationInProgress = useRef(false);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -56,8 +59,6 @@ export const useServicios = () => {
       };
 
       const data = await servicioApi.getServicios(params);
-      
-      console.log("📥 fetchServicios - Respuesta completa:", data);
 
       if (data && data.results) {
         const totalItems = data.count || 0;
@@ -87,13 +88,22 @@ export const useServicios = () => {
       setError(apiError); // Almacenar el objeto de error completo
       setServicios([]);
       setPagination({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 });
+      // Mostrar notificación de error solo para fetch (no duplica porque no se llama desde otro handler)
+      showNotification.error(apiError.message || 'Error al cargar servicios');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Crear servicio
+  // Crear servicio — NO muestra toast de éxito aquí, se delega al caller
+  // SOLO maneja errores de API y los propaga con fieldErrors
   const createServicio = useCallback(async (servicioData) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -105,18 +115,30 @@ export const useServicios = () => {
       const apiError = handleApiError(err);
       setError(apiError); // Almacenar el objeto de error completo
 
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        showNotification.error(apiError.message);
+      // Solo mostrar toast de error si NO hay errores de campo específicos
+      // (los errores de campo se muestran inline en el formulario)
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
+        showNotification.error(apiError.message || serviceMessages.error);
+      } else {
+        // Si hay errores de campo, mostrar un toast genérico una sola vez
+        showNotification.error('Por favor, corrige los errores en el formulario.');
       }
 
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Actualizar servicio
   const updateServicio = useCallback(async (id, servicioData) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -128,18 +150,28 @@ export const useServicios = () => {
       const apiError = handleApiError(err);
       setError(apiError); // Almacenar el objeto de error completo
 
-      if (Object.keys(apiError.fieldErrors).length === 0) {
-        showNotification.error(apiError.message);
+      // Solo mostrar toast de error si NO hay errores de campo específicos
+      if (!apiError.fieldErrors || Object.keys(apiError.fieldErrors).length === 0) {
+        showNotification.error(apiError.message || serviceMessages.error);
+      } else {
+        showNotification.error('Por favor, corrige los errores en el formulario.');
       }
 
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Eliminación temporal
   const softDeleteServicio = useCallback(async (id) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -149,14 +181,22 @@ export const useServicios = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message || 'Error al eliminar el servicio');
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Restaurar servicio
   const restoreServicio = useCallback(async (id) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -166,14 +206,22 @@ export const useServicios = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message || 'Error al restaurar el servicio');
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Toggle estado activo
   const toggleServicioActivo = useCallback(async (id, activo) => {
+    if (operationInProgress.current) {
+      showNotification.warning('Ya hay una operación en curso, espere un momento...');
+      return;
+    }
+
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
 
@@ -184,13 +232,16 @@ export const useServicios = () => {
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError);
+      showNotification.error(apiError.message || 'Error al cambiar el estado del servicio');
       throw apiError;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
   // Función unificada para manejar acciones de servicio
+  // NO muestra toasts propios — los delega a las funciones individuales
   const handleServicioAction = useCallback(async (servicioId, actionType, additionalData = null) => {
     try {
       switch (actionType) {
@@ -204,13 +255,17 @@ export const useServicios = () => {
           const servicio = servicios.find(s => s.id === servicioId);
           if (servicio) {
             await toggleServicioActivo(servicioId, !servicio.activo);
+          } else {
+            showNotification.error('No se encontró el servicio para realizar la acción.');
           }
           break;
         default:
+          showNotification.error(`Acción no reconocida: ${actionType}`);
           throw new Error(`Acción no reconocida: ${actionType}`);
       }
     } catch (err) {
-      console.error(`Error en acción ${actionType}:`, err);
+      // No mostrar toast aquí — ya se mostró en la función individual
+      // Solo propagar el error al caller
       throw err;
     }
   }, [servicios, softDeleteServicio, restoreServicio, toggleServicioActivo]);

@@ -1,6 +1,7 @@
 // src/modulos/inventario/hooks/useLotes.js
 import { useState, useEffect, useCallback } from 'react';
 import { lotesApi } from '../api/lotes';
+import { productsAPI } from '../../../services/api';
 import { showNotification } from '../../../utils/notifications';
 import { handleApiError } from '../../../utils/apiErrorHandlers';
 
@@ -150,6 +151,30 @@ export const useLotes = () => {
     }
   }, []);
 
+  // Buscar productos para selector
+  const buscarProductos = useCallback(async (query = '') => {
+    try {
+      const data = await productsAPI.search(query, { activo: true });
+      return data.results || data;
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      throw apiError;
+    }
+  }, []);
+
+  // Obtener todos los productos activos
+  const fetchProductosActivos = useCallback(async () => {
+    try {
+      const data = await productsAPI.getActive({ page_size: 100 });
+      return data.results || data;
+    } catch (err) {
+      const apiError = handleApiError(err);
+      setError(apiError);
+      throw apiError;
+    }
+  }, []);
+
   // Inicialización
   useEffect(() => {
     fetchLotes();
@@ -169,6 +194,10 @@ export const useLotes = () => {
     deleteLote,
     fetchLotesPorProducto,
     fetchEstadisticas,
+
+    // Funciones de productos
+    buscarProductos,
+    fetchProductosActivos,
 
     // Utilidades
     clearError,
