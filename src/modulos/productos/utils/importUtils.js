@@ -87,10 +87,6 @@ export const validarProductosImportacion = (productos) => {
     const errors = [];
     
     // Validar campos requeridos
-    if (!producto.codigo || producto.codigo.trim() === '') {
-      errors.push('Código es requerido');
-    }
-    
     if (!producto.nombre || producto.nombre.trim() === '') {
       errors.push('Nombre es requerido');
     }
@@ -139,7 +135,6 @@ export const validarProductosImportacion = (productos) => {
 export const convertirParaAPI = (productos) => {
   return productos.map(p => ({
     nombre: p.nombre,
-    codigo: p.codigo,
     descripcion: p.descripcion || '',
     categoria: p.categoria, // Puede ser nombre o ID
     proveedor: p.proveedor || null, // Puede ser nombre o ID
@@ -158,7 +153,6 @@ export const convertirParaAPI = (productos) => {
  */
 export const generarPlantillaCSV = () => {
   const headers = [
-    'codigo',
     'nombre',
     'descripcion',
     'categoria',
@@ -172,7 +166,6 @@ export const generarPlantillaCSV = () => {
   ];
   
   const exampleRow = [
-    'PROD-001',
     'Nombre del producto',
     'Descripción del producto',
     'Motor y componentes',

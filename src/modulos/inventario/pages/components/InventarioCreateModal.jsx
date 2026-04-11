@@ -137,7 +137,7 @@ const InventarioCreateModal = ({ isOpen, onClose, onCreate, loading = false, api
             <option value="">Seleccionar producto...</option>
             {productos.map((producto) => (
               <option key={producto.id} value={producto.id}>
-                {producto.nombre} - {producto.codigo}
+                {producto.nombre}
               </option>
             ))}
           </select>

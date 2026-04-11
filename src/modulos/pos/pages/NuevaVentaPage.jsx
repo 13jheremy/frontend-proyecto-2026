@@ -290,11 +290,6 @@ const NuevaVentaPage = () => {
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             Bs. {item.producto?.precio_venta || '0.00'} c/u
                           </p>
-                          {item.producto?.codigo && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">
-                              Código: {item.producto.codigo}
-                            </p>
-                          )}
                         </div>
                       </div>
                       

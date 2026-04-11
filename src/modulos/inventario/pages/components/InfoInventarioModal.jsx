@@ -72,16 +72,6 @@ const InfoInventarioModal = ({ isOpen, onClose, inventario }) => {
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                <FontAwesomeIcon icon={faBarcode} className="mr-1" />
-                Código
-              </label>
-              <p className="text-sm text-gray-900 dark:text-white">
-                {inventario.producto_codigo || inventario.producto?.codigo || 'N/A'}
-              </p>
-            </div>
-
             {(inventario.producto?.categoria || inventario.categoria_nombre) && (
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -253,7 +243,6 @@ InfoInventarioModal.propTypes = {
     id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     producto: PropTypes.shape({
       nombre: PropTypes.string,
-      codigo: PropTypes.string,
       descripcion: PropTypes.string,
       categoria: PropTypes.shape({
         nombre: PropTypes.string

@@ -86,9 +86,6 @@ const MovimientoTable = ({
               Producto
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Código
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Tipo
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -114,11 +111,6 @@ const MovimientoTable = ({
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {movimiento.producto_nombre || 'N/A'}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {movimiento.producto_codigo || 'N/A'}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -212,7 +204,6 @@ MovimientoTable.propTypes = {
         })
       ]),
       producto_nombre: PropTypes.string,
-      producto_codigo: PropTypes.string,
       usuario_nombre: PropTypes.string,
       tipo: PropTypes.string.isRequired,
       cantidad: PropTypes.number.isRequired,

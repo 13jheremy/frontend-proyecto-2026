@@ -98,9 +98,6 @@ const ProductActionModal = ({ isOpen, onClose, producto, actionType, onConfirm }
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {producto.nombre}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Código: {producto.codigo}
-              </div>
               {producto.categoria_nombre && (
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   Categoría: {producto.categoria_nombre}
@@ -158,7 +155,6 @@ ProductActionModal.propTypes = {
   producto: PropTypes.shape({
     id: PropTypes.number.isRequired,
     nombre: PropTypes.string.isRequired,
-    codigo: PropTypes.string.isRequired,
     activo: PropTypes.bool.isRequired,
     imagen_url: PropTypes.string,
     categoria_nombre: PropTypes.string,

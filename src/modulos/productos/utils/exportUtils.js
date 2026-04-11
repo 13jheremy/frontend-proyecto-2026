@@ -25,7 +25,6 @@ export const generarPDFProductos = (productos, titulo = 'Reporte de Productos') 
   
   // Preparar datos para la tabla
   const tableColumns = [
-    { header: 'Código', dataKey: 'codigo' },
     { header: 'Producto', dataKey: 'nombre' },
     { header: 'Categoría', dataKey: 'categoria_nombre' },
     { header: 'Proveedor', dataKey: 'proveedor_nombre' },
@@ -36,7 +35,6 @@ export const generarPDFProductos = (productos, titulo = 'Reporte de Productos') 
   ];
   
   const tableRows = productos.map(p => ({
-    codigo: p.codigo || 'N/A',
     nombre: p.nombre || 'N/A',
     categoria_nombre: p.categoria_nombre || 'N/A',
     proveedor_nombre: p.proveedor_nombre || 'N/A',
@@ -83,8 +81,7 @@ export const generarPDFProductos = (productos, titulo = 'Reporte de Productos') 
  */
 export const exportarCSVProductos = (productos, filename = 'productos.csv') => {
   const headers = [
-    'Código',
-    'Nombre',
+    'Producto',
     'Descripción',
     'Categoría',
     'Proveedor',
@@ -97,7 +94,6 @@ export const exportarCSVProductos = (productos, filename = 'productos.csv') => {
   ];
   
   const rows = productos.map(p => [
-    p.codigo || '',
     p.nombre || '',
     p.descripcion || '',
     p.categoria_nombre || '',
@@ -149,7 +145,6 @@ export const generarPDFInventario = (inventario, titulo = 'Reporte de Inventario
   doc.line(20, 50, 190, 50);
   
   const tableColumns = [
-    { header: 'Código', dataKey: 'codigo' },
     { header: 'Producto', dataKey: 'nombre' },
     { header: 'Categoría', dataKey: 'categoria' },
     { header: 'Stock', dataKey: 'stock_actual' },
@@ -158,7 +153,6 @@ export const generarPDFInventario = (inventario, titulo = 'Reporte de Inventario
   ];
   
   const tableRows = inventario.map(item => ({
-    codigo: item.producto_codigo || 'N/A',
     nombre: item.producto_nombre || 'N/A',
     categoria: item.categoria_nombre || 'N/A',
     stock_actual: item.stock_actual || 0,

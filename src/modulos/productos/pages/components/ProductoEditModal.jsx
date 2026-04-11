@@ -24,7 +24,6 @@ import {
 const ProductoEditModal = ({ isOpen, onClose, onUpdate, currentProducto, loading, apiError, categorias, proveedores }) => {
   const [formData, setFormData] = useState({
     nombre: '',
-    codigo: '',
     descripcion: '',
     categoria: '',
     proveedor: '',
@@ -46,13 +45,12 @@ const ProductoEditModal = ({ isOpen, onClose, onUpdate, currentProducto, loading
       const producto = currentProducto;
       setFormData({
         nombre: producto.nombre || '',
-        codigo: producto.codigo || '',
         descripcion: producto.descripcion || '',
         categoria: producto.categoria || '',
         proveedor: producto.proveedor || '',
         precio_compra: producto.precio_compra || '',
         precio_venta: producto.precio_venta || '',
-        imagen: null, // No cargamos la imagen existente aquí
+        imagen: null,
         destacado: Boolean(producto.destacado),
         activo: Boolean(producto.activo),
       });
@@ -145,10 +143,6 @@ const ProductoEditModal = ({ isOpen, onClose, onUpdate, currentProducto, loading
       errors.nombre = 'El nombre es requerido';
     }
     
-    if (!formData.codigo.trim()) {
-      errors.codigo = 'El código es requerido';
-    }
-    
     if (!formData.categoria) {
       errors.categoria = 'La categoría es requerida';
     }
@@ -230,27 +224,6 @@ const ProductoEditModal = ({ isOpen, onClose, onUpdate, currentProducto, loading
             />
             {formErrors.nombre && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.nombre}</p>
-            )}
-          </div>
-
-          {/* Código */}
-          <div>
-            <label htmlFor="codigo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <FontAwesomeIcon icon={faBarcode} className="mr-2 text-gray-500" />
-              Código *
-            </label>
-            <input
-              type="text"
-              name="codigo"
-              id="codigo"
-              value={formData.codigo}
-              onChange={handleChange}
-              disabled={loading}
-              className={`mt-1 block w-full border ${formErrors.codigo ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 disabled:opacity-75 disabled:cursor-not-allowed`}
-              placeholder="Código único del producto"
-            />
-            {formErrors.codigo && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{formErrors.codigo}</p>
             )}
           </div>
 

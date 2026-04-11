@@ -154,7 +154,7 @@ const MovimientoCreateModal = ({ isOpen, onClose, onCreate, loading = false, api
             <option value="">Seleccionar inventario</option>
             {inventarios.map((inventario) => (
               <option key={inventario.id} value={inventario.id}>
-                {inventario.producto_nombre || inventario.producto?.nombre || 'Producto sin nombre'} - {inventario.producto_codigo || inventario.producto?.codigo || 'Sin código'} - Stock: {inventario.stock_actual}
+                {inventario.producto_nombre || inventario.producto?.nombre || 'Producto sin nombre'} - Stock: {inventario.stock_actual}
               </option>
             ))}
           </select>
@@ -177,9 +177,6 @@ const MovimientoCreateModal = ({ isOpen, onClose, onCreate, loading = false, api
               Información del Producto
             </h3>
             <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-              <div>
-                <span className="font-medium">Código:</span> {inventarioSeleccionado.producto_codigo || inventarioSeleccionado.producto?.codigo || 'N/A'}
-              </div>
               <div>
                 <span className="font-medium">Stock actual:</span> {inventarioSeleccionado.stock_actual}
               </div>

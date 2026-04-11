@@ -40,10 +40,6 @@ const InfoProductModal = ({ isOpen, onClose, producto }) => {
           )}
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">{producto.nombre}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              <FontAwesomeIcon icon={faBarcode} className="mr-1" />
-              Código: {producto.codigo}
-            </p>
           </div>
         </div>
 
@@ -197,7 +193,6 @@ InfoProductModal.propTypes = {
   producto: PropTypes.shape({
     id: PropTypes.number.isRequired,
     nombre: PropTypes.string.isRequired,
-    codigo: PropTypes.string.isRequired,
     descripcion: PropTypes.string,
     categoria: PropTypes.number,
     categoria_nombre: PropTypes.string,

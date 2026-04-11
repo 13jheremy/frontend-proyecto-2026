@@ -170,9 +170,6 @@ const InventarioEditModal = ({ isOpen, onClose, onUpdate, currentInventario, loa
             <div className="font-medium">
               {currentInventario.producto_nombre || currentInventario.producto?.nombre || 'Producto sin nombre'}
             </div>
-            <div className="text-gray-500 dark:text-gray-400">
-              Código: {currentInventario.producto_codigo || currentInventario.producto?.codigo || 'N/A'}
-            </div>
             {(currentInventario.producto?.categoria || currentInventario.categoria_nombre) && (
               <div className="text-gray-500 dark:text-gray-400">
                 Categoría: {currentInventario.producto?.categoria?.nombre || currentInventario.categoria_nombre || 'N/A'}

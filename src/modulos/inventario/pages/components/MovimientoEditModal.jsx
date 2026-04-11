@@ -115,12 +115,6 @@ const MovimientoEditModal = ({ isOpen, onClose, onUpdate, currentMovimiento, loa
                 {currentMovimiento.producto_nombre || 'N/A'}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Código</p>
-              <p className="text-sm text-gray-900 dark:text-white">
-                {currentMovimiento.producto_codigo || 'N/A'}
-              </p>
-            </div>
           </div>
         </div>
 
@@ -271,7 +265,6 @@ MovimientoEditModal.propTypes = {
     inventario: PropTypes.shape({
       producto: PropTypes.shape({
         nombre: PropTypes.string,
-        codigo: PropTypes.string,
       })
     }),
     tipo: PropTypes.string,

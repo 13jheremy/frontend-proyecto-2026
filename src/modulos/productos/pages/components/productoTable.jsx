@@ -99,16 +99,6 @@ const ProductoTable = ({
                 </div>
               </td>
 
-              {/* Código */}
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faBarcode} className="mr-2 text-gray-500" />
-                  <span className="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-900 dark:text-gray-100">
-                    {producto.codigo}
-                  </span>
-                </div>
-              </td>
-
               {/* Precios */}
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                 <div className="space-y-1">
@@ -267,7 +257,7 @@ ProductoTable.propTypes = {
     PropTypes.shape({
       id: PropTypes.number.isRequired,
       nombre: PropTypes.string.isRequired,
-      codigo: PropTypes.string.isRequired,
+      nombre: PropTypes.string.isRequired,
       precio_compra: PropTypes.number,
       precio_venta: PropTypes.number,
       activo: PropTypes.bool.isRequired,

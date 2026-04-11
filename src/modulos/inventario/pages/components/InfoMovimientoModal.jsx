@@ -56,16 +56,6 @@ const InfoMovimientoModal = ({ isOpen, onClose, movimiento }) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                <FontAwesomeIcon icon={faBarcode} className="mr-1" />
-                Código del Producto
-              </label>
-              <p className="text-sm text-gray-900 dark:text-white">
-                {movimiento.producto_codigo || 'N/A'}
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                 <FontAwesomeIcon icon={faUser} className="mr-1" />
                 ID Usuario
               </label>
@@ -229,7 +219,6 @@ InfoMovimientoModal.propTypes = {
     inventario: PropTypes.shape({
       producto: PropTypes.shape({
         nombre: PropTypes.string,
-        codigo: PropTypes.string,
         categoria: PropTypes.shape({
           nombre: PropTypes.string
         })

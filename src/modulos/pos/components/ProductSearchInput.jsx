@@ -190,9 +190,6 @@ const ProductSearchInput = ({ onProductSelect, placeholder = "Buscar productos p
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
                         <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {producto.codigo}
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-300 truncate">
                           {producto.nombre}
                         </span>
                       </div>

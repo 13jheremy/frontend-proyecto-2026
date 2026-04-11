@@ -98,9 +98,6 @@ const InventarioTable = ({
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {inventario.producto_nombre || inventario.producto?.nombre || 'Producto sin nombre'}
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Código: {inventario.producto_codigo || 'N/A'}
-                    </div>
                     <div className="text-xs text-gray-400 dark:text-gray-500">
                       ID Inventario: {inventario.id}
                     </div>
@@ -195,15 +192,14 @@ InventarioTable.propTypes = {
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
       producto: PropTypes.oneOfType([
-        PropTypes.number,
-        PropTypes.shape({
-          id: PropTypes.number,
-          nombre: PropTypes.string,
-          codigo: PropTypes.string,
-          categoria: PropTypes.shape({
-            nombre: PropTypes.string
-          })
+      PropTypes.number,
+      PropTypes.shape({
+        id: PropTypes.number,
+        nombre: PropTypes.string,
+        categoria: PropTypes.shape({
+          nombre: PropTypes.string
         })
+      })
       ]),
       producto_nombre: PropTypes.string,
       stock_actual: PropTypes.number.isRequired,
