@@ -1,5 +1,5 @@
 // src/modulos/mantenimiento/hooks/useMantenimientos.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { mantenimientoApi } from '../api/mantenimiento';
 import { handleMantenimientoError } from '../utils/apiErrorHandlers';
 import { showNotification, mantenimientoMessages } from '../../../utils/notifications';
@@ -18,6 +18,8 @@ export const useMantenimientos = () => {
     current_page: 1,
     total_pages: 1
   });
+
+  const operationInProgress = useRef(false);
 
   /**
    * Obtener lista de mantenimientos con filtros.
@@ -83,21 +85,13 @@ export const useMantenimientos = () => {
    * Crear nuevo mantenimiento.
    */
   const createMantenimiento = useCallback(async (mantenimientoData) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
-      // DEBUG: Ver datos recibidos del formulario
-      console.log('=== DEBUG HOOK: Datos recibidos del formulario ===');
-      console.log('mantenimientoData:', JSON.stringify(mantenimientoData, null, 2));
-      console.log('=================================================');
       const response = await mantenimientoApi.createMantenimiento(mantenimientoData);
       
-      // DEBUG: Ver respuesta del backend
-      console.log('=== DEBUG HOOK: Respuesta del backend ===');
-      console.log('response:', response);
-      console.log('==========================================');
-      
-      // La API retorna { success: true, data: {...}, status: 200 }
       const newMantenimiento = response.data || response;
       
       setMantenimientos((prev) => [newMantenimiento, ...prev]);
@@ -106,9 +100,7 @@ export const useMantenimientos = () => {
         count: prev.count + 1
       }));
       
-      // Mostrar notificación de éxito
       showNotification.success(mantenimientoMessages.created);
-      
       return newMantenimiento;
     } catch (err) {
       const errorInfo = handleMantenimientoError(err);
@@ -117,6 +109,7 @@ export const useMantenimientos = () => {
       throw err;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
@@ -124,6 +117,8 @@ export const useMantenimientos = () => {
    * Actualizar mantenimiento existente.
    */
   const updateMantenimiento = useCallback(async (id, mantenimientoData) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -132,9 +127,7 @@ export const useMantenimientos = () => {
         prev.map((m) => (m.id === id ? updatedMantenimiento : m))
       );
       
-      // Mostrar notificación de éxito
       showNotification.success(mantenimientoMessages.updated);
-      
       return updatedMantenimiento;
     } catch (err) {
       const errorInfo = handleMantenimientoError(err);
@@ -143,6 +136,7 @@ export const useMantenimientos = () => {
       throw err;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 
@@ -176,6 +170,8 @@ export const useMantenimientos = () => {
    * Cambiar estado del mantenimiento.
    */
   const cambiarEstadoMantenimiento = useCallback(async (id, nuevoEstado) => {
+    if (operationInProgress.current) return;
+    operationInProgress.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -191,6 +187,7 @@ export const useMantenimientos = () => {
       throw err;
     } finally {
       setLoading(false);
+      operationInProgress.current = false;
     }
   }, []);
 

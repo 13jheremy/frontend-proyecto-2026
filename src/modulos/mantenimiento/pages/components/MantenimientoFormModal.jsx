@@ -64,6 +64,7 @@ const MantenimientoFormModal = ({
   const [servicioQuery, setServicioQuery] = useState('');
   const [serviciosDisponibles, setServiciosDisponibles] = useState([]);
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null); // Backend API errors state
   const [containerWidth, setContainerWidth] = useState(0);
   const [gridConfig, setGridConfig] = useState({ cols: 1, itemWidth: '100%' });
 
@@ -246,6 +247,7 @@ const MantenimientoFormModal = ({
     setServicios([]);
     setRepuestos([]);
     setErrors({});
+    setApiError(null);
     setAceiteData({
       tipo_aceite: '',
       tipo_recordatorio: 'km',
@@ -275,11 +277,20 @@ const MantenimientoFormModal = ({
       [field]: value
     }));
 
-    // Limpiar error del campo
+    // Limpiar error local y de API
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
         [field]: null
+      }));
+    }
+    if (apiError && apiError.type === 'validation' && apiError.errors && apiError.errors[field]) {
+      setApiError(prev => ({
+        ...prev,
+        errors: {
+          ...prev.errors,
+          [field]: null
+        }
       }));
     }
   };
@@ -468,8 +479,9 @@ const MantenimientoFormModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError(null);
     
     if (!validateForm()) {
       toast.error('Por favor corrige los errores en el formulario');
@@ -541,14 +553,41 @@ const MantenimientoFormModal = ({
 
     // DEBUG: Ver qué se está enviando al backend
     console.log('=== DEBUG: Datos enviados al backend ===');
-    console.log('formData:', formData);
-    console.log('servicios:', servicios);
-    console.log('repuestos:', repuestos);
-    console.log('aceiteData:', aceiteData);
     console.log('submitData completo:', JSON.stringify(submitData, null, 2));
-    console.log('===========================================');
 
-    onSubmit(submitData);
+    try {
+      await onSubmit(submitData);
+      // Se asume que onSubmit llama a la página, que a su vez llama a crear/actualizar en el hook.
+      // Si todo va bien, no lanzará error y podemos cerrar
+      onClose(); 
+    } catch (error) {
+      console.error("Error capturado en el formulario:", error);
+      
+      // Intentar obtener los detalles de error de la API
+      if (error.response && error.response.data) {
+        const errorData = error.response.data;
+        console.log("Error detallado de API:", errorData);
+        
+        // Si hay errores de campos específicos
+        if (typeof errorData === 'object' && !errorData.detail && !errorData.error) {
+          setApiError({
+            type: 'validation',
+            message: 'Por favor, corrige los errores en los campos marcados.',
+            errors: errorData
+          });
+        } else {
+          setApiError({
+            type: 'general',
+            message: errorData.detail || errorData.error || 'Ocurrió un error al procesar la solicitud.',
+          });
+        }
+      } else {
+        setApiError({
+          type: 'general',
+          message: error.message || 'Error de conexión con el servidor.',
+        });
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -568,6 +607,16 @@ const MantenimientoFormModal = ({
           </button>
         </div>
 
+        {apiError && apiError.type === 'general' && (
+          <div className="mx-6 mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-sm flex items-start">
+            <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">Error al guardar</p>
+              <p className="text-sm">{apiError.message}</p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Información básica */}
           <div className={`grid ${getGridClasses(2)} gap-4`} style={getDynamicStyle(2)}>
@@ -579,7 +628,7 @@ const MantenimientoFormModal = ({
               <MotoSearchInput
                 value={formData.moto}
                 onSelect={handleMotoSelect}
-                error={errors.moto}
+                error={errors.moto || (apiError?.errors?.moto ? apiError.errors.moto[0] : null)}
                 required
               />
             </div>
@@ -609,10 +658,13 @@ const MantenimientoFormModal = ({
               <TecnicoSearchInput
                 value={formData.tecnico_asignado}
                 onSelect={(tecnico) => handleInputChange('tecnico_asignado', tecnico)}
-                error={errors.tecnico_asignado}
+                error={errors.tecnico_asignado || (apiError?.errors?.tecnico_asignado ? apiError.errors.tecnico_asignado[0] : null)}
               />
               {errors.tecnico_asignado && (
                 <p className="mt-1 text-sm text-red-600">{errors.tecnico_asignado}</p>
+              )}
+              {apiError?.errors?.tecnico_asignado && (
+                <p className="mt-1 text-sm text-red-600">{apiError.errors.tecnico_asignado[0]}</p>
               )}
             </div>
 
@@ -626,12 +678,15 @@ const MantenimientoFormModal = ({
                 value={formData.fecha_ingreso}
                 onChange={(e) => handleInputChange('fecha_ingreso', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.fecha_ingreso ? 'border-red-300' : 'border-gray-300'
+                  errors.fecha_ingreso || apiError?.errors?.fecha_ingreso ? 'border-red-300' : 'border-gray-300'
                 }`}
                 required
               />
               {errors.fecha_ingreso && (
                 <p className="mt-1 text-sm text-red-600">{errors.fecha_ingreso}</p>
+              )}
+              {apiError?.errors?.fecha_ingreso && (
+                <p className="mt-1 text-sm text-red-600">{apiError.errors.fecha_ingreso[0]}</p>
               )}
             </div>
 
@@ -644,8 +699,13 @@ const MantenimientoFormModal = ({
                 type="datetime-local"
                 value={formData.fecha_entrega}
                 onChange={(e) => handleInputChange('fecha_entrega', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                  apiError?.errors?.fecha_entrega ? 'border-red-300' : 'border-gray-300'
+                }`}
               />
+              {apiError?.errors?.fecha_entrega && (
+                <p className="mt-1 text-sm text-red-600">{apiError.errors.fecha_entrega[0]}</p>
+              )}
             </div>
 
             <div>
@@ -658,7 +718,7 @@ const MantenimientoFormModal = ({
                 value={formData.kilometraje_ingreso}
                 onChange={(e) => handleInputChange('kilometraje_ingreso', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.kilometraje_ingreso ? 'border-red-300' : 'border-gray-300'
+                  errors.kilometraje_ingreso || apiError?.errors?.kilometraje_ingreso ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="0"
                 min="0"
@@ -666,6 +726,9 @@ const MantenimientoFormModal = ({
               />
               {errors.kilometraje_ingreso && (
                 <p className="mt-1 text-sm text-red-600">{errors.kilometraje_ingreso}</p>
+              )}
+              {apiError?.errors?.kilometraje_ingreso && (
+                <p className="mt-1 text-sm text-red-600">{apiError.errors.kilometraje_ingreso[0]}</p>
               )}
             </div>
 
@@ -721,13 +784,16 @@ const MantenimientoFormModal = ({
               onChange={(e) => handleInputChange('descripcion_problema', e.target.value)}
               rows={3}
               className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                errors.descripcion_problema ? 'border-red-300' : 'border-gray-300'
+                errors.descripcion_problema || apiError?.errors?.descripcion_problema ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Describe el problema reportado por el cliente..."
               required
             />
             {errors.descripcion_problema && (
               <p className="mt-1 text-sm text-red-600">{errors.descripcion_problema}</p>
+            )}
+            {apiError?.errors?.descripcion_problema && (
+              <p className="mt-1 text-sm text-red-600">{apiError.errors.descripcion_problema[0]}</p>
             )}
           </div>
 

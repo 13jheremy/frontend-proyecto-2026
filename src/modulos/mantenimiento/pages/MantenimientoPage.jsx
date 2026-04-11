@@ -160,10 +160,10 @@ const MantenimientoPage = () => {
   const handleCreateMantenimiento = useCallback(async (mantenimientoData) => {
     try {
       await createMantenimiento(mantenimientoData);
-      setIsCreateModalOpen(false);
       fetchMantenimientos(filters, page, pageSize);
     } catch (err) {
       console.error("Error en handleCreateMantenimiento:", err);
+      throw err;
     }
   }, [createMantenimiento, fetchMantenimientos, filters, page, pageSize]);
 
@@ -171,11 +171,10 @@ const MantenimientoPage = () => {
   const handleUpdateMantenimiento = useCallback(async (id, mantenimientoData) => {
     try {
       await updateMantenimiento(id, mantenimientoData);
-      setIsEditModalOpen(false);
-      setCurrentMantenimiento(null);
       fetchMantenimientos(filters, page, pageSize);
     } catch (err) {
       console.error("Error en handleUpdateMantenimiento:", err);
+      throw err;
     }
   }, [updateMantenimiento, fetchMantenimientos, filters, page, pageSize]);
 
