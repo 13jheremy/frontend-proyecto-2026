@@ -380,10 +380,10 @@ const LotesPage = () => {
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
                           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                       }`}>
-                        <FontAwesomeIcon 
-                          icon={lote.cantidad_disponible > faBoxOpen : faExclamationTriangle} 
-                          className="mr-1" 
-                        />
+                          <FontAwesomeIcon 
+                            icon={lote.cantidad_disponible > 0 ? faBoxOpen : faExclamationTriangle} 
+                            className="mr-1" 
+                          />
                         {lote.cantidad_disponible}
                       </span>
                     </td>
