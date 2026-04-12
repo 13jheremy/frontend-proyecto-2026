@@ -46,6 +46,10 @@ const InfoProductModal = ({ isOpen, onClose, producto }) => {
         {/* Detalles principales */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+            <p className="font-semibold flex items-center"><FontAwesomeIcon icon={faTag} className="mr-2" />ID:</p>
+            <p className="ml-6 font-mono">{producto.id}</p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
             <p className="font-semibold flex items-center"><FontAwesomeIcon icon={faTag} className="mr-2" />Categoría:</p>
             <p className="ml-6">{producto.categoria_nombre || 'N/A'}</p>
           </div>
