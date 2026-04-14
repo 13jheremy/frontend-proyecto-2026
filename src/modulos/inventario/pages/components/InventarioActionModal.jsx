@@ -134,13 +134,18 @@ InventarioActionModal.propTypes = {
     id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
     producto_nombre: PropTypes.string,
     codigo: PropTypes.string,
-    producto: PropTypes.shape({
-      nombre: PropTypes.string,
-      codigo: PropTypes.string,
-      categoria: PropTypes.shape({
-        nombre: PropTypes.string
-      })
-    }),
+    producto: PropTypes.oneOfType([
+      PropTypes.shape({
+        id: PropTypes.number,
+        nombre: PropTypes.string,
+        codigo: PropTypes.string,
+        categoria: PropTypes.shape({
+          nombre: PropTypes.string
+        })
+      }),
+      PropTypes.number,
+      PropTypes.string
+    ]),
     stock_actual: PropTypes.number,
     stock_minimo: PropTypes.number,
     activo: PropTypes.bool,

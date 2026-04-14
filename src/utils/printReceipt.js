@@ -139,7 +139,7 @@ export const printReceipt = (venta) => {
           <span>${clienteNombre}</span>
         </div>
         <div class="info-row">
-          <span>C.C./NIT:</span>
+          <span>C.I.:</span>
           <span>${clienteCedula}</span>
         </div>
       </div>

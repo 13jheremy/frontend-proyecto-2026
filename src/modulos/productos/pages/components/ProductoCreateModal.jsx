@@ -20,7 +20,7 @@ import {
 /**
  * Modal para crear un nuevo producto.
  */
-const ProductoCreateModal = ({ isOpen, onClose, onCreate, loading, apiError, categorias, proveedores }) => {
+const ProductoCreateModal = ({ isOpen, onClose, onCreate, loading = false, apiError = null, categorias = [], proveedores = [] }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -499,16 +499,9 @@ ProductoCreateModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onCreate: PropTypes.func.isRequired,
   loading: PropTypes.bool,
-  apiError: PropTypes.object, // Cambiado a object para recibir el objeto completo
+  apiError: PropTypes.object,
   categorias: PropTypes.array,
   proveedores: PropTypes.array,
-};
-
-ProductoCreateModal.defaultProps = {
-  loading: false,
-  apiError: null,
-  categorias: [],
-  proveedores: [],
 };
 
 export default ProductoCreateModal;

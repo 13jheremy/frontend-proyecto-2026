@@ -106,7 +106,7 @@ const InventarioSearch = ({ filters = {}, setFilters, onSearch }) => {
       {/* Sección de filtros avanzados */}
       {showAdvanced && (
         <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Filtro por Stock Bajo */}
             <div>
@@ -123,31 +123,6 @@ const InventarioSearch = ({ filters = {}, setFilters, onSearch }) => {
                 <option value="false">Stock normal</option>
               </select>
             </div>
-
-            {/* Filtro por Rango de Stock */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Rango de Stock
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  placeholder="Mín"
-                  value={filters?.stock_min || ''}
-                  onChange={(e) => handleInputChange('stock_min', e.target.value)}
-                  min="0"
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                />
-                <input
-                  type="number"
-                  placeholder="Máx"
-                  value={filters?.stock_max || ''}
-                  onChange={(e) => handleInputChange('stock_max', e.target.value)}
-                  min="0"
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                />
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -162,62 +137,6 @@ const InventarioSearch = ({ filters = {}, setFilters, onSearch }) => {
                 type="button"
                 onClick={() => handleInputChange('search', '')}
                 className="ml-2 h-4 w-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
-              >
-                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-          
-          {filters.activo === 'true' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
-              <FontAwesomeIcon icon={faCheckCircle} className="mr-1 h-3 w-3" />
-              Activos
-              <button
-                type="button"
-                onClick={() => handleInputChange('activo', '')}
-                className="ml-2 h-4 w-4 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
-              >
-                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-
-          {filters.activo === 'false' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200">
-              <FontAwesomeIcon icon={faBan} className="mr-1 h-3 w-3" />
-              Inactivos
-              <button
-                type="button"
-                onClick={() => handleInputChange('activo', '')}
-                className="ml-2 h-4 w-4 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
-              >
-                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-
-          {filters.eliminado === 'true' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
-              <FontAwesomeIcon icon={faTrash} className="mr-1 h-3 w-3" />
-              Eliminados
-              <button
-                type="button"
-                onClick={() => handleInputChange('eliminado', '')}
-                className="ml-2 h-4 w-4 text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
-              >
-                <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
-              </button>
-            </span>
-          )}
-
-          {filters.eliminado === 'false' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
-              <FontAwesomeIcon icon={faEye} className="mr-1 h-3 w-3" />
-              No Eliminados
-              <button
-                type="button"
-                onClick={() => handleInputChange('eliminado', '')}
-                className="ml-2 h-4 w-4 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
               >
                 <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
               </button>

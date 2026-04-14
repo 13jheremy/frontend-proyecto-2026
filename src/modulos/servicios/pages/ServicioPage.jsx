@@ -375,17 +375,19 @@ const ServiciosPage = () => {
       />
 
       {/* Modal para confirmar acciones */}
-      <ServicioActionModal
-        isOpen={actionModalOpen}
-        onClose={() => {
-          setActionModalOpen(false);
-          setSelectedActionServicio(null);
-          setActionType(null);
-        }}
-        servicio={selectedActionServicio}
-        actionType={actionType}
-        onConfirm={handleConfirmAction}
-      />
+      {actionModalOpen && actionType && (
+        <ServicioActionModal
+          isOpen={actionModalOpen}
+          onClose={() => {
+            setActionModalOpen(false);
+            setSelectedActionServicio(null);
+            setActionType(null);
+          }}
+          servicio={selectedActionServicio}
+          actionType={actionType}
+          onConfirm={handleConfirmAction}
+        />
+      )}
 
       {/* Modal para ver información detallada del servicio */}
       <InfoServicioModal

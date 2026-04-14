@@ -262,7 +262,6 @@ ProductoTable.propTypes = {
     PropTypes.shape({
       id: PropTypes.number.isRequired,
       nombre: PropTypes.string.isRequired,
-      nombre: PropTypes.string.isRequired,
       precio_compra: PropTypes.number,
       precio_venta: PropTypes.number,
       activo: PropTypes.bool.isRequired,

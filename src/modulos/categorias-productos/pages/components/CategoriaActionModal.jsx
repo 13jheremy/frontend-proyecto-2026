@@ -158,8 +158,13 @@ CategoriaActionModal.propTypes = {
     descripcion: PropTypes.string,
     activo: PropTypes.bool.isRequired,
   }),
-  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']).isRequired,
+  actionType: PropTypes.oneOf(['softDelete', 'hardDelete', 'restore', 'toggleActivo']),
   onConfirm: PropTypes.func.isRequired,
+};
+
+CategoriaActionModal.defaultProps = {
+  categoria: null,
+  actionType: null,
 };
 
 export default CategoriaActionModal;

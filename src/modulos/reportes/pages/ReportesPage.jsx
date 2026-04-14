@@ -1,11 +1,9 @@
 // src/modulos/reportes/pages/ReportesPage.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faChartBar, 
   faSpinner, 
-  faDownload, 
-  faFileExport, 
   faSync,
   faFilePdf,
   faFileAlt,
@@ -13,7 +11,10 @@ import {
   faBox,
   faUsers,
   faTruck,
-  faExclamationTriangle
+  faExclamationTriangle,
+  faWarehouse,
+  faUserPlus,
+  faWrench
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../../context/AuthContext';
 import useReportes from '../hooks/useReportes';
@@ -24,25 +25,40 @@ import { toCSV, downloadCSV, exportJSON } from '../utils/exportUtils';
 import { BarChart, PieChart } from './components/Charts';
 import DataTable from './components/DataTable';
 import pdfService from '../../../services/pdfService';
+import FiltrosReportes from './components/FiltrosReportes';
+import ResumenReportes from './components/ResumenReportes';
+import TablaVentasDetalle from './components/TablaVentasDetalle';
+import TablaInventarioDetalle from './components/TablaInventarioDetalle';
+import TablaClientes from './components/TablaClientes';
+import TablaMantenimientosDetalle from './components/TablaMantenimientosDetalle';
 
 const ReportesPage = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('ventas');
   const {
     loading,
     error,
     stats,
     reporteVentas,
+    reporteVentasDetalle,
+    reporteInventarioDetalle,
+    reporteClientes,
     reporteProductos,
     reporteInventario,
     reporteMantenimientos,
+    reporteMantenimientosDetalle,
     reporteMotos,
     reporteProveedores,
     reporteUsuarios,
     fetchStats,
     fetchReporteVentas,
+    fetchReporteVentasDetalle,
+    fetchReporteInventarioDetalle,
+    fetchReporteClientes,
     fetchReporteProductos,
     fetchReporteInventario,
     fetchReporteMantenimientos,
+    fetchReporteMantenimientosDetalle,
     fetchReporteMotos,
     fetchReporteProveedores,
     fetchReporteUsuarios,
@@ -85,6 +101,22 @@ const ReportesPage = () => {
     fetchReporteVentas(params);
   };
 
+  const handleGenerarVentasDetalle = (params) => {
+    fetchReporteVentasDetalle(params);
+  };
+
+  const handleGenerarInventarioDetalle = (params) => {
+    fetchReporteInventarioDetalle(params);
+  };
+
+  const handleGenerarClientes = (params) => {
+    fetchReporteClientes(params);
+  };
+
+  const handleGenerarMantenimientosDetalle = (params) => {
+    fetchReporteMantenimientosDetalle(params);
+  };
+
   // PDF Export function
   const handleExportPDF = (type, data) => {
     if (!data) return;
@@ -119,6 +151,18 @@ const ReportesPage = () => {
       case 'motos':
         doc = pdfService.generarReporteMotos(data);
         filename = `reporte_motos_${timestamp}.pdf`;
+        break;
+      case 'ventas_detalle':
+        doc = pdfService.generarReporteVentasDetalle(data);
+        filename = `reporte_ventas_detalle_${timestamp}.pdf`;
+        break;
+      case 'inventario_detalle':
+        doc = pdfService.generarReporteInventarioDetalle(data);
+        filename = `reporte_inventario_detalle_${timestamp}.pdf`;
+        break;
+      case 'clientes':
+        doc = pdfService.generarReporteClientes(data);
+        filename = `reporte_clientes_${timestamp}.pdf`;
         break;
       default:
         return;
@@ -204,6 +248,216 @@ const ReportesPage = () => {
             iconColor="text-red-600"
             iconBgColor="bg-red-100 dark:bg-red-900"
           />
+        </div>
+
+        {/* Tabs de Reportes Detallados */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex flex-wrap gap-2 -mb-px">
+              <button
+                onClick={() => setActiveTab('ventas')}
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'ventas'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                <FontAwesomeIcon icon={faChartLine} className="mr-2" />
+                Ventas Detalle
+              </button>
+              <button
+                onClick={() => setActiveTab('inventario')}
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'inventario'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                <FontAwesomeIcon icon={faWarehouse} className="mr-2" />
+                Inventario
+              </button>
+              <button
+                onClick={() => setActiveTab('clientes')}
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'clientes'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+                Clientes
+              </button>
+              <button
+                onClick={() => setActiveTab('mantenimientos')}
+                className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'mantenimientos'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                <FontAwesomeIcon icon={faWrench} className="mr-2" />
+                Mantenimientos
+              </button>
+            </nav>
+          </div>
+
+          {/* Contenido de tabs */}
+          <div className="mt-4">
+            {activeTab === 'ventas' && (
+              <ReportCard
+                title="Reporte Detallado de Ventas"
+                icon={faChartLine}
+                iconColor="text-green-600 dark:text-green-400"
+                iconBgColor="bg-green-100 dark:bg-green-900"
+                loading={loading}
+                canExport={!!reporteVentasDetalle}
+                onExportPDF={reporteVentasDetalle ? () => handleExportPDF('ventas_detalle', reporteVentasDetalle) : null}
+                onExportJSON={reporteVentasDetalle ? () => exportJSON('reporte_ventas_detalle.json', reporteVentasDetalle) : null}
+                onExportCSV={reporteVentasDetalle ? () => downloadCSV('reporte_ventas_detalle.csv', toCSV(reporteVentasDetalle.ventas || [])) : null}
+              >
+                <div className="space-y-4">
+                  <FiltrosReportes
+                    onGenerate={handleGenerarVentasDetalle}
+                    loading={loading}
+                    tipo="ventas"
+                    showClientFilter={true}
+                    showProductFilter={true}
+                    showGroupBy={false}
+                    showExportButtons={false}
+                  />
+                  {error && (
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="text-sm text-red-600 dark:text-red-400">{error.message}</p>
+                    </div>
+                  )}
+                  {reporteVentasDetalle && (
+                    <>
+                      <ResumenReportes
+                        resumen={reporteVentasDetalle.resumen}
+                        titulo="Resumen de Ventas"
+                      />
+                      <TablaVentasDetalle ventas={reporteVentasDetalle.ventas || []} />
+                    </>
+                  )}
+                </div>
+              </ReportCard>
+            )}
+
+            {activeTab === 'inventario' && (
+              <ReportCard
+                title="Reporte de Inventario"
+                icon={faWarehouse}
+                iconColor="text-amber-600 dark:text-amber-400"
+                iconBgColor="bg-amber-100 dark:bg-amber-900"
+                loading={loading}
+                canExport={!!reporteInventarioDetalle}
+                onExportPDF={reporteInventarioDetalle ? () => handleExportPDF('inventario_detalle', reporteInventarioDetalle) : null}
+                onExportJSON={reporteInventarioDetalle ? () => exportJSON('reporte_inventario_detalle.json', reporteInventarioDetalle) : null}
+                onExportCSV={reporteInventarioDetalle ? () => downloadCSV('reporte_inventario_detalle.csv', toCSV(reporteInventarioDetalle.productos || [])) : null}
+              >
+                <div className="space-y-4">
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => handleGenerarInventarioDetalle({ incluir_lotes: true, stock_bajo: false })}
+                      className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      Ver Todo
+                    </button>
+                    <button
+                      onClick={() => handleGenerarInventarioDetalle({ incluir_lotes: true, stock_bajo: true })}
+                      className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    >
+                      Stock Bajo
+                    </button>
+                  </div>
+                  {reporteInventarioDetalle && (
+                    <>
+                      <ResumenReportes
+                        resumen={reporteInventarioDetalle.resumen}
+                        titulo="Resumen de Inventario"
+                      />
+                      <TablaInventarioDetalle productos={reporteInventarioDetalle.productos || []} />
+                    </>
+                  )}
+                </div>
+              </ReportCard>
+            )}
+
+            {activeTab === 'clientes' && (
+              <ReportCard
+                title="Reporte de Ventas por Cliente"
+                icon={faUserPlus}
+                iconColor="text-purple-600 dark:text-purple-400"
+                iconBgColor="bg-purple-100 dark:bg-purple-900"
+                loading={loading}
+                canExport={!!reporteClientes}
+                onExportPDF={reporteClientes ? () => handleExportPDF('clientes', reporteClientes) : null}
+                onExportJSON={reporteClientes ? () => exportJSON('reporte_clientes.json', reporteClientes) : null}
+                onExportCSV={reporteClientes ? () => downloadCSV('reporte_clientes.csv', toCSV(reporteClientes.clientes || [])) : null}
+              >
+                <div className="space-y-4">
+                  <FiltrosReportes
+                    onGenerate={handleGenerarClientes}
+                    loading={loading}
+                    tipo="clientes"
+                    showClientFilter={true}
+                    showProductFilter={false}
+                    showGroupBy={false}
+                    showExportButtons={false}
+                  />
+                  {reporteClientes && (
+                    <>
+                      <ResumenReportes
+                        resumen={reporteClientes.resumen}
+                        titulo="Resumen por Cliente"
+                      />
+                      <TablaClientes clientes={reporteClientes.clientes || []} />
+                    </>
+                  )}
+                </div>
+              </ReportCard>
+            )}
+
+            {activeTab === 'mantenimientos' && (
+              <ReportCard
+                title="Reporte Detallado de Mantenimientos"
+                icon={faWrench}
+                iconColor="text-amber-600 dark:text-amber-400"
+                iconBgColor="bg-amber-100 dark:bg-amber-900"
+                loading={loading}
+                canExport={!!reporteMantenimientosDetalle}
+                onExportPDF={reporteMantenimientosDetalle ? () => handleExportPDF('mantenimientos', reporteMantenimientosDetalle) : null}
+                onExportJSON={reporteMantenimientosDetalle ? () => exportJSON('reporte_mantenimientos_detalle.json', reporteMantenimientosDetalle) : null}
+                onExportCSV={reporteMantenimientosDetalle ? () => downloadCSV('reporte_mantenimientos_detalle.csv', toCSV(reporteMantenimientosDetalle.mantenimientos || [])) : null}
+              >
+                <div className="space-y-4">
+                  <FiltrosReportes
+                    onGenerate={handleGenerarMantenimientosDetalle}
+                    loading={loading}
+                    tipo="mantenimientos"
+                    showClientFilter={true}
+                    showProductFilter={false}
+                    showGroupBy={false}
+                    showExportButtons={false}
+                  />
+                  {error && (
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="text-sm text-red-600 dark:text-red-400">{error.message}</p>
+                    </div>
+                  )}
+                  {reporteMantenimientosDetalle && (
+                    <>
+                      <ResumenReportes
+                        resumen={reporteMantenimientosDetalle.resumen}
+                        titulo="Resumen de Mantenimientos"
+                      />
+                      <TablaMantenimientosDetalle mantenimientos={reporteMantenimientosDetalle.mantenimientos || []} />
+                    </>
+                  )}
+                </div>
+              </ReportCard>
+            )}
+          </div>
         </div>
 
         {/* Reporte de Ventas */}

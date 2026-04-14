@@ -208,6 +208,7 @@ const MantenimientoFormModal = ({
         estado: mantenimiento.estado || 'pendiente',
         kilometraje_ingreso: mantenimiento.kilometraje_ingreso || '',
         total: mantenimiento.total || '0.00',
+        adicional: mantenimiento.costo_adicional || '0.00',
         tecnico_asignado: tecnicoData
       });
       setServicios(mantenimiento.detalles || []);
@@ -242,6 +243,7 @@ const MantenimientoFormModal = ({
       estado: 'pendiente',
       kilometraje_ingreso: '',
       total: '0.00',
+      adicional: '0.00',
       tecnico_asignado: null
     });
     setServicios([]);
@@ -546,6 +548,8 @@ const MantenimientoFormModal = ({
       servicios: serviciosConAceite,
       // El backend espera repuestos_data
       repuestos_data: repuestos,
+      // Costo adicional - enviar como costo_adicional
+      costo_adicional: Number(formData.adicional) || 0,
       // No enviar fecha_entrega vacía - enviar null si está vacía
       ...(formData.fecha_entrega && formData.fecha_entrega.trim() !== '' && { fecha_entrega: formData.fecha_entrega }),
       ...(recordatorioData && { recordatorio: recordatorioData })

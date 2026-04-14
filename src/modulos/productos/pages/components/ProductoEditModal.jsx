@@ -21,7 +21,7 @@ import {
 /**
  * Modal para editar un producto existente.
  */
-const ProductoEditModal = ({ isOpen, onClose, onUpdate, currentProducto, loading, apiError, categorias, proveedores }) => {
+const ProductoEditModal = ({ isOpen, onClose, onUpdate, currentProducto = null, loading = false, apiError = null, categorias = [], proveedores = [] }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -483,17 +483,9 @@ ProductoEditModal.propTypes = {
   onUpdate: PropTypes.func.isRequired,
   currentProducto: PropTypes.object,
   loading: PropTypes.bool,
-  apiError: PropTypes.object, // Cambiado a object para recibir el objeto completo
+  apiError: PropTypes.object,
   categorias: PropTypes.array,
   proveedores: PropTypes.array,
-};
-
-ProductoEditModal.defaultProps = {
-  currentProducto: null,
-  loading: false,
-  apiError: null,
-  categorias: [],
-  proveedores: [],
 };
 
 export default ProductoEditModal;

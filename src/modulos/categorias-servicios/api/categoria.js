@@ -50,6 +50,9 @@ export const categoriaApi = {
       throw new Error(response.error);
     } catch (error) {
       console.error('Error en createCategoria:', error);
+      if (error.response) {
+        throw error;
+      }
       throw new Error(error.message || 'Error al crear categoría');
     }
   },
@@ -67,6 +70,9 @@ export const categoriaApi = {
       throw new Error(response.error);
     } catch (error) {
       console.error('Error en updateCategoria:', error);
+      if (error.response) {
+        throw error;
+      }
       throw new Error(error.message || 'Error al actualizar categoría');
     }
   },

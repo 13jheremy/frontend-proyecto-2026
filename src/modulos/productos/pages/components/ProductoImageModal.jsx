@@ -7,7 +7,7 @@ import { faTimes, faDownload, faExpand } from '@fortawesome/free-solid-svg-icons
 /**
  * Modal para mostrar la imagen del producto en tamaño completo.
  */
-const ProductoImageModal = ({ isOpen, onClose, imageUrl, productName }) => {
+const ProductoImageModal = ({ isOpen, onClose, imageUrl = null, productName = '' }) => {
   if (!isOpen || !imageUrl) return null;
 
   const handleDownload = () => {
@@ -96,11 +96,6 @@ ProductoImageModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   imageUrl: PropTypes.string,
   productName: PropTypes.string,
-};
-
-ProductoImageModal.defaultProps = {
-  imageUrl: null,
-  productName: '',
 };
 
 export default ProductoImageModal;

@@ -1,5 +1,5 @@
 // src/modulos/reportes/api/reportesAPI.js
-import api from '../../../services/api';
+import api from '@/services/api';
 
 export const reportesAPI = {
   obtenerDashboardStats: async () => {
@@ -10,6 +10,27 @@ export const reportesAPI = {
   generarReporteVentas: async ({ fecha_inicio, fecha_fin, formato = 'json', group_by = 'day' }) => {
     const { data } = await api.get('/reportes/ventas/', {
       params: { fecha_inicio, fecha_fin, formato, group_by },
+    });
+    return data;
+  },
+
+  obtenerReporteVentasDetalle: async ({ fecha_inicio, fecha_fin, cliente_id, producto_id }) => {
+    const { data } = await api.get('/reportes/ventas/detalle/', {
+      params: { fecha_inicio, fecha_fin, cliente_id, producto_id },
+    });
+    return data;
+  },
+
+  obtenerReporteInventarioDetalle: async ({ producto_id, incluir_lotes = true, stock_bajo = false }) => {
+    const { data } = await api.get('/reportes/inventario/detalle/', {
+      params: { producto_id, incluir_lotes, stock_bajo },
+    });
+    return data;
+  },
+
+  obtenerReporteClientes: async ({ fecha_inicio, fecha_fin, cliente_id, ordenar_por = 'total' }) => {
+    const { data } = await api.get('/reportes/clientes/', {
+      params: { fecha_inicio, fecha_fin, cliente_id, ordenar_por },
     });
     return data;
   },
@@ -26,6 +47,13 @@ export const reportesAPI = {
 
   obtenerReporteMantenimientos: async () => {
     const { data } = await api.get('/reportes/mantenimientos/');
+    return data;
+  },
+
+  obtenerReporteMantenimientosDetalle: async ({ fecha_inicio, fecha_fin, moto_id, cliente_id, estado, tecnico_id }) => {
+    const { data } = await api.get('/reportes/mantenimientos/detalle/', {
+      params: { fecha_inicio, fecha_fin, moto_id, cliente_id, estado, tecnico_id },
+    });
     return data;
   },
 

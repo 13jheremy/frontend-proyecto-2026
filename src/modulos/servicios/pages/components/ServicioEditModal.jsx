@@ -99,8 +99,23 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
     }
   }, [apiError]);
 
-  // Sanitizar texto: eliminar espacios múltiples, trim
+  // Sanitizar texto: eliminar caracteres especiales HTML
   const sanitizeText = (text) => {
+    if (!text) return '';
+    return text.replace(/<[^>]*>/g, '').trim();
+  };
+
+  // Normalizar nombre: solo primera letra mayúscula, resto minúscula, un espacio entre palabras
+  const normalizeNombre = (value) => {
+    if (!value) return '';
+    const lower = value.toLowerCase();
+    const trimmed = lower.trim().replace(/\s+/g, ' ');
+    if (!trimmed) return '';
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  };
+
+  // Sanitizar nombre para envío: eliminar espacios múltiples, trim
+  const sanitizeNombre = (text) => {
     return text.replace(/\s+/g, ' ').trim();
   };
 
@@ -163,10 +178,19 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
     }
   };
 
-  // Validar al salir del campo (onBlur)
+  // Validar y normalizar al salir del campo (onBlur)
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    const error = validateField(name, value);
+    let valueToValidate = value;
+    if (name === 'nombre' && value) {
+      const normalized = normalizeNombre(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: normalized
+      }));
+      valueToValidate = normalized;
+    }
+    const error = validateField(name, valueToValidate);
     if (error) {
       setFormErrors(prev => ({
         ...prev,
@@ -258,7 +282,7 @@ const ServicioEditModal = ({ isOpen, onClose, onUpdate, currentServicio, loading
 
     // Sanitizar datos antes de enviar
     const dataToSubmit = {
-      nombre: sanitizeText(formData.nombre),
+      nombre: sanitizeNombre(formData.nombre),
       descripcion: sanitizeText(formData.descripcion),
       precio: parseFloat(formData.precio),
       duracion_estimada: duracionTotal,

@@ -102,30 +102,36 @@ export const useProductos = () => {
     setError(null);
 
     try {
-      // Preparar los datos para envío
-      let dataToSend = productoData;
+      const { imagen, categoria, proveedor, precio_compra, precio_venta, stock_inicial, stock_minimo, ...rest } = productoData;
 
-      // Si hay una imagen (File object), convertir a FormData
-      if (productoData.imagen && productoData.imagen instanceof File) {
+      const dataToSend = {
+        ...rest,
+        categoria: categoria ? Number(categoria) : null,
+        proveedor: proveedor ? Number(proveedor) : null,
+        precio_compra: precio_compra !== '' && precio_compra != null ? Number(precio_compra) : 0,
+        precio_venta: precio_venta !== '' && precio_venta != null ? Number(precio_venta) : 0,
+        stock_inicial: stock_inicial ? Number(stock_inicial) : 2,
+        stock_minimo: stock_minimo ? Number(stock_minimo) : 1,
+      };
+
+      let apiData = dataToSend;
+
+      if (imagen && imagen instanceof File) {
         const formData = new FormData();
         
-        // Agregar todos los campos excepto la imagen
-        Object.keys(productoData).forEach(key => {
-          if (key !== 'imagen') {
-            formData.append(key, productoData[key]);
+        Object.keys(dataToSend).forEach(key => {
+          const value = dataToSend[key];
+          if (value !== null && value !== undefined) {
+            formData.append(key, value);
           }
         });
         
-        // Agregar la imagen
-        formData.append('imagen', productoData.imagen);
+        formData.append('imagen', imagen);
         
-        dataToSend = formData;
-      } else {
-        // Para datos sin imagen, mantener valores exactos
-        dataToSend = productoData;
+        apiData = formData;
       }
 
-      const data = await productoApi.createProducto(dataToSend);
+      const data = await productoApi.createProducto(apiData);
       showNotification.success(productMessages.productCreated);
       return data;
     } catch (err) {
@@ -148,30 +154,36 @@ export const useProductos = () => {
     setError(null);
 
     try {
-      // Preparar los datos para envío
-      let dataToSend = productoData;
+      const { imagen, categoria, proveedor, precio_compra, precio_venta, stock_inicial, stock_minimo, ...rest } = productoData;
 
-      // Si hay una imagen (File object), convertir a FormData
-      if (productoData.imagen && productoData.imagen instanceof File) {
+      const transformedData = {
+        ...rest,
+        categoria: categoria ? Number(categoria) : null,
+        proveedor: proveedor ? Number(proveedor) : null,
+        precio_compra: precio_compra !== '' && precio_compra != null ? Number(precio_compra) : 0,
+        precio_venta: precio_venta !== '' && precio_venta != null ? Number(precio_venta) : 0,
+        stock_inicial: stock_inicial ? Number(stock_inicial) : 2,
+        stock_minimo: stock_minimo ? Number(stock_minimo) : 1,
+      };
+
+      let apiData = transformedData;
+
+      if (imagen && imagen instanceof File) {
         const formData = new FormData();
         
-        // Agregar todos los campos excepto la imagen
-        Object.keys(productoData).forEach(key => {
-          if (key !== 'imagen') {
-            formData.append(key, productoData[key]);
+        Object.keys(transformedData).forEach(key => {
+          const value = transformedData[key];
+          if (value !== null && value !== undefined) {
+            formData.append(key, value);
           }
         });
         
-        // Agregar la imagen
-        formData.append('imagen', productoData.imagen);
+        formData.append('imagen', imagen);
         
-        dataToSend = formData;
-      } else {
-        // Para datos sin imagen, mantener valores exactos
-        dataToSend = productoData;
+        apiData = formData;
       }
 
-      const data = await productoApi.updateProducto(id, dataToSend);
+      const data = await productoApi.updateProducto(id, apiData);
       showNotification.success(productMessages.productUpdated);
       return data;
     } catch (err) {

@@ -10,9 +10,13 @@ export default function useReportes() {
   
   const [stats, setStats] = useState(null);
   const [reporteVentas, setReporteVentas] = useState(null);
+  const [reporteVentasDetalle, setReporteVentasDetalle] = useState(null);
+  const [reporteInventarioDetalle, setReporteInventarioDetalle] = useState(null);
+  const [reporteClientes, setReporteClientes] = useState(null);
   const [reporteProductos, setReporteProductos] = useState(null);
   const [reporteInventario, setReporteInventario] = useState(null);
   const [reporteMantenimientos, setReporteMantenimientos] = useState(null);
+  const [reporteMantenimientosDetalle, setReporteMantenimientosDetalle] = useState(null);
   const [reporteMotos, setReporteMotos] = useState(null);
   const [reporteProveedores, setReporteProveedores] = useState(null);
   const [reporteUsuarios, setReporteUsuarios] = useState(null);
@@ -45,19 +49,16 @@ export default function useReportes() {
       const data = await reportesAPI.generarReporteVentas(params);
       console.log('Datos recibidos:', data);
       
-      // Verificar si la respuesta es un error
       if (data && data.error) {
         throw new Error(data.error || data.detail || 'Error en el servidor');
       }
       
-      // Verificar que tenemos los datos necesarios
       if (!data || !data.resumen) {
         console.warn('Datos del reporte pueden estar incompletos:', data);
       }
       
       setReporteVentas(data);
       
-      // Si el formato es pdf, generar y descargar automáticamente
       if (params.formato === 'pdf') {
         const timestamp = new Date().toISOString().split('T')[0];
         const doc = pdfService.generarReporteVentas(data);
@@ -71,7 +72,75 @@ export default function useReportes() {
       return data;
     } catch (e) {
       console.error('Error generando reporte de ventas:', e);
-      // Extraer mensaje de error legible
+      const errorMessage = e.response?.data?.detail || e.response?.data?.error || e.message || 'Error al generar reporte';
+      setError(new Error(errorMessage));
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchReporteVentasDetalle = useCallback(async (params) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await reportesAPI.obtenerReporteVentasDetalle(params);
+      
+      if (data && data.error) {
+        throw new Error(data.error || data.detail || 'Error en el servidor');
+      }
+      
+      setReporteVentasDetalle(data);
+      return data;
+    } catch (e) {
+      console.error('Error generando reporte de ventas detalle:', e);
+      const errorMessage = e.response?.data?.detail || e.response?.data?.error || e.message || 'Error al generar reporte';
+      setError(new Error(errorMessage));
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchReporteInventarioDetalle = useCallback(async (params) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await reportesAPI.obtenerReporteInventarioDetalle(params);
+      
+      if (data && data.error) {
+        throw new Error(data.error || data.detail || 'Error en el servidor');
+      }
+      
+      setReporteInventarioDetalle(data);
+      return data;
+    } catch (e) {
+      console.error('Error generando reporte de inventario detalle:', e);
+      const errorMessage = e.response?.data?.detail || e.response?.data?.error || e.message || 'Error al generar reporte';
+      setError(new Error(errorMessage));
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchReporteClientes = useCallback(async (params) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await reportesAPI.obtenerReporteClientes(params);
+      
+      if (data && data.error) {
+        throw new Error(data.error || data.detail || 'Error en el servidor');
+      }
+      
+      setReporteClientes(data);
+      return data;
+    } catch (e) {
+      console.error('Error generando reporte de clientes:', e);
       const errorMessage = e.response?.data?.detail || e.response?.data?.error || e.message || 'Error al generar reporte';
       setError(new Error(errorMessage));
       throw e;
@@ -125,6 +194,29 @@ export default function useReportes() {
       return null;
     } finally {
       setReportLoading('mantenimientos', false);
+    }
+  }, []);
+
+  const fetchReporteMantenimientosDetalle = useCallback(async (params) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await reportesAPI.obtenerReporteMantenimientosDetalle(params);
+      
+      if (data && data.error) {
+        throw new Error(data.error || data.detail || 'Error en el servidor');
+      }
+      
+      setReporteMantenimientosDetalle(data);
+      return data;
+    } catch (e) {
+      console.error('Error generando reporte mantenimientos detalle:', e);
+      const errorMessage = e.response?.data?.detail || e.response?.data?.error || e.message || 'Error al generar reporte';
+      setError(new Error(errorMessage));
+      throw e;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -182,17 +274,25 @@ export default function useReportes() {
     loadingStates,
     stats,
     reporteVentas,
+    reporteVentasDetalle,
+    reporteInventarioDetalle,
+    reporteClientes,
     reporteProductos,
     reporteInventario,
     reporteMantenimientos,
+    reporteMantenimientosDetalle,
     reporteMotos,
     reporteProveedores,
     reporteUsuarios,
     fetchStats,
     fetchReporteVentas,
+    fetchReporteVentasDetalle,
+    fetchReporteInventarioDetalle,
+    fetchReporteClientes,
     fetchReporteProductos,
     fetchReporteInventario,
     fetchReporteMantenimientos,
+    fetchReporteMantenimientosDetalle,
     fetchReporteMotos,
     fetchReporteProveedores,
     fetchReporteUsuarios,

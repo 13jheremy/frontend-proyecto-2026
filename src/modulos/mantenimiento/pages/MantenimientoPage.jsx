@@ -456,17 +456,19 @@ const MantenimientoPage = () => {
       />
 
       {/* Modal para confirmar acciones */}
-      <MantenimientoActionModal
-        isOpen={actionModalOpen}
-        onClose={() => {
-          setActionModalOpen(false);
-          setSelectedActionMantenimiento(null);
-          setActionType(null);
-        }}
-        mantenimiento={selectedActionMantenimiento}
-        actionType={actionType}
-        onConfirm={handleConfirmAction}
-      />
+      {actionModalOpen && actionType && (
+        <MantenimientoActionModal
+          isOpen={actionModalOpen}
+          onClose={() => {
+            setActionModalOpen(false);
+            setSelectedActionMantenimiento(null);
+            setActionType(null);
+          }}
+          mantenimiento={selectedActionMantenimiento}
+          actionType={actionType}
+          onConfirm={handleConfirmAction}
+        />
+      )}
 
       {/* Modal para ver información detallada del mantenimiento */}
       <MantenimientoInfoModal

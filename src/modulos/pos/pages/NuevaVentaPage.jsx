@@ -123,45 +123,33 @@ const NuevaVentaPage = () => {
         console.log('✅ Venta exitosa');
         toast.success('Venta procesada exitosamente');
         
-        // Generar recibo PDF automaticamente
-        if (resultado.venta_id) {
+        // Generar recibo automaticamente usando los datos devueltos por la venta
+        const ventaData = resultado.data?.data || resultado.data || resultado;
+        
+        if (ventaData) {
           try {
-            // Obtener los datos completos de la venta
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const ventaResponse = await fetch(`${apiUrl}/api/ventas/${resultado.venta_id}/`, {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-              }
-            });
-            const ventaData = await ventaResponse.json();
+            const pdfData = {
+              venta_id: ventaData.venta_id || ventaData.id,
+              fecha_venta: ventaData.fecha_venta,
+              estado: ventaData.estado || 'PAGADA',
+              cliente: ventaData.cliente || { nombre_completo: 'Cliente General', cedula: 'N/A', telefono: 'N/A' },
+              productos: (ventaData.productos || []).map(p => ({
+                nombre: p.nombre || 'Producto',
+                cantidad: p.cantidad,
+                precio_unitario: p.precio_unitario,
+                subtotal: p.subtotal
+              })),
+              subtotal: parseFloat(ventaData.subtotal || 0),
+              descuento: 0,
+              impuesto: parseFloat(ventaData.impuesto || 0),
+              total: parseFloat(ventaData.total || 0),
+              metodo_pago: ventaData.metodo_pago || datosVenta.metodo_pago || 'No especificado'
+            };
             
-            if (ventaData) {
-              // Preparar datos para el PDF
-              const pdfData = {
-                venta_id: ventaData.id,
-                fecha_venta: ventaData.fecha_venta,
-                estado: 'PAGADA',
-                cliente: ventaData.cliente || { nombre_completo: 'Cliente General', cedula: 'N/A', telefono: 'N/A' },
-                productos: ventaData.detalles?.map(d => ({
-                  nombre: d.producto?.nombre || 'Producto',
-                  cantidad: d.cantidad,
-                  precio_unitario: d.precio_unitario,
-                  subtotal: d.subtotal
-                })) || [],
-                subtotal: ventaData.subtotal || 0,
-                descuento: ventaData.descuento || 0,
-                impuesto: ventaData.impuesto || 0,
-                total: ventaData.total || 0,
-                metodo_pago: datosVenta.metodo_pago || 'No especificado'
-              };
-              
-              const doc = pdfService.generarComprobanteVenta(pdfData);
-              // Opcional: descargar el PDF silenciosamente como respaldo o quitarlo. Por ahora lo dejamos:
-              pdfService.descargarPDF(doc, `recibo_venta_${ventaData.id}_${new Date().toISOString().split('T')[0]}.pdf`);
-              
-              // Imprimir recibo ticket! (Requerimiento del usuario)
-              printReceipt(pdfData);
-            }
+            const doc = pdfService.generarComprobanteVenta(pdfData);
+            pdfService.descargarPDF(doc, `recibo_venta_${ventaData.venta_id || ventaData.id}_${new Date().toISOString().split('T')[0]}.pdf`);
+            
+            printReceipt(pdfData);
           } catch (pdfError) {
             console.error('Error generando PDF:', pdfError);
           }

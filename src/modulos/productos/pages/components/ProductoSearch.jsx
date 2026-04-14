@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faFilter, faTimes, faStar, faBox, faBuilding } from '@fortawesome/free-solid-svg-icons';
 
-const ProductoSearch = ({ filters, setFilters, onSearch, categorias, proveedores }) => {
+const ProductoSearch = ({ filters = {}, setFilters, onSearch, categorias = [], proveedores = [] }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const debounce = (func, wait) => {
@@ -301,11 +301,6 @@ ProductoSearch.propTypes = {
       nombre: PropTypes.string.isRequired,
     })
   ),
-};
-
-ProductoSearch.defaultProps = {
-  categorias: [],
-  proveedores: [],
 };
 
 export default ProductoSearch;

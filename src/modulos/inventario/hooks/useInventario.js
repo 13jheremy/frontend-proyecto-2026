@@ -29,10 +29,6 @@ export const useInventario = () => {
       params.activo = String(params.activo);
     }
 
-    if (params.eliminado !== undefined && params.eliminado !== '') {
-      params.eliminado = String(params.eliminado);
-    }
-
     return params;
   };
 
@@ -49,13 +45,17 @@ export const useInventario = () => {
         page_size: pageSize,
       };
 
+      console.log('[DEBUG] fetchInventarios params:', params);
       const data = await inventarioApi.getInventarios(params);
+      console.log('[DEBUG] fetchInventarios response:', data);
 
-      if (data && data.results) {
-        const totalItems = data.count || 0;
+      if (data) {
+        const results = data.results || (Array.isArray(data) ? data : []);
+        const totalItems = data.count || results.length || 0;
         const totalPages = Math.ceil(totalItems / pageSize);
 
-        setInventarios(data.results);
+        console.log('[DEBUG] Inventarios cargados:', results.length, 'total:', totalItems);
+        setInventarios(results);
         setPagination({
           page,
           pageSize,
@@ -64,8 +64,13 @@ export const useInventario = () => {
           next: data.next,
           previous: data.previous,
         });
+      } else {
+        console.log('[DEBUG] No hay datos en la respuesta');
+        setInventarios([]);
+        setPagination({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 });
       }
     } catch (err) {
+      console.error('[DEBUG] Error fetching inventarios:', err);
       const apiError = handleApiError(err);
       setError(apiError);
       setInventarios([]);

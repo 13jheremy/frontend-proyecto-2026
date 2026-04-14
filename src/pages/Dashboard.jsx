@@ -16,6 +16,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [productosStockBajo, setProductosStockBajo] = useState([]);
   const navigate = useNavigate();
 
   // Cargar estadísticas del dashboard - solo una vez al montar
@@ -67,6 +68,22 @@ const Dashboard = () => {
               }
               
               statsData = { ...statsData, productos_destacados: featuredCount };
+              
+              // Obtener productos con stock bajo
+              const lowStockResult = await productsAPI.getLowStock();
+              console.log('Low stock result:', lowStockResult);
+              
+              let lowStockProducts = [];
+              if (lowStockResult && lowStockResult.results) {
+                lowStockProducts = lowStockResult.results;
+              } else if (Array.isArray(lowStockResult)) {
+                lowStockProducts = lowStockResult;
+              } else if (lowStockResult && lowStockResult.data) {
+                lowStockProducts = lowStockResult.data.results || lowStockResult.data;
+              }
+              
+              console.log('Low stock products:', lowStockProducts);
+              setProductosStockBajo(lowStockProducts);
             } catch (featErr) {
               console.error('Error fetching featured products:', featErr);
             }
@@ -138,28 +155,67 @@ const Dashboard = () => {
               icon={<svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
             />
           </div>
-          
-          {/* Estadísticas adicionales */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Mantenimientos Pendientes"
-              value={stats.mantenimientos_pendientes}
-              color="orange"
-              icon={<svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-            />
-            <StatCard
-              title="Stock Bajo"
-              value={stats.productos_stock_bajo}
-              color="red"
-              icon={<svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
-            />
-            <StatCard
-              title="Productos Destacados"
-              value={stats?.productos_destacados ?? 0}
-              color="yellow"
-              icon={<svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>}
-            />
-          </div>
+
+          {/* Productos con Stock Bajo */}
+          {productosStockBajo.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-red-200 dark:border-red-800 p-6 mt-6">
+              <h2 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Productos con Stock Bajo
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Producto</th>
+                      <th className="px-4 py-2 text-left">Categoría</th>
+                      <th className="px-4 py-2 text-center">Stock Actual</th>
+                      <th className="px-4 py-2 text-center">Stock Mínimo</th>
+                      <th className="px-4 py-2 text-right">Precio Venta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productosStockBajo.slice(0, 5).map((producto) => {
+                      console.log('Producto stock bajo:', producto);
+                      return (
+                      <tr key={producto.id} className="border-b border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/10">
+                        <td className="px-4 py-2 font-medium text-slate-900 dark:text-slate-100">
+                          {producto.nombre}
+                        </td>
+                        <td className="px-4 py-2 text-slate-600 dark:text-slate-400">
+                          {producto.categoria_nombre || '-'}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                            {producto.inventario_stock ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-center text-slate-500">
+                          {producto.inventario_stock_minimo ?? '-'}
+                        </td>
+                        <td className="px-4 py-2 text-right text-green-600 dark:text-green-400 font-medium">
+                          ${producto.precio_venta?.toLocaleString('es-CO') || '0'}
+                        </td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {productosStockBajo.length > 5 && (
+                  <div className="mt-3 text-center">
+                    <button 
+                      onClick={() => navigate('/reportes')}
+                      className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                    >
+                      Ver más ({productosStockBajo.length - 5} más) →
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 

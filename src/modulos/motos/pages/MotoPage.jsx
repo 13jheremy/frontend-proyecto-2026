@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useMotos } from '../hooks/useMotos';
 import { usersAPI } from '../../../services/api'; // Para obtener usuarios/propietarios
+import { toast } from 'react-toastify';
 import MotoTable from './components/MotoTable';
 import MotoCreateModal from './components/MotoCreateModal';
 import MotoEditModal from './components/MotoEditModal';
@@ -96,7 +97,7 @@ const MotoPage = () => {
     eliminados: 0
   });
 
-  // Cargar usuarios disponibles para asignar como propietarios
+  // Cargar usuarios disponibles para asignar como propietarios (solo clientes)
   const fetchUsuarios = useCallback(async () => {
     setLoadingUsuarios(true);
     try {
@@ -106,9 +107,12 @@ const MotoPage = () => {
       });
       
       if (response.data && response.data.results) {
-        // Filtrar solo usuarios que tengan persona asociada
+        // Filtrar solo usuarios que tengan persona asociada Y rol de Cliente
         const usuariosConPersona = response.data.results.filter(usuario => 
-          usuario.persona && usuario.persona.id
+          usuario.persona && usuario.persona.id &&
+          usuario.roles && usuario.roles.some(rol => 
+            rol.nombre && rol.nombre.toLowerCase() === 'cliente'
+          )
         );
         setUsuariosDisponibles(usuariosConPersona);
       }
@@ -134,8 +138,16 @@ const MotoPage = () => {
       setActionModalOpen(false);
       setSelectedActionMoto(null);
       setActionType(null);
+      
+      if (type === 'toggleActivo') {
+        toast.success('Estado de motocicleta actualizado');
+      } else if (type === 'softDelete') {
+        toast.success('Motocicleta eliminada correctamente');
+      } else if (type === 'restore') {
+        toast.success('Motocicleta restaurada correctamente');
+      }
     } catch (err) {
-      // Error handling for action
+      toast.error('Error al realizar la acción');
     }
   };
 
@@ -170,8 +182,9 @@ const MotoPage = () => {
       await createMoto(motoData);
       setIsCreateModalOpen(false);
       fetchMotos(filters, page, pageSize);
+      toast.success('Motocicleta creada correctamente');
     } catch (err) {
-      // Error handling for create
+      toast.error('Error al crear la motocicleta');
     }
   }, [createMoto, fetchMotos, filters, page, pageSize]);
 
@@ -188,8 +201,9 @@ const MotoPage = () => {
       setCurrentMoto(null);
       
       fetchMotos(filters, page, pageSize);
+      toast.success('Motocicleta actualizada correctamente');
     } catch (err) {
-      // Error handling for update
+      toast.error('Error al actualizar la motocicleta');
     }
   }, [updateMoto, fetchMotos, filters, page, pageSize]);
 

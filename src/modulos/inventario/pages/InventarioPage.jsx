@@ -76,8 +76,6 @@ const InventarioPage = () => {
   // Estados para búsqueda y paginación
   const [filters, setFilters] = useState({
     search: '',
-    activo: '',
-    eliminado: '',
     stock_bajo: ''
   });
   const [page, setPage] = useState(1);
@@ -113,9 +111,13 @@ const InventarioPage = () => {
 
   // Limpiar filtros
   const handleClearFilters = useCallback(() => {
-    setFilters({});
+    const defaultFilters = {
+      search: '',
+      stock_bajo: ''
+    };
+    setFilters(defaultFilters);
     setPage(1);
-    fetchInventarios({}, 1, pageSize);
+    fetchInventarios(defaultFilters, 1, pageSize);
   }, [fetchInventarios, pageSize]);
 
   // Manejar cambio de página
@@ -277,17 +279,6 @@ const InventarioPage = () => {
 
       {/* BOTONES DE ACCIÓN */}
       <div className="flex flex-wrap gap-4 mb-6">
-        {canCreate && (
-          <button
-            onClick={openCreateModal}
-            disabled={loading}
-            className="flex items-center p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Crear Inventario"
-          >
-            <FontAwesomeIcon icon={faPlus} />
-          </button>
-        )}
-
         {estadisticasLocales.conStock > 0 && (
           <div className="flex items-center px-3 py-2 bg-green-100 text-green-800 rounded-md">
             <FontAwesomeIcon icon={faCheckCircle} className="mr-2" />

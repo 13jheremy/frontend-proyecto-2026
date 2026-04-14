@@ -139,7 +139,8 @@ export const useCategorias = () => {
     } catch (err) {
       const errorInfo = handleApiError(err);
       setError(errorInfo);
-      if (!errorInfo.fieldErrors || Object.keys(errorInfo.fieldErrors).length === 0) {
+      const hasFieldErrors = errorInfo.fieldErrors && Object.keys(errorInfo.fieldErrors).length > 0;
+      if (!hasFieldErrors) {
         showNotification.error(errorInfo.message);
       }
       throw errorInfo;
@@ -164,7 +165,8 @@ export const useCategorias = () => {
     } catch (err) {
       const errorInfo = handleApiError(err);
       setError(errorInfo);
-      if (!errorInfo.fieldErrors || Object.keys(errorInfo.fieldErrors).length === 0) {
+      const hasFieldErrors = errorInfo.fieldErrors && Object.keys(errorInfo.fieldErrors).length > 0;
+      if (!hasFieldErrors) {
         showNotification.error(errorInfo.message);
       }
       throw errorInfo;

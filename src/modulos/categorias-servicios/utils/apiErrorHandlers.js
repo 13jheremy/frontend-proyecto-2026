@@ -12,6 +12,7 @@ export const handleApiError = (error) => {
     let message = 'Error desconocido';
     let type = 'unknown';
     let details = data;
+    let fieldErrors = {};
 
     // Función auxiliar recursiva para buscar el primer mensaje de error significativo
     const getErrorMessage = (obj, prefix = '') => {
@@ -46,6 +47,24 @@ export const handleApiError = (error) => {
       return null;
     };
 
+    // Detectar errores de campo (errores de validación de Django)
+    const extractFieldErrors = (data) => {
+      const errors = {};
+      const skipFields = ['detail', 'non_field_errors', 'message', 'error', 'count', 'next', 'previous', 'results'];
+      
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key) && !skipFields.includes(key)) {
+          const value = data[key];
+          if (Array.isArray(value)) {
+            errors[key] = value.join(', ');
+          } else if (typeof value === 'string') {
+            errors[key] = value;
+          }
+        }
+      }
+      return Object.keys(errors).length > 0 ? errors : null;
+    };
+
     // Prioriza mensajes de error específicos del backend
     if (data.detail) {
       message = data.detail;
@@ -73,13 +92,18 @@ export const handleApiError = (error) => {
         } else if (data.persona) {
           message = 'Error en los datos de persona. Verifique la información personal.';
         } else if (data.correo_electronico) {
-          message = 'Error en el correo electrónico. Verifique que sea válido y único.';
+          message = 'El correo electrónico ya está en uso o no es válido.';
         } else if (data.username) {
-          message = 'Error en el nombre de usuario. Verifique que sea único.';
+          message = 'El nombre de usuario ya está en uso.';
         } else {
           message = 'Datos inválidos. Por favor, revisa el formulario.';
         }
       }
+    }
+
+    // Extraer errores de campo para errores 400
+    if (status === 400) {
+      fieldErrors = extractFieldErrors(data) || {};
     }
 
     switch (status) {
@@ -94,6 +118,8 @@ export const handleApiError = (error) => {
           message = 'La cédula ya está registrada o no es válida.';
         } else if (message.includes('roles') || message.includes('rol')) {
           message = 'Error en la asignación de roles. Verifique los roles seleccionados.';
+        } else if (message.includes('nombre')) {
+          message = 'Ya existe una categoría de servicio con este nombre.';
         }
         break;
       case 401:
@@ -121,7 +147,7 @@ export const handleApiError = (error) => {
         message = message || `Error del servidor con código ${status}.`;
     }
     
-    return { message, type, details };
+    return { message, type, details, fieldErrors };
   } else if (error.request) {
     return { 
       message: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.', 

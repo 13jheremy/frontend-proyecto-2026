@@ -5,7 +5,7 @@ import Modal from '../../../../components/Modal'; // Ajusta la ruta si es necesa
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInfoCircle, faBox, faTag, faDollarSign, faWarehouse, faCheckCircle, faTimesCircle, faStar, faBuilding, faBarcode, faCalendarAlt, faUser, faUserEdit, faUserMinus } from '@fortawesome/free-solid-svg-icons';
 
-const InfoProductModal = ({ isOpen, onClose, producto }) => {
+const InfoProductModal = ({ isOpen, onClose, producto = null }) => {
   if (!isOpen || !producto) return null;
 
   const formatPrice = (price) => {
@@ -230,10 +230,6 @@ InfoProductModal.propTypes = {
       correo: PropTypes.string,
     }),
   }),
-};
-
-InfoProductModal.defaultProps = {
-  producto: null,
 };
 
 export default InfoProductModal;

@@ -110,37 +110,32 @@ const DataTable = ({
 
       {/* Pagination */}
       {showPagination && filtered.length > 0 && (
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
-              <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full">
-                Mostrando <span className="font-bold">{((page - 1) * pageSize) + 1}</span> a{' '}
-                <span className="font-bold">{Math.min(page * pageSize, filtered.length)}</span> de{' '}
-                <span className="font-bold">{filtered.length}</span> resultados
+        <div className="px-2 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div className="flex items-center justify-center md:justify-start text-xs font-medium text-gray-700 dark:text-gray-300 order-2 md:order-1">
+              <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full whitespace-nowrap text-[10px] md:text-xs">
+                {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, filtered.length)} / {filtered.length}
               </span>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-center gap-1 md:gap-2 order-1 md:order-2">
               <button
                 disabled={page === 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="relative inline-flex items-center px-4 py-2 border-2 border-blue-300 dark:border-blue-600 text-sm font-semibold rounded-lg text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 hover:border-blue-400 dark:hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-all duration-200 shadow-sm"
+                className="inline-flex items-center px-1.5 md:px-3 py-1 border border-blue-300 dark:border-blue-600 text-[10px] md:text-xs font-medium rounded text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <FontAwesomeIcon icon={faChevronLeft} className="h-4 w-4 mr-2" />
-                Anterior
+                <FontAwesomeIcon icon={faChevronLeft} className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
+                <span className="hidden md:inline">Ant</span>
               </button>
-              <div className="flex items-center bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md">
-                <span className="text-sm font-bold">
-                  Página <span className="text-lg">{page}</span> de{' '}
-                  <span className="text-lg">{totalPages}</span>
-                </span>
+              <div className="flex items-center bg-blue-600 dark:bg-blue-700 text-white px-1.5 md:px-2 py-1 rounded text-[10px] md:text-xs">
+                <span className="font-medium">{page}/{totalPages}</span>
               </div>
               <button
                 disabled={page === totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="relative inline-flex items-center px-4 py-2 border-2 border-blue-300 dark:border-blue-600 text-sm font-semibold rounded-lg text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 hover:border-blue-400 dark:hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-all duration-200 shadow-sm"
+                className="inline-flex items-center px-1.5 md:px-3 py-1 border border-blue-300 dark:border-blue-600 text-[10px] md:text-xs font-medium rounded text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Siguiente
-                <FontAwesomeIcon icon={faChevronRight} className="h-4 w-4 ml-2" />
+                <span className="hidden md:inline">Sig</span>
+                <FontAwesomeIcon icon={faChevronRight} className="h-2.5 w-2.5 md:h-3 md:w-3 ml-0.5" />
               </button>
             </div>
           </div>

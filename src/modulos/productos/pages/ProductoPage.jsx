@@ -418,17 +418,19 @@ const ProductosPage = () => {
       />
 
       {/* Modal para confirmar acciones */}
-      <ProductActionModal
-        isOpen={actionModalOpen}
-        onClose={() => {
-          setActionModalOpen(false);
-          setSelectedActionProducto(null);
-          setActionType(null);
-        }}
-        producto={selectedActionProducto}
-        actionType={actionType}
-        onConfirm={handleConfirmAction}
-      />
+      {actionModalOpen && actionType && (
+        <ProductActionModal
+          isOpen={actionModalOpen}
+          onClose={() => {
+            setActionModalOpen(false);
+            setSelectedActionProducto(null);
+            setActionType(null);
+          }}
+          producto={selectedActionProducto}
+          actionType={actionType}
+          onConfirm={handleConfirmAction}
+        />
+      )}
 
       {/* Modal para ver imagen ampliada */}
       <ProductoImageModal

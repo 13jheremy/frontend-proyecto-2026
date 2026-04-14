@@ -1,9 +1,10 @@
 // src/modulos/inventario/pages/LotesPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLotes } from '../hooks/useLotes';
 import { useAuth } from '../../../context/AuthContext';
 import { PERMISSIONS } from '../../../utils/constants';
 import { normalizeRoles } from '../../../utils/rolePermissions';
+import { posAPI } from '../../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faPlus, 
@@ -473,7 +474,6 @@ const LotesPage = () => {
           onClose={() => closeModal('create')}
           onCreate={handleCreate}
           loading={loading}
-          fetchProductos={fetchProductosActivos}
         />
       )}
 
@@ -536,9 +536,7 @@ const LotesPage = () => {
 // COMPONENTES DE MODALES
 // =======================================
 
-import React, { useState, useEffect } from 'react';
-
-const LoteCreateModal = ({ isOpen, onClose, onCreate, loading, fetchProductos }) => {
+const LoteCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
   const [productoId, setProductoId] = useState('');
   const [cantidad, setCantidad] = useState('');
   const [precioCompra, setPrecioCompra] = useState('');
@@ -547,56 +545,80 @@ const LoteCreateModal = ({ isOpen, onClose, onCreate, loading, fetchProductos })
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingProductos, setLoadingProductos] = useState(false);
+  const dropdownRef = useRef(null);
+  const selectedProductRef = useRef(null); // Track selected product for effect
 
   useEffect(() => {
-    if (isOpen && !productos.length) {
-      loadProductos();
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setProductoId('');
+      setCantidad('');
+      setPrecioCompra('');
+      setProductoSearch('');
+      setProductoSeleccionado(null);
+      setProductos([]);
+      setShowDropdown(false);
+      selectedProductRef.current = null;
     }
   }, [isOpen]);
 
+  // Solo buscar cuando NO hay producto seleccionado Y hay texto para buscar
   useEffect(() => {
-    if (productoSearch.length >= 2) {
+    const selectedProduct = selectedProductRef.current;
+    const hasValidSearch = productoSearch.length >= 1;
+    const isSelectedMatch = selectedProduct && productoSearch === selectedProduct.nombre;
+    
+    if (hasValidSearch && !isSelectedMatch) {
       const timer = setTimeout(() => {
         buscarProductos(productoSearch);
       }, 300);
       return () => clearTimeout(timer);
-    } else if (productoSearch.length === 0) {
-      loadProductos();
+    } else if (!hasValidSearch || isSelectedMatch) {
+      setProductos([]);
+      setShowDropdown(false);
     }
   }, [productoSearch]);
-
-  const loadProductos = async () => {
-    setLoadingProductos(true);
-    try {
-      const data = await fetchProductos();
-      setProductos(data || []);
-    } catch (err) {
-      console.error('Error cargando productos:', err);
-    } finally {
-      setLoadingProductos(false);
-    }
-  };
 
   const buscarProductos = async (query) => {
     setLoadingProductos(true);
     try {
-      const data = await fetchProductos();
-      const filtered = (data || []).filter(p => 
-        p.nombre.toLowerCase().includes(query.toLowerCase())
-      );
-      setProductos(filtered);
+      const response = await posAPI.buscarProductos(query);
+      let productosData = [];
+      if (response && response.success && response.data) {
+        if (response.data.success && response.data.data) {
+          productosData = Array.isArray(response.data.data) ? response.data.data : [];
+        } else if (Array.isArray(response.data)) {
+          productosData = response.data;
+        }
+      }
+      setProductos(productosData);
+      if (productosData.length > 0) {
+        setShowDropdown(true);
+      }
     } catch (err) {
       console.error('Error buscando productos:', err);
+      setProductos([]);
     } finally {
       setLoadingProductos(false);
     }
   };
 
   const seleccionarProducto = (producto) => {
+    selectedProductRef.current = producto;
     setProductoId(producto.id);
     setProductoSeleccionado(producto);
     setProductoSearch(producto.nombre);
     setShowDropdown(false);
+    setProductos([]);
   };
 
   if (!isOpen) return null;
@@ -650,12 +672,14 @@ const LoteCreateModal = ({ isOpen, onClose, onCreate, loading, fetchProductos })
                 value={productoSearch}
                 onChange={(e) => {
                   setProductoSearch(e.target.value);
-                  setProductoId('');
-                  setProductoSeleccionado(null);
+                  if (productoSeleccionado && e.target.value !== productoSeleccionado.nombre) {
+                    setProductoId('');
+                    setProductoSeleccionado(null);
+                  }
                   setShowDropdown(true);
                 }}
                 onFocus={() => setShowDropdown(true)}
-                placeholder="Buscar producto..."
+                placeholder="Buscar por nombre o ID..."
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
                 autoComplete="off"

@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import Modal from '../../../../components/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faSpinner, faBoxes, faBox, faHashtag, faWarning } from '@fortawesome/free-solid-svg-icons';
+import { toast } from 'react-toastify';
 
 /**
  * Modal para editar un registro de inventario existente.
@@ -68,12 +69,18 @@ const InventarioEditModal = ({ isOpen, onClose, onUpdate, currentInventario, loa
     // Convertir cadenas vacías a 0 para la validación
     const stockActual = formData.stock_actual === '' ? 0 : Number(formData.stock_actual);
     const stockMinimo = formData.stock_minimo === '' ? 0 : Number(formData.stock_minimo);
+    const stockOriginal = currentInventario?.stock_actual || 0;
     
     // Validar que sean números válidos
     if (isNaN(stockActual)) {
       errors.stock_actual = 'El stock actual debe ser un número';
     } else if (stockActual < 0) {
       errors.stock_actual = 'El stock actual no puede ser negativo';
+    } else if (stockActual > stockOriginal) {
+      errors.stock_actual = 'No se puede aumentar el stock manualmente. Solo se permite disminuir.';
+      toast.error('No se puede aumentar el stock manualmente. Solo se permite disminuir el stock mediante ventas o consumos.');
+      setFormErrors(errors);
+      return;
     }
     
     if (isNaN(stockMinimo)) {
@@ -309,13 +316,18 @@ InventarioEditModal.propTypes = {
   onUpdate: PropTypes.func.isRequired,
   currentInventario: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-    producto: PropTypes.shape({
-      nombre: PropTypes.string,
-      codigo: PropTypes.string,
-      categoria: PropTypes.shape({
-        nombre: PropTypes.string
-      })
-    }),
+    producto: PropTypes.oneOfType([
+      PropTypes.shape({
+        id: PropTypes.number,
+        nombre: PropTypes.string,
+        codigo: PropTypes.string,
+        categoria: PropTypes.shape({
+          nombre: PropTypes.string
+        })
+      }),
+      PropTypes.number,
+      PropTypes.string
+    ]),
     stock_actual: PropTypes.number,
     stock_minimo: PropTypes.number,
   }),

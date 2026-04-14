@@ -8,7 +8,7 @@ import { faPlus, faSpinner } from '@fortawesome/free-solid-svg-icons';
 /**
  * Modal para crear una nueva categoría de servicio.
  */
-const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
+const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading, error }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -50,6 +50,13 @@ const CategoriaCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
+
+  // Sincronizar errores de API al estado local
+  useEffect(() => {
+    if (error && error.fieldErrors) {
+      setFormErrors(prev => ({ ...prev, ...error.fieldErrors }));
+    }
+  }, [error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -165,7 +172,7 @@ CategoriaCreateModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onCreate: PropTypes.func.isRequired,
   loading: PropTypes.bool,
-  error: PropTypes.string,
+  error: PropTypes.object,
 };
 
 CategoriaCreateModal.defaultProps = {

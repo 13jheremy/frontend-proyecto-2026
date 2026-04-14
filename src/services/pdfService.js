@@ -928,3 +928,210 @@ class PDFService {
 // Exportar una instancia
 const pdfService = new PDFService();
 export default pdfService;
+
+// Métodos adicionales para reportes detallados
+pdfService.generarReporteVentasDetalle = function(data) {
+  if (!data) return null;
+  
+  const doc = this.initDocument();
+  let yPos = this.addHeader(doc, 'REPORTE DETALLADO DE VENTAS');
+  
+  yPos += 10;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Período: ${data.periodo?.inicio || 'N/A'} al ${data.periodo?.fin || 'N/A'}`, 20, yPos);
+  doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 20, yPos + 6);
+  
+  // Resumen
+  yPos += 20;
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Resumen:', 20, yPos);
+  yPos += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Total de ventas: ${data.resumen?.total_ventas || 0}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Total de ingresos: $${(data.resumen?.total_ingresos || 0).toLocaleString('es-CO')}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Total de productos vendidos: ${data.resumen?.total_productos || 0}`, 25, yPos);
+  
+  // Ventas detalladas
+  if (data.ventas && data.ventas.length > 0) {
+    yPos += 20;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Detalle de Ventas:', 20, yPos);
+    yPos += 10;
+    
+    data.ventas.forEach((venta, index) => {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Venta #${venta.venta_id} - ${venta.fecha}`, 20, yPos);
+      yPos += 6;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Cliente: ${venta.cliente?.nombre || 'N/A'}`, 25, yPos);
+      yPos += 5;
+      doc.text(`Estado: ${venta.estado}`, 25, yPos);
+      yPos += 5;
+      doc.text(`Total: $${venta.total?.toLocaleString('es-CO')}`, 25, yPos);
+      yPos += 8;
+      
+      if (venta.detalles && venta.detalles.length > 0) {
+        doc.setFontSize(9);
+        const tableRows = venta.detalles.map(d => [
+          d.producto_nombre || 'N/A',
+          d.cantidad?.toString() || '0',
+          `$${d.precio_unitario?.toLocaleString('es-CO')}`,
+          `$${d.subtotal?.toLocaleString('es-CO')}`
+        ]);
+        
+        try {
+          doc.autoTable({
+            startY: yPos,
+            head: [['Producto', 'Cantidad', 'P. Unit.', 'Subtotal']],
+            body: tableRows,
+            theme: 'striped',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [40, 167, 69] },
+            margin: { left: 25, right: 20 }
+          });
+          yPos = doc.lastAutoTable.finalY + 10;
+        } catch (e) {
+          yPos += 10;
+        }
+      }
+      
+      yPos += 5;
+    });
+  }
+  
+  return doc;
+};
+
+pdfService.generarReporteInventarioDetalle = function(data) {
+  if (!data) return null;
+  
+  const doc = this.initDocument();
+  let yPos = this.addHeader(doc, 'REPORTE DETALLADO DE INVENTARIO');
+  
+  yPos += 10;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 20, yPos);
+  
+  // Resumen
+  yPos += 15;
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Resumen:', 20, yPos);
+  yPos += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Total de productos: ${data.resumen?.total_productos || 0}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Stock total: ${data.resumen?.total_stock || 0}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Valor total del inventario: $${(data.resumen?.valor_total_inventario || 0).toLocaleString('es-CO')}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Productos con stock bajo: ${data.resumen?.productos_stock_bajo || 0}`, 25, yPos);
+  
+  // Productos
+  if (data.productos && data.productos.length > 0) {
+    yPos += 20;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Inventario por Producto:', 20, yPos);
+    yPos += 10;
+    
+    const tableRows = data.productos.map(p => [
+      p.nombre || 'N/A',
+      p.categoria || '-',
+      p.stock_actual?.toString() || '0',
+      p.stock_minimo?.toString() || '0',
+      p.stock_bajo ? 'BAJO' : 'OK',
+      `$${p.valor_total?.toLocaleString('es-CO')}`
+    ]);
+    
+    try {
+      doc.autoTable({
+        startY: yPos,
+        head: [['Producto', 'Categoría', 'Stock', 'Mín', 'Estado', 'Valor']],
+        body: tableRows,
+        theme: 'striped',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [255, 193, 7] },
+        margin: { left: 20, right: 20 }
+      });
+    } catch (e) {
+      console.error('Error creating table:', e);
+    }
+  }
+  
+  return doc;
+};
+
+pdfService.generarReporteClientes = function(data) {
+  if (!data) return null;
+  
+  const doc = this.initDocument();
+  let yPos = this.addHeader(doc, 'REPORTE DE VENTAS POR CLIENTE');
+  
+  yPos += 10;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Período: ${data.periodo?.inicio || 'N/A'} al ${data.periodo?.fin || 'N/A'}`, 20, yPos);
+  doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, 20, yPos + 6);
+  
+  // Resumen
+  yPos += 20;
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Resumen:', 20, yPos);
+  yPos += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Total de clientes: ${data.resumen?.total_clientes || 0}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Total de ventas: ${data.resumen?.total_ventas || 0}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Ingresos totales: $${(data.resumen?.total_ingresos || 0).toLocaleString('es-CO')}`, 25, yPos);
+  yPos += 6;
+  doc.text(`Promedio por cliente: $${(data.resumen?.promedio_por_cliente || 0).toLocaleString('es-CO')}`, 25, yPos);
+  
+  // Clientes
+  if (data.clientes && data.clientes.length > 0) {
+    yPos += 20;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Detalle por Cliente:', 20, yPos);
+    yPos += 10;
+    
+    const tableRows = data.clientes.map(c => [
+      c.nombre || 'N/A',
+      c.cedula || '-',
+      c.cantidad_ventas?.toString() || '0',
+      `$${c.total_compras?.toLocaleString('es-CO')}`,
+      `$${c.promedio_por_venta?.toLocaleString('es-CO')}`
+    ]);
+    
+    try {
+      doc.autoTable({
+        startY: yPos,
+        head: [['Cliente', 'Cédula', 'Ventas', 'Total', 'Promedio']],
+        body: tableRows,
+        theme: 'striped',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [111, 66, 193] },
+        margin: { left: 20, right: 20 }
+      });
+    } catch (e) {
+      console.error('Error creating table:', e);
+    }
+  }
+  
+  return doc;
+};

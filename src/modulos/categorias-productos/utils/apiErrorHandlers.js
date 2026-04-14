@@ -12,22 +12,19 @@ export const handleApiError = (error) => {
     let message = 'Error desconocido';
     let type = 'unknown';
     let details = data;
+    let fieldErrors = {};
 
-    // Función auxiliar recursiva para buscar el primer mensaje de error significativo
     const getErrorMessage = (obj, prefix = '') => {
       if (typeof obj === 'string') {
         return obj;
       }
       if (Array.isArray(obj) && obj.length > 0) {
-        // Para arrays, tomar el primer mensaje válido
         const firstMessage = getErrorMessage(obj[0]);
         return firstMessage ? `${prefix}${firstMessage}` : null;
       }
       if (typeof obj === 'object' && obj !== null) {
-        // Busca en los valores del objeto, priorizando algunos campos comunes
         const priorityFields = ['detail', 'non_field_errors', 'message', 'error'];
         
-        // Primero buscar en campos prioritarios
         for (const field of priorityFields) {
           if (obj[field]) {
             const errorMsg = getErrorMessage(obj[field], field === 'non_field_errors' ? '' : `${field}: `);
@@ -35,7 +32,6 @@ export const handleApiError = (error) => {
           }
         }
         
-        // Luego buscar en otros campos
         for (const key in obj) {
           if (Object.prototype.hasOwnProperty.call(obj, key) && !priorityFields.includes(key)) {
             const errorMsg = getErrorMessage(obj[key], `${key}: `);
@@ -46,7 +42,23 @@ export const handleApiError = (error) => {
       return null;
     };
 
-    // Prioriza mensajes de error específicos del backend
+    const extractFieldErrors = (data) => {
+      const errors = {};
+      const skipFields = ['detail', 'non_field_errors', 'message', 'error', 'count', 'next', 'previous', 'results'];
+      
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key) && !skipFields.includes(key)) {
+          const value = data[key];
+          if (Array.isArray(value)) {
+            errors[key] = value.join(', ');
+          } else if (typeof value === 'string') {
+            errors[key] = value;
+          }
+        }
+      }
+      return Object.keys(errors).length > 0 ? errors : null;
+    };
+
     if (data.detail) {
       message = data.detail;
     } else if (data.non_field_errors) {
@@ -60,32 +72,33 @@ export const handleApiError = (error) => {
     } else if (data.error) {
       message = data.error;
     } else {
-      // Intenta extraer un mensaje de error detallado de cualquier nivel de anidación
       const detailedMessage = getErrorMessage(data);
       if (detailedMessage) {
         message = detailedMessage;
       } else if (typeof data === 'string') {
         message = data;
       } else {
-        // Mensajes específicos para errores comunes de usuarios
         if (data.roles_ids || data.roles) {
           message = 'Error en la asignación de roles. Verifique los roles seleccionados.';
         } else if (data.persona) {
           message = 'Error en los datos de persona. Verifique la información personal.';
         } else if (data.correo_electronico) {
-          message = 'Error en el correo electrónico. Verifique que sea válido y único.';
+          message = 'El correo electrónico ya está en uso o no es válido.';
         } else if (data.username) {
-          message = 'Error en el nombre de usuario. Verifique que sea único.';
+          message = 'El nombre de usuario ya está en uso.';
         } else {
           message = 'Datos inválidos. Por favor, revisa el formulario.';
         }
       }
     }
 
+    if (status === 400) {
+      fieldErrors = extractFieldErrors(data) || {};
+    }
+
     switch (status) {
       case 400:
         type = 'validation';
-        // Mejorar mensaje para errores de validación específicos
         if (message.includes('correo_electronico') || message.includes('email')) {
           message = 'El correo electrónico ya está en uso o no es válido.';
         } else if (message.includes('username')) {
@@ -94,6 +107,8 @@ export const handleApiError = (error) => {
           message = 'La cédula ya está registrada o no es válida.';
         } else if (message.includes('roles') || message.includes('rol')) {
           message = 'Error en la asignación de roles. Verifique los roles seleccionados.';
+        } else if (message.includes('nombre')) {
+          message = 'Ya existe una categoría con este nombre.';
         }
         break;
       case 401:
@@ -108,7 +123,7 @@ export const handleApiError = (error) => {
         type = 'notfound';
         message = 'Recurso no encontrado.';
         break;
-      case 409: // Conflict
+      case 409:
         type = 'conflict';
         message = message || 'Conflicto de datos. Es posible que el recurso ya exista.';
         break;
@@ -121,7 +136,7 @@ export const handleApiError = (error) => {
         message = message || `Error del servidor con código ${status}.`;
     }
     
-    return { message, type, details };
+    return { message, type, details, fieldErrors };
   } else if (error.request) {
     return { 
       message: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.', 

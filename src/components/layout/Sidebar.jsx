@@ -19,6 +19,7 @@ import {
   faHome,
   faUsers,
   faBox,
+  faBoxOpen,
   faTruck,
   faTools,
   faShoppingCart,
@@ -31,7 +32,8 @@ import {
   faUserFriends,
   faClipboardList,
   faSearch,
-  faChartLine
+  faChartLine,
+  faBell
 } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = () => {
@@ -96,6 +98,8 @@ const Sidebar = () => {
       'Mantenimiento': faWrench,
       'Mis Mantenimientos': faWrench,
       'Inventario': faWarehouse,
+      'Lotes': faBoxOpen,
+      'Recordatorios': faBell,
       'Movimientos': faExchangeAlt,
       'Reportes': faChartBar,
       'Business Intelligence': faChartLine,

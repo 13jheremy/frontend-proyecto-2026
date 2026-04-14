@@ -1,8 +1,9 @@
 // src/modulos/ventas/pages/components/VentaFormModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faShoppingCart, faUser, faCalendar, faDollarSign, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
-import ProductoSearchInput from '../../../../components/ui/ProductoSearchInput'; // Importar el componente
+import { faTimes, faShoppingCart, faUser, faCalendar, faDollarSign, faPlus, faTrash, faSearch, faSpinner, faIdCard, faPhone } from '@fortawesome/free-solid-svg-icons';
+import ProductoSearchInput from '../../../../components/ui/ProductoSearchInput';
+import { posAPI } from '../../../../services/api';
 
 const VentaFormModal = ({ 
   isOpen, 
@@ -31,6 +32,11 @@ const VentaFormModal = ({
   const [productos, setProductos] = useState([]);
   const [busquedaCliente, setBusquedaCliente] = useState('');
   const [busquedaProducto, setBusquedaProducto] = useState('');
+  const [clienteSearchOpen, setClienteSearchOpen] = useState(false);
+  const [clienteLoading, setClienteLoading] = useState(false);
+  const [selectedClienteData, setSelectedClienteData] = useState(null);
+  const clienteInputRef = useRef(null);
+  const clienteDropdownRef = useRef(null);
 
   // Estados de los métodos de pago disponibles
   const metodosPago = [
@@ -50,6 +56,9 @@ const VentaFormModal = ({
   // Efecto para cargar datos cuando se abre el modal en modo edición
   useEffect(() => {
     if (isOpen && mode === 'edit' && currentVenta) {
+      const clienteNombre = currentVenta.cliente?.nombre_completo || 
+                            currentVenta.cliente_nombre || 
+                            '';
       setFormData({
         cliente: currentVenta.cliente?.id || '',
         fecha_venta: currentVenta.fecha_venta ? currentVenta.fecha_venta.split('T')[0] : new Date().toISOString().split('T')[0],
@@ -61,6 +70,8 @@ const VentaFormModal = ({
         observaciones: currentVenta.observaciones || '',
         detalles: currentVenta.detalles || []
       });
+      setBusquedaCliente(clienteNombre);
+      setSelectedClienteData(currentVenta.cliente || null);
     } else if (isOpen && mode === 'create') {
       // Resetear formulario para nueva venta
       setFormData({
@@ -74,6 +85,9 @@ const VentaFormModal = ({
         observaciones: '',
         detalles: []
       });
+      setBusquedaCliente('');
+      setSelectedClienteData(null);
+      setClientes([]);
     }
     setErrors({});
   }, [isOpen, mode, currentVenta]);
@@ -93,6 +107,74 @@ const VentaFormModal = ({
       total: parseFloat(total.toFixed(2))
     }));
   }, [formData.detalles]);
+
+  // Buscar clientes con debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (busquedaCliente.trim().length >= 2 && clienteSearchOpen) {
+        setClienteLoading(true);
+        try {
+          const response = await posAPI.buscarClientes(busquedaCliente);
+          let clientesData = [];
+          if (response && response.success && response.data) {
+            if (response.data.success && response.data.data) {
+              clientesData = Array.isArray(response.data.data) ? response.data.data : [];
+            } else if (Array.isArray(response.data)) {
+              clientesData = response.data;
+            }
+          }
+          setClientes(clientesData);
+        } catch (err) {
+          console.error('Error buscando clientes:', err);
+          setClientes([]);
+        } finally {
+          setClienteLoading(false);
+        }
+      } else {
+        setClientes([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [busquedaCliente, clienteSearchOpen]);
+
+  // Click outside para cerrar dropdown de clientes
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(event.target)) {
+        setClienteSearchOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleClienteSelect = (cliente) => {
+    setFormData(prev => ({ ...prev, cliente: cliente.id }));
+    setSelectedClienteData(cliente);
+    setBusquedaCliente(cliente.nombre_completo);
+    setClienteSearchOpen(false);
+    setClientes([]);
+    if (errors.cliente) {
+      setErrors(prev => ({ ...prev, cliente: '' }));
+    }
+  };
+
+  const handleClienteInputChange = (e) => {
+    const value = e.target.value;
+    setBusquedaCliente(value);
+    setFormData(prev => ({ ...prev, cliente: '' }));
+    setSelectedClienteData(null);
+    if (value.trim().length >= 2) {
+      setClienteSearchOpen(true);
+    } else {
+      setClienteSearchOpen(false);
+    }
+    if (errors.cliente) {
+      setErrors(prev => ({ ...prev, cliente: '' }));
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -212,6 +294,10 @@ const VentaFormModal = ({
       detalles: []
     });
     setErrors({});
+    setBusquedaCliente('');
+    setSelectedClienteData(null);
+    setClientes([]);
+    setClienteSearchOpen(false);
     onClose();
   };
 
@@ -250,17 +336,77 @@ const VentaFormModal = ({
                 <FontAwesomeIcon icon={faUser} className="mr-2" />
                 Cliente *
               </label>
-              <select
-                name="cliente"
-                value={formData.cliente}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                  errors.cliente ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                }`}
-              >
-                <option value="">Seleccionar cliente...</option>
-                {/* Aquí se cargarían los clientes desde la API */}
-              </select>
+              <div className="relative" ref={clienteDropdownRef}>
+                <div className="relative">
+                  <input
+                    ref={clienteInputRef}
+                    type="text"
+                    value={busquedaCliente}
+                    onChange={handleClienteInputChange}
+                    onFocus={() => {
+                      if (busquedaCliente.trim().length >= 2) {
+                        setClienteSearchOpen(true);
+                      }
+                    }}
+                    placeholder="Buscar cliente por nombre, cédula o teléfono..."
+                    className={`w-full px-3 py-2 pl-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
+                      errors.cliente ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    {clienteLoading ? (
+                      <FontAwesomeIcon icon={faSpinner} className="text-gray-400 animate-spin" />
+                    ) : (
+                      <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Dropdown de resultados */}
+                {clienteSearchOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {!clienteLoading && clientes.length === 0 && (
+                      <div className="p-3 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        No se encontraron clientes
+                      </div>
+                    )}
+                    {clientes.map((cliente) => (
+                      <div
+                        key={cliente.id}
+                        className="p-3 cursor-pointer border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        onClick={() => handleClienteSelect(cliente)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                              <FontAwesomeIcon icon={faUser} className="text-blue-600 dark:text-blue-400 text-xs" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {cliente.nombre_completo}
+                            </div>
+                            <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
+                              {cliente.cedula && (
+                                <div className="flex items-center">
+                                  <FontAwesomeIcon icon={faIdCard} className="mr-1" />
+                                  {cliente.cedula}
+                                </div>
+                              )}
+                              {cliente.telefono && (
+                                <div className="flex items-center">
+                                  <FontAwesomeIcon icon={faPhone} className="mr-1" />
+                                  {cliente.telefono}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {errors.cliente && (
                 <p className="mt-1 text-sm text-red-600">{errors.cliente}</p>
               )}

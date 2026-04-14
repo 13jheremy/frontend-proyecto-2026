@@ -7,7 +7,6 @@ import CategoriaCreateModal from './components/CategoriaCreateModal';
 import CategoriaEditModal from './components/CategoriaEditModal';
 import InfoCategoriaModal from './components/InfoCategoriaModal';
 import CategoriaActionModal from './components/CategoriaActionModal';
-import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faListAlt, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
@@ -48,19 +47,11 @@ const CategoriaProductoPage = () => {
   }, [page, pageSize]);
 
   // Cuando cambian filtros, resetear a página 1 y buscar
-  // ✅ useCallback para estabilizar la función
   const handleSearch = useCallback((newFilters) => {
     setFilters(newFilters);
     setPage(1);
     fetchCategorias(newFilters, 1, pageSize);
   }, [pageSize, fetchCategorias]);
-
-  // Error toast
-  useEffect(() => {
-    if (error) {
-      toast.error(`Error: ${error}`);
-    }
-  }, [error]);
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -209,6 +200,7 @@ const CategoriaProductoPage = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreate}
           loading={loading}
+          error={error}
         />
 
         <CategoriaEditModal
@@ -217,6 +209,7 @@ const CategoriaProductoPage = () => {
           onUpdate={handleUpdate}
           currentCategoria={currentCategoria}
           loading={loading}
+          error={error}
         />
 
         <InfoCategoriaModal

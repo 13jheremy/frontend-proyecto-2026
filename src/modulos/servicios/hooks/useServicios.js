@@ -95,8 +95,13 @@ export const useServicios = () => {
     }
   }, []);
 
-  // Crear servicio — NO muestra toast de éxito aquí, se delega al caller
-  // SOLO maneja errores de API y los propaga con fieldErrors
+  // Normalizar nombre para comparación
+  const normalizeNombre = (nombre) => {
+    if (!nombre) return '';
+    return nombre.toLowerCase().trim().replace(/\s+/g, ' ');
+  };
+
+  // Crear servicio
   const createServicio = useCallback(async (servicioData) => {
     if (operationInProgress.current) {
       showNotification.warning('Ya hay una operación en curso, espere un momento...');
@@ -143,6 +148,7 @@ export const useServicios = () => {
     setError(null);
 
     try {
+      // El nombre ya viene normalizado del modal
       const data = await servicioApi.updateServicio(id, servicioData);
       showNotification.success(serviceMessages.serviceUpdated);
       return data;

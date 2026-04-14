@@ -8,7 +8,7 @@ import { faSave, faSpinner } from '@fortawesome/free-solid-svg-icons';
 /**
  * Modal para editar una categoría de servicio existente.
  */
-const CategoriaEditModal = ({ isOpen, onClose, onUpdate, currentCategoria, loading }) => {
+const CategoriaEditModal = ({ isOpen, onClose, onUpdate, currentCategoria, loading, error }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -29,6 +29,13 @@ const CategoriaEditModal = ({ isOpen, onClose, onUpdate, currentCategoria, loadi
       setApiError(null);
     }
   }, [isOpen, currentCategoria]);
+
+  // Sincronizar errores de API al estado local
+  useEffect(() => {
+    if (error && error.fieldErrors) {
+      setFormErrors(prev => ({ ...prev, ...error.fieldErrors }));
+    }
+  }, [error]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -170,7 +177,7 @@ CategoriaEditModal.propTypes = {
   onUpdate: PropTypes.func.isRequired,
   currentCategoria: PropTypes.object,
   loading: PropTypes.bool,
-  error: PropTypes.string,
+  error: PropTypes.object,
 };
 
 CategoriaEditModal.defaultProps = {
